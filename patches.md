@@ -19,7 +19,7 @@ Upstream baseline: `bfec2387b8102975c84690f99be0f5f834fd0cbe`.
 - Translates primary navigation/settings headings, settings search, chat/composer and approval controls, code/message copy controls, empty states and common provider controls.
 - User content, code, paths and provider/model labels are not translated.
 - Coverage is intentionally partial. Some detailed descriptions, secondary dialogs/errors and the mobile interface remain English.
-- Desktop packaging retains both Chromium `zh-TW.pak` (Windows/Linux) and `zh_TW.lproj` (macOS). Electron Builder compares locale basenames literally, so both separator spellings are listed. The initial unpublished build exposed this mismatch; it was corrected before release.
+- Desktop packaging retains both Chromium `zh-TW.pak` (Windows/Linux) and `zh_TW.lproj` (macOS). Electron Builder compares locale basenames literally, so both separator spellings are listed. The initial unpublished build exposed this mismatch; it was corrected before local installation.
 
 ## Development-signed fork nightly
 
@@ -34,7 +34,7 @@ Upstream baseline: `bfec2387b8102975c84690f99be0f5f834fd0cbe`.
 
 ## Verification
 
-Run focused provider/protocol, contract/settings, locale/UI and packaging/signing tests, followed by web/server typechecks. Publish only after artifact signature and bundled fork update feed verification.
+Run focused provider/protocol, contract/settings, locale/UI and packaging/signing tests, followed by web/server typechecks. Install only after artifact signature and bundled fork update feed verification. The current delivery is local Mac installation plus source push, not a GitHub release.
 
 ## Repeatable build
 
@@ -56,3 +56,12 @@ The script selects the single Apple Development identity in the keychain, uses N
 - Web, server, contracts and desktop typechecks passed; signing-hook typecheck passed.
 - Installed OMP metadata RPC smoke passed for state, command catalog and model catalog in a temporary HOME, with no model-generation request.
 - Apple Development keychain identity successfully signed and verified a temporary executable. Final app signature must also be verified before publication.
+
+## Local Mac deployment (2026-10-07)
+
+- Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
+- Installed `0.0.45-nightly.20261007.1791347413` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
+- Installed binary was built from `261d9ac8cc1df819883b57989d10f91d14b08324` and signed with the owner's existing Apple Development certificate; complete bundle verification passed after installation.
+- Old app and existing local profiles were backed up at `/Users/jianruicheng/GitHub/t3code/release/local-install-backups/20261007-123720` before replacement. No existing user profile was overwritten or manually migrated.
+- Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. DMG/ZIP, private profile backups and local logs remain ignored and are not pushed.
+- No release or release tag is created for this deployment.
