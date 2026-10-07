@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   normalizeProviderAccentColor,
+  providerIconKind,
   providerInstanceInitials,
   resolveProviderInstanceDisplayName,
   shouldShowInstanceBadge,
@@ -132,5 +133,16 @@ describe("shouldShowInstanceBadge", () => {
     const entry = { driverKind: codex, accentColor: undefined };
     const other = { driverKind: claude, accentColor: undefined };
     expect(shouldShowInstanceBadge(entry, [entry, other])).toBe(false);
+  });
+});
+
+describe("providerIconKind", () => {
+  it("draws the OMP glyph only for Pi instances named OMP", () => {
+    expect(providerIconKind("pi", "OMP")).toBe("omp");
+    expect(providerIconKind("pi", " omp work ")).toBe("omp");
+    expect(providerIconKind("pi", "Pi")).toBe("pi");
+    expect(providerIconKind("pi", "Ompa")).toBe("pi");
+    expect(providerIconKind("codex", "OMP")).toBe("codex");
+    expect(providerIconKind(undefined, "OMP")).toBeUndefined();
   });
 });

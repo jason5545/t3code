@@ -1,7 +1,10 @@
 import { Image } from "expo-image";
-import { Path, Svg } from "react-native-svg";
+import { Defs, LinearGradient, Path, Stop, Svg } from "react-native-svg";
 import { View } from "react-native";
-import { providerInstanceInitials } from "@t3tools/client-runtime/state/provider-instance-display";
+import {
+  providerIconKind,
+  providerInstanceInitials,
+} from "@t3tools/client-runtime/state/provider-instance-display";
 import { useState } from "react";
 import { resolveOfficialAcpRegistryIconUrl } from "@t3tools/contracts";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
@@ -11,6 +14,8 @@ type ProviderIconProps = {
   readonly provider: string | null | undefined;
   readonly iconUrl?: string | null | undefined;
   readonly size?: number;
+  /** Instance name; tells an OMP instance apart from Pi, which share a driver. */
+  readonly displayName?: string | null | undefined;
 };
 
 function AcpRegistryFallbackIcon(props: { readonly color: string; readonly size: number }) {
@@ -119,6 +124,21 @@ export function ProviderIcon(props: ProviderIconProps) {
     );
   }
 
+  if (providerIconKind(props.provider, props.displayName) === "omp") {
+    return (
+      <Svg width={size} height={size} viewBox="10 13 44 44" fill="none">
+        <Defs>
+          <LinearGradient id="omp-mark" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#ed4abf" />
+            <Stop offset=".5" stopColor="#9b4dff" />
+            <Stop offset="1" stopColor="#5ad8e6" />
+          </LinearGradient>
+        </Defs>
+        <Path fill="url(#omp-mark)" d="M10 14h44v9H43v33h-9V23h-9v22h-9V23H10z" />
+      </Svg>
+    );
+  }
+
   if (props.provider === "pi") {
     const foreground = isDarkMode ? "#F5F5F5" : "#0F0F0F";
     return (
@@ -174,7 +194,12 @@ export function ProviderInstanceIcon(props: {
   return (
     <View style={{ position: "relative" }}>
       <View style={{ opacity: 0.6 }}>
-        <ProviderIcon iconUrl={props.iconUrl} provider={props.provider} size={props.size} />
+        <ProviderIcon
+          displayName={props.displayName}
+          iconUrl={props.iconUrl}
+          provider={props.provider}
+          size={props.size}
+        />
       </View>
       {props.showBadge ? (
         <View

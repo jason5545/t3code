@@ -8,18 +8,21 @@ Upstream baseline: `bfec2387b8102975c84690f99be0f5f834fd0cbe`.
 - OMP is an independent provider instance with display name `OMP` and executable `omp`.
 - It shares the Pi driver, without overwriting a user's existing Pi configuration.
 - New/legacy settings that omit `providerInstances` receive the OMP default. Explicit instance maps, including an empty map, remain unchanged. Existing users can add OMP in Settings → Providers.
+- Sparse settings persistence compares `providerInstances` as a whole. Per-field stripping would drop a user-added OMP identical to the default, and turn removing it into an omitted key that restores the default.
 - The creation wizard offers Pi and OMP separately, with independent drafts.
+- OMP shows its own π mark and gradient from omp.sh instead of Pi's glyph. Instances share the `pi` driver, so `providerIconKind` treats a Pi instance whose name starts with "OMP" as OMP; web and mobile icons use it. Mobile surfaces that only know the driver (usage, environment provider lists) still show Pi.
 - OMP JSONL dialect adapts command discovery, correlated prompt admission/completion, background settlement, queue state, and before-user branch semantics. Pi remains a passthrough.
 - Compatible protocol was inspected from installed OMP `18.7.0`; tests cover these adaptations. No model-generation request was used during verification.
 
 ## 2. Taiwan Traditional Chinese interface
 
-- Adds `en` and `zh-TW`, a saved device-local language selection, Traditional Chinese browser defaults, English fallback and reactive document language.
-- The General and Appearance settings contain the language selector.
-- Translates primary navigation/settings headings, settings search, chat/composer and approval controls, code/message copy controls, empty states and common provider controls.
-- User content, code, paths and provider/model labels are not translated.
-- Draft landing headings, inline project selection labels and the start-without-project shortcut use the selected locale, including accessible headings. Project names remain unchanged.
-- Coverage is intentionally partial. Some detailed descriptions, secondary dialogs/errors and the mobile interface remain English.
+- Adds `en` and `zh-TW`, a saved device-local language selection, Traditional Chinese browser defaults and English fallback. The General and Appearance settings contain the language selector; changing it reloads the page.
+- Most text is translated at build time so component sources stay identical to upstream. `scripts/i18n/autoTranslate.cjs` runs in the web Vite Babel pass and the mobile Babel config. It rewrites English in display positions (JSX text, display attributes and object properties, toast and `Alert.alert` calls) into runtime calls carrying both languages, but only for strings in `apps/web/src/locale/zh-TW.json`. Mobile follows the device language.
+- Inline JSX children become one message (`Delete {name} from {project}?`), so translations can reorder values or drop English plural suffixes.
+- `scripts/i18n/untranslated.json` keeps names and identifiers English, and keeps English at positions where code compares the literal (for example the `New thread` draft title, which the server checks). Context-record fields that reach agents (`rangeLabel`, `sectionTitle`, `terminalLabel`) are never translated.
+- The first-round `t()` calls and typed `messages.ts` catalog remain for the files they already touch.
+- After syncing upstream, run `node scripts/i18n/extract.ts --json <file>` to list new untranslated text, add it to the catalog, and check new comparisons against display strings. Restart Metro with `--clear` after catalog edits.
+- User content, code, paths, provider/model names and server-generated messages are not translated. Electron's custom native menu labels remain English.
 - Desktop packaging retains both Chromium `zh-TW.pak` (Windows/Linux) and `zh_TW.lproj` (macOS). Electron Builder compares locale basenames literally, so both separator spellings are listed. The initial unpublished build exposed this mismatch; it was corrected before local installation.
 
 ## Development-signed fork nightly

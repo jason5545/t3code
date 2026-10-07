@@ -1,6 +1,9 @@
 import { type CSSProperties, memo } from "react";
 
-import { providerInstanceInitials } from "@t3tools/client-runtime/state/provider-instance-display";
+import {
+  providerIconKind,
+  providerInstanceInitials,
+} from "@t3tools/client-runtime/state/provider-instance-display";
 
 import { ProviderDriverKind } from "@t3tools/contracts";
 import {
@@ -13,6 +16,7 @@ import {
   OpenCodeIcon,
   PiAgentIcon,
 } from "../Icons";
+import { OmpIcon } from "../OmpIcon";
 
 import { cn } from "~/lib/utils";
 import {
@@ -71,7 +75,10 @@ export const ProviderInstanceIcon = memo(function ProviderInstanceIcon(props: {
   statusDotClassName?: string;
   indicatorBackground?: string;
 }) {
-  const Icon = PROVIDER_ICON_BY_PROVIDER[props.driverKind] ?? null;
+  const Icon =
+    providerIconKind(props.driverKind, props.displayName) === "omp"
+      ? OmpIcon
+      : (PROVIDER_ICON_BY_PROVIDER[props.driverKind] ?? null);
   const indicatorBackground = props.indicatorBackground ?? "var(--card)";
   const accentStyle = props.accentColor
     ? ({ "--provider-accent": props.accentColor } as CSSProperties)

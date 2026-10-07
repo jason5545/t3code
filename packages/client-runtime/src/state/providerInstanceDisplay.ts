@@ -101,3 +101,14 @@ export function shouldShowInstanceBadge(
   }
   return false;
 }
+
+/**
+ * The glyph an instance shows. OMP runs on the Pi driver but has its own mark,
+ * so a Pi instance named OMP (the fork's default name) draws the OMP glyph.
+ */
+export function providerIconKind(
+  driver: string | null | undefined,
+  displayName: string | null | undefined,
+): string | null | undefined {
+  return driver === "pi" && /^omp\b/iu.test(displayName?.trim() ?? "") ? "omp" : driver;
+}
