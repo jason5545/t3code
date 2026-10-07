@@ -1,6 +1,8 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
+import * as Queue from "effect/Queue";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
@@ -44,6 +46,56 @@ function piProbeSpawner(version: string, name = "pi") {
   });
 }
 
+/** Answers the discovery requests a status probe sends, with one available model. */
+function piRpcSpawner(version: string, name: string) {
+  return ChildProcessSpawner.make((command) => {
+    const args = ChildProcess.isStandardCommand(command) ? command.args : [];
+    if (args.includes("--version")) {
+      return Effect.succeed(processHandle({ stdout: `${name}${version}\n` }));
+    }
+    return Effect.gen(function* () {
+      const stdout = yield* Queue.unbounded<Uint8Array, Cause.Done>();
+      let buffer = "";
+      const data: Record<string, unknown> = {
+        get_state: { thinkingLevel: "medium" },
+        get_available_models: { models: [{ provider: "anthropic", id: "claude-opus" }] },
+        get_available_commands: { commands: [] },
+      };
+      const stdin = Sink.forEach((chunk: Uint8Array) =>
+        Effect.gen(function* () {
+          buffer += new TextDecoder().decode(chunk);
+          for (let newline = buffer.indexOf("\n"); newline !== -1; newline = buffer.indexOf("\n")) {
+            const request = JSON.parse(buffer.slice(0, newline)) as Record<string, unknown>;
+            buffer = buffer.slice(newline + 1);
+            const type = String(request["type"]);
+            const response = {
+              type: "response",
+              id: request["id"],
+              command: type,
+              success: true,
+              data: data[type] ?? {},
+            };
+            yield* Queue.offer(stdout, encoder.encode(`${JSON.stringify(response)}\n`));
+          }
+        }),
+      );
+      return ChildProcessSpawner.makeHandle({
+        pid: ChildProcessSpawner.ProcessId(900_000_002),
+        exitCode: Effect.never,
+        isRunning: Effect.succeed(true),
+        kill: () => Effect.void,
+        unref: Effect.succeed(Effect.void),
+        stdin,
+        stdout: Stream.fromQueue(stdout),
+        stderr: Stream.empty,
+        all: Stream.empty,
+        getInputFd: () => Sink.drain,
+        getOutputFd: () => Stream.empty,
+      });
+    });
+  });
+}
+
 const settings = {
   enabled: true,
   binaryPath: "pi",
@@ -63,6 +115,21 @@ describe("PiProvider", () => {
       assert.equal(snapshot.status, "ready");
       assert.equal(snapshot.version, "18.7.0");
       assert.equal(snapshot.auth.status, "unknown");
+      assert.include(snapshot.message ?? "", "OMP is available");
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("labels an authenticated OMP as OMP rather than Pi", () =>
+    Effect.gen(function* () {
+      const snapshot = yield* checkPiProviderStatus({ ...settings, binaryPath: "omp" }).pipe(
+        Effect.provideService(
+          ChildProcessSpawner.ChildProcessSpawner,
+          piRpcSpawner("18.7.0", "omp/"),
+        ),
+      );
+      assert.equal(snapshot.auth.status, "authenticated");
+      assert.equal(snapshot.auth.label, "OMP");
+      assert.isTrue(snapshot.models.some((model) => model.slug === "anthropic/claude-opus"));
     }).pipe(Effect.provide(NodeServices.layer)),
   );
 

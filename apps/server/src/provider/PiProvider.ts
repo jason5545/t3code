@@ -35,6 +35,7 @@ import {
   piRecordField as recordField,
   piRecordString as recordString,
 } from "../orchestration-v2/Adapters/PiRpc.ts";
+import { isOmpBinary } from "../orchestration-v2/Adapters/piRpcDialect.ts";
 import {
   buildServerProvider,
   isCommandMissingCause,
@@ -190,6 +191,7 @@ export function buildInitialPiProviderSnapshot(
   return Effect.gen(function* () {
     const checkedAt = yield* Effect.map(DateTime.now, DateTime.formatIso);
     const models = piModelsFromSettings(piSettings.customModels);
+    const name = isOmpBinary(piSettings.binaryPath) ? "OMP" : "Pi";
     if (!piSettings.enabled) {
       return buildServerProvider({
         presentation: PI_PRESENTATION,
@@ -201,7 +203,7 @@ export function buildInitialPiProviderSnapshot(
           version: null,
           status: "warning",
           auth: { status: "unknown" },
-          message: "Pi is disabled in T3 Code settings.",
+          message: `${name} is disabled in T3 Code settings.`,
         },
       });
     }
@@ -215,7 +217,7 @@ export function buildInitialPiProviderSnapshot(
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "Checking Pi CLI availability...",
+        message: `Checking ${name} CLI availability...`,
       },
     });
   });
@@ -228,6 +230,9 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
 ): Effect.fn.Return<ServerProviderDraft, never, ChildProcessSpawner.ChildProcessSpawner> {
   const checkedAt = DateTime.formatIso(yield* DateTime.now);
   const fallbackModels = piModelsFromSettings(piSettings.customModels);
+  // OMP shares this driver; name it in status text so users see the CLI they configured.
+  const ompBinary = isOmpBinary(piSettings.binaryPath);
+  const binaryName = ompBinary ? "OMP" : "Pi";
 
   if (!piSettings.enabled) {
     return buildServerProvider({
@@ -240,7 +245,7 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         version: null,
         status: "warning",
         auth: { status: "unknown" },
-        message: "Pi is disabled in T3 Code settings.",
+        message: `${binaryName} is disabled in T3 Code settings.`,
       },
     });
   }
@@ -264,8 +269,10 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         status: "error",
         auth: { status: "unknown" },
         message: isCommandMissingCause(error)
-          ? "Pi CLI (`pi`) is not installed or not on PATH. Install with `npm install -g @earendil-works/pi-coding-agent`."
-          : "Failed to execute Pi CLI health check.",
+          ? ompBinary
+            ? "OMP CLI (`omp`) is not installed or not on PATH. Install with `npm install -g @oh-my-pi/pi-coding-agent`."
+            : "Pi CLI (`pi`) is not installed or not on PATH. Install with `npm install -g @earendil-works/pi-coding-agent`."
+          : `Failed to execute ${binaryName} CLI health check.`,
       },
     });
   }
@@ -281,14 +288,15 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         version: null,
         status: "error",
         auth: { status: "unknown" },
-        message: "Pi CLI is installed but timed out while running `pi --version`.",
+        message: `${binaryName} CLI is installed but timed out while running \`${binaryName.toLowerCase()} --version\`.`,
       },
     });
   }
 
   const versionOutput = versionResult.success.value;
   const versionText = `${versionOutput.stdout}\n${versionOutput.stderr}`;
-  const isOmp = /\bomp(?:\/|\s+v?)\d/i.test(versionText);
+  const isOmp = ompBinary || /\bomp(?:\/|\s+v?)\d/i.test(versionText);
+  const name = isOmp ? "OMP" : "Pi";
   const version = parseGenericCliVersion(versionText);
   if (versionOutput.code !== 0) {
     return buildServerProvider({
@@ -301,7 +309,7 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         version,
         status: "error",
         auth: { status: "unknown" },
-        message: "Pi CLI is installed but failed to run.",
+        message: `${name} CLI is installed but failed to run.`,
       },
     });
   }
@@ -317,7 +325,9 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         version: null,
         status: "error",
         auth: { status: "unknown" },
-        message: `T3 Code could not determine the Pi version. Pi ${MINIMUM_PI_VERSION} or newer is required.`,
+        message: isOmp
+          ? "T3 Code could not determine the OMP version."
+          : `T3 Code could not determine the Pi version. Pi ${MINIMUM_PI_VERSION} or newer is required.`,
       },
     });
   }
@@ -375,8 +385,7 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         version,
         status: "ready",
         auth: { status: "unknown" },
-        message:
-          "Pi is available, but T3 Code could not refresh its models and commands. The live session will retry startup.",
+        message: `${name} is available, but T3 Code could not refresh its models and commands. The live session will retry startup.`,
       },
     });
   }
@@ -391,8 +400,7 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
         version,
         status: "ready",
         auth: { status: "unknown" },
-        message:
-          "Pi is available, but model and command discovery needs interactive input. The live session will handle it.",
+        message: `${name} is available, but model and command discovery needs interactive input. The live session will handle it.`,
       },
     });
   }
@@ -410,12 +418,17 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
       installed: true,
       version,
       status: discovery.authenticated ? "ready" : "warning",
-      auth: { status: discovery.authenticated ? "authenticated" : "unauthenticated", type: "pi" },
+      auth: {
+        status: discovery.authenticated ? "authenticated" : "unauthenticated",
+        type: "pi",
+        ...(isOmp ? { label: "OMP" } : {}),
+      },
       ...(discovery.authenticated
         ? {}
         : {
-            message:
-              "Pi has no usable models. Run `pi` in a terminal and use /login, or configure an API key in ~/.pi/agent.",
+            message: isOmp
+              ? "OMP has no usable models. Run `omp login` in a terminal, or configure an API key in ~/.omp/agent."
+              : "Pi has no usable models. Run `pi` in a terminal and use /login, or configure an API key in ~/.pi/agent.",
           }),
     },
   });
