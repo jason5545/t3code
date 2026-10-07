@@ -432,9 +432,7 @@ it.layer(NodeServices.layer)("EnvironmentAuth.layer", (it) => {
       expect(token.scope).toBe("orchestration:read");
       expect(session.scopes).toEqual(["orchestration:read"]);
     }).pipe(
-      Effect.provide(
-        layerEnvironmentAuth({ desktopBootstrapToken: "desktop-bootstrap-token" }),
-      ),
+      Effect.provide(layerEnvironmentAuth({ desktopBootstrapToken: "desktop-bootstrap-token" })),
     ),
   );
 

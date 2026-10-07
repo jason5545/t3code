@@ -466,7 +466,7 @@ it.layer(NodeServices.layer)("SessionStore.layer", (it) => {
         expect((yield* sessions.listActive()).map((session) => session.sessionId).sort()).toEqual(
           [previous.sessionId, unrelated.sessionId].sort(),
         );
-      }).pipe(Effect.provide(Layer.mergeAll(makeSessionStoreLayer(), SqlitePersistenceMemory))),
+      }).pipe(Effect.provide(Layer.mergeAll(layerSessionStore(), SqlitePersistence.layerMemory))),
   );
 
   it.effect("rejects websocket tokens once the parent session has expired", () =>

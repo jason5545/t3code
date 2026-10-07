@@ -382,14 +382,17 @@ const makeHarness = Effect.fn("TestEnvironmentRegistry.makeHarness")(function* (
   const connectRoute = (entry: ConnectionCatalogEntry, route: ConnectionRoute) =>
     Effect.gen(function* () {
       const target = route.target;
-      const credential = target._tag === "BearerConnectionTarget"
-        ? yield* credentialStore.get(target.connectionId)
-        : Option.none();
+      const credential =
+        target._tag === "BearerConnectionTarget"
+          ? yield* credentialStore.get(target.connectionId)
+          : Option.none();
       const prepared: PreparedConnection = {
         ...PREPARED,
         environmentId: target.environmentId,
         label: target.label,
-        httpAuthorization: Option.isSome(credential) ? { _tag: "Bearer", token: credential.value.token } : null,
+        httpAuthorization: Option.isSome(credential)
+          ? { _tag: "Bearer", token: credential.value.token }
+          : null,
         target,
       };
       if (options?.prepareError) return yield* options.prepareError;
