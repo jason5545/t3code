@@ -228,7 +228,6 @@ describe("t3 pair", () => {
         const listed = yield* captureStdout(
           runCli(["auth", "pairing", "list", "--base-dir", baseDir, "--json"]),
         );
-        // @effect-diagnostics-next-line preferSchemaOverJson:off - CLI JSON is a presentation DTO.
         const credentials = JSON.parse(listed) as ReadonlyArray<{
           readonly scopes: ReadonlyArray<string>;
         }>;
@@ -359,12 +358,10 @@ describe("auth scope options", () => {
             "orchestration:read",
           ]),
         );
-        // @effect-diagnostics-next-line preferSchemaOverJson:off - CLI JSON is a presentation DTO.
         const issued = JSON.parse(output) as { readonly scopes: ReadonlyArray<string> };
         const listOutput = yield* captureStdout(
           runCli(["auth", group, "list", "--base-dir", baseDir, "--json"]),
         );
-        // @effect-diagnostics-next-line preferSchemaOverJson:off - CLI JSON is a presentation DTO.
         const listed = JSON.parse(listOutput) as ReadonlyArray<{
           readonly scopes: ReadonlyArray<string>;
         }>;
