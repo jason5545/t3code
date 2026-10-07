@@ -1247,10 +1247,12 @@ export const make = Effect.gen(function* () {
     access,
   ) =>
     // No proof key: a code bound to a T3 Connect client's key fails without being spent.
-    resolveBootstrapGrant(code.trim()).pipe(
+    resolveBootstrapGrant(code.trim(), { requestedScopes: mcpClientScopes(access) }).pipe(
       Effect.catchTags({
         ServerAuthInvalidCredentialError: () =>
           Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "unknown_or_used" })),
+        ServerAuthScopeNotGrantedError: () =>
+          Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "insufficient_scope" })),
       }),
       Effect.flatMap((grant) =>
         grant.method !== "one-time-token" && grant.method !== "reusable-dev-token"
