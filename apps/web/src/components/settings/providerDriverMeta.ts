@@ -1,4 +1,6 @@
 import {
+  DEFAULT_PROVIDER_INSTANCES,
+  ProviderInstanceId,
   AcpRegistrySettings,
   AntigravitySettings,
   ClaudeSettings,
@@ -108,6 +110,37 @@ const PROVIDER_CLIENT_DEFINITION_BY_VALUE: Partial<
 export const DRIVER_OPTIONS = PROVIDER_CLIENT_DEFINITIONS;
 export const DRIVER_OPTION_BY_VALUE = PROVIDER_CLIENT_DEFINITION_BY_VALUE;
 export type DriverOption = ProviderClientDefinition;
+
+/** Creation presets are instance choices, not additional protocol drivers. */
+export interface ProviderInstanceOption extends ProviderClientDefinition {
+  readonly driver: ProviderDriverKind;
+  readonly defaultConfig?: Record<string, unknown>;
+}
+
+export const PROVIDER_INSTANCE_OPTIONS: readonly ProviderInstanceOption[] =
+  PROVIDER_CLIENT_DEFINITIONS.flatMap((definition) => {
+    const option = { ...definition, driver: definition.value };
+    return definition.value === "pi"
+      ? [
+          option,
+          {
+            ...definition,
+            value: ProviderDriverKind.make("omp"),
+            driver: ProviderDriverKind.make("pi"),
+            label: "OMP",
+            defaultConfig: DEFAULT_PROVIDER_INSTANCES[ProviderInstanceId.make("omp")]!
+              .config as Record<string, unknown>,
+          },
+        ]
+      : [option];
+  });
+
+export function getProviderInstanceOption(value: string): ProviderInstanceOption {
+  return (
+    PROVIDER_INSTANCE_OPTIONS.find((option) => option.value === value) ??
+    PROVIDER_INSTANCE_OPTIONS[0]!
+  );
+}
 
 /**
  * Look up the driver metadata for an instance's `driver` field. Accepts

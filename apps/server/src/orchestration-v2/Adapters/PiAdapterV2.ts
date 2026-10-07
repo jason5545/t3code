@@ -1921,6 +1921,10 @@ export function makePiAdapterV2(
             if (
               recordField(data, "isStreaming") !== true &&
               recordField(data, "isCompacting") !== true &&
+              // OMP can be idle between background-job continuations. Its
+              // quiescence predicate is stronger than Pi's queue-only probe.
+              recordField(data, "isSettled") !== false &&
+              recordField(data, "hasPendingAsyncWork") !== true &&
               (recordNumber(data, "pendingMessageCount") ?? 0) === 0
             ) {
               turn.settleWhenIdle = false;

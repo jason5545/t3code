@@ -29,6 +29,7 @@ import {
   type WebAssetBrand,
 } from "./lib/brand-assets.ts";
 import { getDefaultBuildArch } from "./lib/build-target-arch.ts";
+import { resolveDevelopmentSigningConfig } from "./lib/fork-development-signing.ts";
 import {
   findInlinedExternalPackages,
   selectCliRuntimeExternalDependencies,
@@ -941,7 +942,7 @@ interface StagePackageJson {
 }
 
 export const STAGE_INSTALL_ARGS = ["install", "--prod"] as const;
-export const DESKTOP_ELECTRON_LANGUAGES = ["en-US"] as const;
+export const DESKTOP_ELECTRON_LANGUAGES = ["en-US", "zh-TW"] as const;
 export const DESKTOP_FILE_EXCLUSIONS = [
   // Cursor finds platform assets by walking up from argv[1]. Keep them outside
   // asar so spawning helpers and loading native addons both use real paths.
@@ -2668,9 +2669,17 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   wslRuntimeBundled = false,
   arch?: typeof BuildArch.Type,
 ) {
+  const developmentEnv = yield* Config.all({
+    mode: Config.String("T3CODE_MACOS_SIGNING_MODE").pipe(Config.withDefault("distribution")),
+    identity: Config.String("T3CODE_MACOS_DEVELOPMENT_IDENTITY").pipe(Config.withDefault("")),
+    repository: Config.String("T3CODE_DESKTOP_UPDATE_REPOSITORY").pipe(Config.withDefault("")),
+  });
+  const developmentSigning = yield* Effect.try(() =>
+    resolveDevelopmentSigningConfig({ ...developmentEnv, platform, version, signed }),
+  );
   const buildConfig: Record<string, unknown> = {
-    appId: DESKTOP_APP_ID,
-    productName: resolveDesktopProductName(version),
+    appId: developmentSigning?.appId ?? DESKTOP_APP_ID,
+    productName: developmentSigning?.productName ?? resolveDesktopProductName(version),
     artifactName: "T3-Code-${version}-${arch}.${ext}",
     electronLanguages: [...DESKTOP_ELECTRON_LANGUAGES],
     files: [
@@ -2731,6 +2740,19 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
         },
       ],
       ...(signed ? { sign: path.join(repoRoot, "scripts/sign-macos.ts") } : {}),
+      ...(developmentSigning
+        ? {
+            // electron-builder does not discover Apple Development identities
+            // for darwin. The placeholder ONLY dispatches the custom hook,
+            // which validates and uses the real certificate hash instead.
+            identity: "-",
+            type: "development",
+            notarize: false,
+            hardenedRuntime: true,
+            preAutoEntitlements: false,
+            sign: path.join(repoRoot, "scripts/sign-macos-development.ts"),
+          }
+        : {}),
       ...(macPasskeySigning
         ? {
             entitlements: macPasskeySigning.entitlementsPath,
@@ -3654,8 +3676,13 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   const stageProdResourcesDir = path.join(stageAppDir, "apps/desktop/prod-resources");
   yield* fs.copy(stageResourcesDir, stageProdResourcesDir);
 
+  const signingMode = yield* Config.String("T3CODE_MACOS_SIGNING_MODE").pipe(
+    Config.withDefault("distribution"),
+  );
+  // Local development builds have no entitlement to upstream Associated
+  // Domains. Production signing still requires the original provisioning.
   const configuredMacPasskeySigning =
-    options.platform === "mac" && options.signed
+    options.platform === "mac" && options.signed && signingMode !== "development"
       ? yield* Effect.try({
           try: () => resolveMacPasskeySigningConfiguration(loadRepoEnv({ repoRoot })),
           catch: MacPasskeySigningConfigurationResolutionError.fromCause,

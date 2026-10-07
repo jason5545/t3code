@@ -157,6 +157,16 @@ export type ProviderInstanceMutation = typeof ProviderInstanceMutation.Type;
 export const ProviderInstanceConfigMap = Schema.Record(ProviderInstanceId, ProviderInstanceConfig);
 export type ProviderInstanceConfigMap = typeof ProviderInstanceConfigMap.Type;
 
+/** Built-in instances that share a driver but have independent CLI configuration. */
+export const DEFAULT_PROVIDER_INSTANCES: ProviderInstanceConfigMap = {
+  [ProviderInstanceId.make("omp")]: {
+    driver: ProviderDriverKind.make("pi"),
+    displayName: "OMP",
+    enabled: true,
+    config: { binaryPath: "omp", launchArgs: "", customModels: [] },
+  },
+};
+
 /**
  * Construct the canonical `ProviderInstanceId` used as a back-compat default
  * for a built-in driver. The legacy single-instance-per-driver world used

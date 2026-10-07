@@ -1,3 +1,4 @@
+import { useLocale } from "../../locale/LocaleProvider";
 import {
   type ProviderApprovalDecision,
   type ProviderApprovalOption,
@@ -35,10 +36,20 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
   options = DEFAULT_APPROVAL_OPTIONS,
   onRespondToApproval,
 }: ComposerPendingApprovalActionsProps) {
-  const primaryOptions = options.filter(
+  const { t } = useLocale();
+  const localizedOptions =
+    options === DEFAULT_APPROVAL_OPTIONS
+      ? ([
+          { decision: "cancel", label: t("Cancel") },
+          { decision: "decline", label: t("Decline") },
+          { decision: "acceptForSession", label: t("Always allow this session") },
+          { decision: "accept", label: t("Approve") },
+        ] satisfies ReadonlyArray<ProviderApprovalOption>)
+      : options;
+  const primaryOptions = localizedOptions.filter(
     (option) => option.decision === "decline" || option.decision === "accept",
   );
-  const moreOptions = options.filter(
+  const moreOptions = localizedOptions.filter(
     (option) => option.decision !== "decline" && option.decision !== "accept",
   );
 
@@ -71,7 +82,9 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
         <Menu>
           <MenuTrigger
             disabled={isResponding}
-            render={<Button size="icon-xs" variant="outline" aria-label="More approval options" />}
+            render={
+              <Button size="icon-xs" variant="outline" aria-label={t("More approval options")} />
+            }
           >
             <EllipsisIcon />
           </MenuTrigger>

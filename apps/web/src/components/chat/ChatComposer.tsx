@@ -1,3 +1,4 @@
+import { useLocale } from "../../locale/LocaleProvider";
 import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../lib/desktopPasteAsText";
 import { runtimeModeConfig, runtimeModeOptions as runtimeModes } from "./runtimeModeConfig";
 import { isLocalEnvironmentDisabled } from "../../localEnvironment";
@@ -82,7 +83,6 @@ import {
   formatAssistantCitationForComposer,
   replaceTextRange,
 } from "../../composer-logic";
-import { DISCONNECTED_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
 import { listContinuationForEnter, listIndentForTab } from "../../composer-list-continuation";
 import {
   deriveComposerSendState,
@@ -1682,6 +1682,7 @@ export interface ChatComposerProps {
 // --------------------------------------------------------------------------
 
 export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps) {
+  const { t } = useLocale();
   const {
     composerDraftTarget,
     environmentId,
@@ -7376,20 +7377,26 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     onPaste={onComposerPaste}
                     placeholder={
                       isComposerApprovalState
-                        ? "Resolve this approval request to continue"
+                        ? t("Resolve this approval request to continue")
                         : activePendingProgress
                           ? isChoiceOnlyPendingQuestion
-                            ? "Choose an option above"
-                            : "Type your own answer, or leave this blank to use the selected option"
+                            ? t("Choose an option above")
+                            : t(
+                                "Type your own answer, or leave this blank to use the selected option",
+                              )
                           : showPlanFollowUpPrompt && activeProposedPlan
-                            ? "Add feedback to refine the plan, or leave this blank to implement it"
+                            ? t(
+                                "Add feedback to refine the plan, or leave this blank to implement it",
+                              )
                             : projectSelectionRequired
-                              ? "Choose a project above to start a thread"
+                              ? t("Choose a project above to start a thread")
                               : showProviderUnavailable
-                                ? "Enable a provider in Settings to send a message"
+                                ? t("Enable a provider in Settings to send a message")
                                 : phase === "disconnected"
-                                  ? DISCONNECTED_COMPOSER_PLACEHOLDER
-                                  : "Ask anything, @tag files/folders, $use skills, or / for commands"
+                                  ? t("Ask for changes, send follow-ups, or attach images")
+                                  : t(
+                                      "Ask anything, @tag files/folders, $use skills, or / for commands",
+                                    )
                     }
                     disabled={
                       isConnecting ||
@@ -7501,13 +7508,13 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                               size="icon-sm"
                               onPointerDown={(event) => event.preventDefault()}
                               onClick={() => attachmentInputRef.current?.click()}
-                              aria-label="Attach files"
+                              aria-label={t("Attach files")}
                             />
                           }
                         >
                           <PaperclipIcon />
                         </TooltipTrigger>
-                        <TooltipPopup>Attach files</TooltipPopup>
+                        <TooltipPopup>{t("Attach files")}</TooltipPopup>
                       </Tooltip>
                     </>
                   ) : null}

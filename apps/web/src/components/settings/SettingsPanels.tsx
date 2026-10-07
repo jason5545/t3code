@@ -1,3 +1,5 @@
+import { useLocale } from "../../locale/LocaleProvider";
+import { LanguageSettings } from "./LanguageSettings";
 import { SettingsGroup } from "./SettingsGroup";
 import { Spinner } from "~/components/ui/spinner";
 import { NotificationSettings } from "./NotificationSettings";
@@ -24,7 +26,6 @@ import {
 import {
   DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE,
   DEFAULT_UNIFIED_SETTINGS,
-  type ChatWidth,
   type DiffLayout,
   type EnvironmentIdentificationMode,
   MAX_APPEARANCE_CONTRAST,
@@ -197,12 +198,6 @@ const TIMESTAMP_FORMAT_LABELS = {
   "12-hour": "12-hour",
   "24-hour": "24-hour",
 } as const;
-
-const CHAT_WIDTH_LABELS: Record<ChatWidth, string> = {
-  comfortable: "Comfortable",
-  wide: "Wide",
-  full: "Full",
-};
 
 const DIFF_LAYOUT_LABELS: Record<DiffLayout, string> = {
   stacked: "Stacked",
@@ -876,6 +871,7 @@ function BackgroundActivityAdvancedDialog({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const resolvedBackgroundActivity = resolveServerBackgroundActivitySettings(settings);
@@ -949,7 +945,7 @@ function BackgroundActivityAdvancedDialog({
             <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 space-y-1">
                 <div className="text-sm font-medium">
-                  {searchableSetting("git-fetch-interval").title}
+                  {searchableSetting("git-fetch-interval", t).title}
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   Refresh remote branch status in the background.
@@ -1142,6 +1138,7 @@ function BackgroundActivityAdvancedDialog({
 }
 
 export function AppearanceSettingsPanel() {
+  const { t } = useLocale();
   const {
     appearanceMode,
     refreshTheme,
@@ -1182,8 +1179,9 @@ export function AppearanceSettingsPanel() {
 
   return (
     <SettingsPageContainer>
-      <SettingsSection id="appearance" title="Colors & themes" variant="plain" hideTitle>
-        <div id={searchableSetting("theme").id}>
+      <LanguageSettings />
+      <SettingsSection id="appearance" title={t("Colors & themes")} variant="plain" hideTitle>
+        <div id={searchableSetting("theme", t).id}>
           <ThemeLibrary
             appearanceMode={appearanceMode}
             customThemes={customThemes}
@@ -1200,10 +1198,10 @@ export function AppearanceSettingsPanel() {
         </div>
       </SettingsSection>
 
-      <SettingsSection id="appearance-interface" title="Interface">
+      <SettingsSection id="appearance-interface" title={t("Interface")}>
         <SettingsRow
-          {...searchableSetting("setting-appearance-contrast")}
-          description="Adjust the contrast of colors and borders across the interface."
+          {...searchableSetting("setting-appearance-contrast", t)}
+          description={t("Adjust the contrast of colors and borders across the interface.")}
           resetAction={
             settings.appearanceContrast !== DEFAULT_UNIFIED_SETTINGS.appearanceContrast ? (
               <SettingResetButton
@@ -1225,7 +1223,7 @@ export function AppearanceSettingsPanel() {
                 {settings.appearanceContrast}%
               </output>
               <input
-                aria-label="Contrast"
+                aria-label={t("Contrast")}
                 className="settings-slider min-w-0 flex-1"
                 id="appearance-contrast"
                 max={MAX_APPEARANCE_CONTRAST}
@@ -1250,8 +1248,8 @@ export function AppearanceSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("setting-glass-opacity")}
-          description="Higher values make menus, dialogs, and the composer more solid."
+          {...searchableSetting("setting-glass-opacity", t)}
+          description={t("Higher values make menus, dialogs, and the composer more solid.")}
           resetAction={
             settings.glassOpacity !== DEFAULT_UNIFIED_SETTINGS.glassOpacity ? (
               <SettingResetButton
@@ -1271,7 +1269,7 @@ export function AppearanceSettingsPanel() {
                 {settings.glassOpacity}%
               </output>
               <input
-                aria-label="Glass opacity"
+                aria-label={t("Glass opacity")}
                 className="settings-slider min-w-0 flex-1"
                 id="glass-opacity"
                 max={MAX_GLASS_OPACITY}
@@ -1297,7 +1295,7 @@ export function AppearanceSettingsPanel() {
 
         {showEnvironmentIdentification ? (
           <SettingsRow
-            {...searchableSetting("environment-identification")}
+            {...searchableSetting("environment-identification", t)}
             description="Choose how Dev and Nightly environments are identified."
             resetAction={
               settings.environmentIdentificationMode !== DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE ? (
@@ -1323,7 +1321,7 @@ export function AppearanceSettingsPanel() {
                 <SelectTrigger
                   size="sm"
                   className="w-full sm:w-40"
-                  aria-label="Environment identification"
+                  aria-label={t("Environment identification")}
                 >
                   <SelectValue>
                     {ENVIRONMENT_IDENTIFICATION_LABELS[settings.environmentIdentificationMode]}
@@ -1342,7 +1340,7 @@ export function AppearanceSettingsPanel() {
         ) : null}
 
         <SettingsRow
-          {...searchableSetting("diff-color-scheme")}
+          {...searchableSetting("diff-color-scheme", t)}
           description="Choose colors for additions and deletions, including change counts."
           resetAction={
             settings.diffColorScheme !== DEFAULT_UNIFIED_SETTINGS.diffColorScheme ? (
@@ -1363,7 +1361,7 @@ export function AppearanceSettingsPanel() {
                     updateSettings({ diffColorScheme: value });
                 }}
               >
-                <SelectTrigger size="sm" className="w-full min-w-0" aria-label="Diff colors">
+                <SelectTrigger size="sm" className="w-full min-w-0" aria-label={t("Diff colors")}>
                   <span
                     aria-hidden="true"
                     className={
@@ -1376,12 +1374,14 @@ export function AppearanceSettingsPanel() {
                     <span className="size-2 rounded-full bg-diff-addition" />
                   </span>
                   <SelectValue>
-                    {settings.diffColorScheme === "blue-orange" ? "Blue & orange" : "Red & green"}
+                    {settings.diffColorScheme === "blue-orange"
+                      ? t("Blue & orange")
+                      : t("Red & green")}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectPopup align="end" alignItemWithTrigger={false}>
-                  <SelectItem value="red-green">Red & green (default)</SelectItem>
-                  <SelectItem value="blue-orange">Blue & orange</SelectItem>
+                  <SelectItem value="red-green">{t("Red & green (default)")}</SelectItem>
+                  <SelectItem value="blue-orange">{t("Blue & orange")}</SelectItem>
                 </SelectPopup>
               </Select>
             </div>
@@ -1389,7 +1389,7 @@ export function AppearanceSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("composer-context")}
+          {...searchableSetting("composer-context", t)}
           description="Keep branch and worktree controls below the composer after a thread starts."
           resetAction={
             settings.persistComposerContextStrip !==
@@ -1417,7 +1417,7 @@ export function AppearanceSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("chat-width")}
+          {...searchableSetting("chat-width", t)}
           description="Set how wide messages and the composer can grow on large screens."
           resetAction={
             settings.chatWidth !== DEFAULT_UNIFIED_SETTINGS.chatWidth ? (
@@ -1436,13 +1436,19 @@ export function AppearanceSettingsPanel() {
                     updateSettings({ chatWidth: value });
                 }}
               >
-                <SelectTrigger size="sm" className="w-full min-w-0" aria-label="Chat width">
-                  <SelectValue>{CHAT_WIDTH_LABELS[settings.chatWidth]}</SelectValue>
+                <SelectTrigger size="sm" className="w-full min-w-0" aria-label={t("Chat width")}>
+                  <SelectValue>
+                    {settings.chatWidth === "comfortable"
+                      ? t("Comfortable")
+                      : settings.chatWidth === "wide"
+                        ? t("Wide")
+                        : t("Full")}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectPopup align="end" alignItemWithTrigger={false}>
-                  <SelectItem value="comfortable">Comfortable (default)</SelectItem>
-                  <SelectItem value="wide">Wide</SelectItem>
-                  <SelectItem value="full">Full</SelectItem>
+                  <SelectItem value="comfortable">{t("Comfortable (default)")}</SelectItem>
+                  <SelectItem value="wide">{t("Wide")}</SelectItem>
+                  <SelectItem value="full">{t("Full")}</SelectItem>
                 </SelectPopup>
               </Select>
             </div>
@@ -1450,10 +1456,10 @@ export function AppearanceSettingsPanel() {
         />
       </SettingsSection>
 
-      <SettingsSection id="motion" title="Motion">
+      <SettingsSection id="motion" title={t("Motion")}>
         <SettingsRow
-          {...searchableSetting("panel-animations")}
-          description="Set how fast panels open and close."
+          {...searchableSetting("panel-animations", t)}
+          description={t("Set how fast panels open and close.")}
           control={
             <div className="grid w-full grid-cols-[5rem_minmax(0,1fr)] items-center gap-3 sm:w-auto sm:grid-cols-[7rem_13rem] sm:gap-4">
               <PanelAnimationsPreview durationMs={settings.panelAnimationDurationMs} />
@@ -1465,7 +1471,7 @@ export function AppearanceSettingsPanel() {
                   {settings.panelAnimationDurationMs} ms
                 </output>
                 <input
-                  aria-label="Panel animation duration"
+                  aria-label={t("Panel animation duration")}
                   className="settings-slider min-w-0 flex-1"
                   id="panel-animation-duration"
                   max={MAX_PANEL_ANIMATION_DURATION_MS}
@@ -1530,12 +1536,13 @@ function useFontDefaultFamilies() {
 }
 
 function InterfaceFontRow({ preview }: { preview?: ReactNode }) {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const defaults = useFontDefaultFamilies();
   return (
     <FontFamilySettingsRow
-      {...searchableSetting("interface-font")}
+      {...searchableSetting("interface-font", t)}
       description="Everything outside code blocks and the terminal."
       defaultFamily={defaults.sans}
       defaultValue={DEFAULT_UNIFIED_SETTINGS.fontFamilySans}
@@ -1561,12 +1568,13 @@ function InterfaceFontRow({ preview }: { preview?: ReactNode }) {
 }
 
 function PromptFontRow() {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const defaults = useFontDefaultFamilies();
   return (
     <FontFamilySettingsRow
-      {...searchableSetting("prompt-font")}
+      {...searchableSetting("prompt-font", t)}
       description="Only the box you write prompts in. Mono works well here."
       defaultFamily={defaults.interfaceFamily}
       defaultValue={DEFAULT_UNIFIED_SETTINGS.fontFamilyComposer}
@@ -1600,12 +1608,13 @@ function CodeFontRow({
   description?: string;
   preview?: ReactNode;
 }) {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const defaults = useFontDefaultFamilies();
   return (
     <FontFamilySettingsRow
-      {...searchableSetting("code-font")}
+      {...searchableSetting("code-font", t)}
       {...(title !== undefined ? { title } : {})}
       description={description}
       defaultFamily={defaults.code}
@@ -1633,12 +1642,13 @@ function CodeFontRow({
 }
 
 function TerminalFontRow() {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const defaults = useFontDefaultFamilies();
   return (
     <FontFamilySettingsRow
-      {...searchableSetting("terminal-font")}
+      {...searchableSetting("terminal-font", t)}
       description="Terminal output, independent from code blocks and diffs."
       defaultFamily={defaults.code}
       defaultValue={DEFAULT_UNIFIED_SETTINGS.fontFamilyTerminal}
@@ -1674,12 +1684,13 @@ function TerminalFontRow() {
 }
 
 function FontSmoothingRow() {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   if (!isMacPlatform(navigator.platform)) return null;
   return (
     <SettingsRow
-      {...searchableSetting("font-smoothing")}
+      {...searchableSetting("font-smoothing", t)}
       description="Use thinner grayscale text smoothing instead of the macOS default."
       resetAction={
         settings.fontSmoothing !== DEFAULT_UNIFIED_SETTINGS.fontSmoothing ? (
@@ -1703,11 +1714,12 @@ function FontSmoothingRow() {
 }
 
 function WordWrapRow() {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   return (
     <SettingsRow
-      {...searchableSetting("word-wrap")}
+      {...searchableSetting("word-wrap", t)}
       description="Wrap long lines in code blocks, tables, diffs, and file previews by default."
       resetAction={
         settings.wordWrap !== DEFAULT_UNIFIED_SETTINGS.wordWrap ? (
@@ -1746,12 +1758,13 @@ function FontSettingsGroup() {
  * under each row show every surface the choice reaches.
  */
 function SimpleFontRows() {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   return (
     <>
       <InterfaceFontRow preview={<PromptFontPreview />} />
       <CodeFontRow
-        title="Monospace font"
+        title={t("Monospace font")}
         description="Code blocks, diffs, file previews, and the terminal."
         preview={
           <>
@@ -1793,6 +1806,7 @@ const ADVANCED_TYPOGRAPHY_TARGET_IDS: ReadonlySet<string> = new Set([
  * target exists to scroll to.
  */
 function TypographySection() {
+  const { t } = useLocale();
   const [advanced, setAdvanced] = useLocalStorage(
     TYPOGRAPHY_ADVANCED_STORAGE_KEY,
     false,
@@ -1812,10 +1826,10 @@ function TypographySection() {
   return (
     <SettingsSection
       id="typography"
-      title="Typography"
+      title={t("Typography")}
       headerAction={
         <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground">
-          Advanced
+          {t("Advanced")}
           <Switch
             checked={advanced}
             onCheckedChange={(checked) => setAdvanced(Boolean(checked))}
@@ -2086,6 +2100,7 @@ const LEGACY_FEATURE_TARGET_IDS: ReadonlySet<string> = new Set([
  * jump to one of the rows unfolds the section.
  */
 function LegacyFeaturesSection() {
+  const { t } = useLocale();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const [open, setOpen] = useState(false);
@@ -2119,7 +2134,7 @@ function LegacyFeaturesSection() {
         <CollapsiblePanel>
           <SettingsGroup>
             <SettingsRow
-              {...searchableSetting("legacy-plan-mode")}
+              {...searchableSetting("legacy-plan-mode", t)}
               description="Restore Build/Plan, /plan, /default, and Shift+Tab. Off uses build mode."
               control={
                 <Switch
@@ -2132,7 +2147,7 @@ function LegacyFeaturesSection() {
               }
             />
             <SettingsRow
-              {...searchableSetting("legacy-context-window-indicator")}
+              {...searchableSetting("legacy-context-window-indicator", t)}
               description="Shows context window usage as a circular indicator in the composer."
               control={
                 <Switch
@@ -2145,7 +2160,7 @@ function LegacyFeaturesSection() {
               }
             />
             <SettingsRow
-              {...searchableSetting("legacy-sidebar")}
+              {...searchableSetting("legacy-sidebar", t)}
               description="Restore per-project thread trees instead of the default flat sidebar."
               control={
                 <Switch
@@ -2165,11 +2180,15 @@ function LegacyFeaturesSection() {
 }
 
 export function GeneralSettingsPanel() {
+  const { t } = useLocale();
   const modifierLabel = isMacPlatform(navigator.platform) ? "⌘" : "Ctrl";
   const sendShortcutOptions = [
     { value: "enter", label: "Enter" },
-    { value: "mod-enter-multiline", label: `${modifierLabel} + Enter for multiline prompts` },
-    { value: "mod-enter", label: `${modifierLabel} + Enter always` },
+    {
+      value: "mod-enter-multiline",
+      label: t("{modifier} + Enter for multiline prompts", { modifier: modifierLabel }),
+    },
+    { value: "mod-enter", label: t("{modifier} + Enter always", { modifier: modifierLabel }) },
   ] as const;
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
@@ -2253,10 +2272,11 @@ export function GeneralSettingsPanel() {
 
   return (
     <SettingsPageContainer>
+      <LanguageSettings />
       <ProjectDefaultsSettings category="general" />
-      <SettingsSection id="organization" title="Organization">
+      <SettingsSection id="organization" title={t("Organization")}>
         <SettingsRow
-          {...searchableSetting("project-grouping")}
+          {...searchableSetting("project-grouping", t)}
           description="Combine matching repositories across environments."
           resetAction={
             settings.sidebarProjectGroupingMode !==
@@ -2291,7 +2311,7 @@ export function GeneralSettingsPanel() {
           }
         />
         <SettingsRow
-          {...searchableSetting("project-order")}
+          {...searchableSetting("project-order", t)}
           description="Order of projects in the sidebar project picker and command palette."
           resetAction={
             settings.sidebarProjectSortOrder !==
@@ -2333,7 +2353,7 @@ export function GeneralSettingsPanel() {
 
         <SettingsRow
           serverScoped
-          {...searchableSetting("auto-resume-limited-threads")}
+          {...searchableSetting("auto-resume-limited-threads", t)}
           description="Resume usage-limit stops at the reported reset time. Each thread can cancel its scheduled continuation."
           settingKeys={["autoResumeLimitedThreads"]}
           control={
@@ -2349,7 +2369,7 @@ export function GeneralSettingsPanel() {
         />
         <SettingsRow
           serverScoped
-          {...searchableSetting("snooze-limited-threads")}
+          {...searchableSetting("snooze-limited-threads", t)}
           description="Snooze usage-limit stops until the reported reset time. Combine with auto-resume to continue when they wake."
           settingKeys={["snoozeLimitedThreads"]}
           control={
@@ -2365,7 +2385,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("working-shelf")}
+          {...searchableSetting("working-shelf", t)}
           description="Fold working and monitoring threads into a Working section. They return to the top of the inbox when they need you."
           resetAction={
             settings.sidebarWorkingShelfEnabled !==
@@ -2396,7 +2416,7 @@ export function GeneralSettingsPanel() {
             <SettingsRow
               serverScoped
               settingKeys={["sidebarAutoSettleOnMerge"]}
-              {...searchableSetting("auto-settle-merged-threads")}
+              {...searchableSetting("auto-settle-merged-threads", t)}
               description="Settle a thread when its pull request merges. Closed pull requests still settle automatically."
               resetAction={
                 settings.sidebarAutoSettleOnMerge !==
@@ -2426,7 +2446,7 @@ export function GeneralSettingsPanel() {
             <SettingsRow
               serverScoped
               settingKeys={["sidebarAutoSettleAfterDays"]}
-              {...searchableSetting("auto-settle-inactive-threads")}
+              {...searchableSetting("auto-settle-inactive-threads", t)}
               description="Sidebar threads with no activity for this long settle automatically."
               resetAction={
                 settings.sidebarAutoSettleAfterDays !==
@@ -2459,7 +2479,7 @@ export function GeneralSettingsPanel() {
               <SettingsRow
                 serverScoped
                 settingKeys={["sidebarAutoSettleAfterDays"]}
-                title={searchableSetting("days-before-auto-settle").title}
+                title={searchableSetting("days-before-auto-settle", t).title}
                 description="Any new activity un-settles a thread automatically."
                 control={
                   <AutoSettleDaysInput
@@ -2473,10 +2493,10 @@ export function GeneralSettingsPanel() {
         ) : null}
       </SettingsSection>
 
-      <SettingsSection id="behavior" title="Behavior">
+      <SettingsSection id="behavior" title={t("Behavior")}>
         <NotificationSettings />
         <SettingsRow
-          {...searchableSetting("in-app-notifications")}
+          {...searchableSetting("in-app-notifications", t)}
           description="Show a toast when another thread finishes, fails, or needs input or approval while this app has focus."
           control={
             <Switch
@@ -2487,7 +2507,7 @@ export function GeneralSettingsPanel() {
           }
         />
         <SettingsRow
-          {...searchableSetting("time-format")}
+          {...searchableSetting("time-format", t)}
           description="System default follows your browser or OS clock preference."
           resetAction={
             settings.timestampFormat !== DEFAULT_UNIFIED_SETTINGS.timestampFormat ? (
@@ -2530,7 +2550,7 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           serverScoped
           settingKeys={["responseStreamingMode"]}
-          {...searchableSetting("response-streaming")}
+          {...searchableSetting("response-streaming", t)}
           description={
             mixedResponseStreamingMode
               ? "The selected targets use different streaming modes."
@@ -2576,7 +2596,7 @@ export function GeneralSettingsPanel() {
           }
         />
         <SettingsRow
-          {...searchableSetting("hide-whitespace-changes")}
+          {...searchableSetting("hide-whitespace-changes", t)}
           description="Set whether the diff panel ignores whitespace-only edits by default."
           resetAction={
             settings.diffIgnoreWhitespace !== DEFAULT_UNIFIED_SETTINGS.diffIgnoreWhitespace ? (
@@ -2601,7 +2621,7 @@ export function GeneralSettingsPanel() {
           }
         />
         <SettingsRow
-          {...searchableSetting("default-diff-file-state")}
+          {...searchableSetting("default-diff-file-state", t)}
           description="Start with files expanded or collapsed when opening diffs or a pull request's Code tab."
           resetAction={
             settings.diffFilesCollapsed !== DEFAULT_UNIFIED_SETTINGS.diffFilesCollapsed ? (
@@ -2643,7 +2663,7 @@ export function GeneralSettingsPanel() {
           }
         />
         <SettingsRow
-          {...searchableSetting("diff-layout")}
+          {...searchableSetting("diff-layout", t)}
           description="Show diffs stacked or side by side. The toggle in the diff toolbar changes this too."
           resetAction={
             settings.diffLayout !== DEFAULT_UNIFIED_SETTINGS.diffLayout ? (
@@ -2678,7 +2698,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("proactive-panels")}
+          {...searchableSetting("proactive-panels", t)}
           description="Open linked pull requests first. Otherwise, open Changes for edits to at least 3 files or 50 lines."
           resetAction={
             settings.proactivePanelsEnabled !== DEFAULT_UNIFIED_SETTINGS.proactivePanelsEnabled ? (
@@ -2704,7 +2724,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("skills-in-slash-menu")}
+          {...searchableSetting("skills-in-slash-menu", t)}
           description="Also include skills in the / command menu. Skills always appear when you type $."
           resetAction={
             settings.showSkillsInSlashMenu !== DEFAULT_UNIFIED_SETTINGS.showSkillsInSlashMenu ? (
@@ -2730,7 +2750,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("composer-rich-text")}
+          {...searchableSetting("composer-rich-text", t)}
           description="Show formatted Markdown as you type."
           resetAction={
             settings.composerRichTextEnabled !==
@@ -2757,7 +2777,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("composer-collapse")}
+          {...searchableSetting("composer-collapse", t)}
           description="Rest the composer of an existing thread into a single line when you scroll the conversation. Focus the composer or start typing to expand it again."
           resetAction={
             settings.composerCollapseOnScroll !==
@@ -2784,8 +2804,8 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("send-shortcut")}
-          description="Choose when Enter sends a prompt or inserts a new line"
+          {...searchableSetting("send-shortcut", t)}
+          description={t("Choose when Enter sends a prompt or inserts a new line")}
           resetAction={
             settings.sendShortcut !== DEFAULT_UNIFIED_SETTINGS.sendShortcut ? (
               <SettingResetButton
@@ -2807,7 +2827,7 @@ export function GeneralSettingsPanel() {
               <SelectTrigger
                 size="sm"
                 className="w-auto min-w-0 max-w-full"
-                aria-label="Send shortcut"
+                aria-label={t("Send shortcut")}
               >
                 <SelectValue>
                   {
@@ -2831,7 +2851,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("follow-up-behavior")}
+          {...searchableSetting("follow-up-behavior", t)}
           description={
             "Queue follow-ups while the agent runs or steer the current run. " +
             (settings.sendShortcut === "mod-enter-multiline"
@@ -2859,14 +2879,18 @@ export function GeneralSettingsPanel() {
                 }
               }}
             >
-              <SelectTrigger size="sm" className="w-auto min-w-0" aria-label="Follow-up behavior">
+              <SelectTrigger
+                size="sm"
+                className="w-auto min-w-0"
+                aria-label={t("Follow-up behavior")}
+              >
                 <SelectValue>
-                  {settings.followUpBehavior === "queue" ? "Queue" : "Steer"}
+                  {settings.followUpBehavior === "queue" ? t("Queue") : t("Steer")}
                 </SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
-                <SelectItem value="queue">Queue</SelectItem>
-                <SelectItem value="steer">Steer</SelectItem>
+                <SelectItem value="queue">{t("Queue")}</SelectItem>
+                <SelectItem value="steer">{t("Steer")}</SelectItem>
               </SelectPopup>
             </Select>
           }
@@ -2875,7 +2899,7 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           serverScoped
           settingKeys={["enableProviderUpdateChecks"]}
-          {...searchableSetting("provider-update-checks")}
+          {...searchableSetting("provider-update-checks", t)}
           description="Check installed provider CLIs for newer available versions."
           resetAction={
             settings.enableProviderUpdateChecks !==
@@ -2903,7 +2927,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("continue-threads-after-server-update")}
+          {...searchableSetting("continue-threads-after-server-update", t)}
           serverScoped
           settingKeys={["continueThreadsAfterServerUpdate"]}
           description="Automatically resume interrupted threads after an update, crash, or machine restart on the selected environments."
@@ -2943,10 +2967,10 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           serverScoped
           settingKeys={["backgroundActivity"]}
-          id={searchableSetting("background-activity").id}
+          id={searchableSetting("background-activity", t).id}
           title={
             <span className="inline-flex items-center gap-1.5">
-              {searchableSetting("background-activity").title}
+              {searchableSetting("background-activity", t).title}
               <PolicyTooltip>
                 This shared policy gates background work such as Git refreshes and provider health
                 probes after their individual intervals elapse.
@@ -3034,11 +3058,11 @@ export function GeneralSettingsPanel() {
         />
       </SettingsSection>
 
-      <SettingsSection id="projects-and-threads" title="Projects & threads">
+      <SettingsSection id="projects-and-threads" title={t("Projects & threads")}>
         <SettingsRow
           serverScoped
           settingKeys={["newWorktreesStartFromOrigin"]}
-          {...searchableSetting("start-from-origin")}
+          {...searchableSetting("start-from-origin", t)}
           description="Creates the worktree from the latest matching branch on origin instead of your local branch."
           resetAction={
             settings.newWorktreesStartFromOrigin !==
@@ -3068,7 +3092,7 @@ export function GeneralSettingsPanel() {
         <SettingsRow
           serverScoped
           settingKeys={["addProjectBaseDirectory"]}
-          {...searchableSetting("add-project-starts-in")}
+          {...searchableSetting("add-project-starts-in", t)}
           description='Leave empty to use "~/" when the Add Project browser opens.'
           resetAction={
             settings.addProjectBaseDirectory !==
@@ -3097,9 +3121,9 @@ export function GeneralSettingsPanel() {
         />
       </SettingsSection>
 
-      <SettingsSection id="confirmations" title="Confirmations">
+      <SettingsSection id="confirmations" title={t("Confirmations")}>
         <SettingsRow
-          {...searchableSetting("unpin-confirmation")}
+          {...searchableSetting("unpin-confirmation", t)}
           description="Ask before unpinning a thread from the pinned section."
           resetAction={
             settings.confirmThreadUnpin !== DEFAULT_UNIFIED_SETTINGS.confirmThreadUnpin ? (
@@ -3125,7 +3149,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("archive-confirmation")}
+          {...searchableSetting("archive-confirmation", t)}
           description="Require a second click on the inline archive action before a thread is archived."
           resetAction={
             settings.confirmThreadArchive !== DEFAULT_UNIFIED_SETTINGS.confirmThreadArchive ? (
@@ -3151,7 +3175,7 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("delete-confirmation")}
+          {...searchableSetting("delete-confirmation", t)}
           description="Ask before deleting a thread and its chat history."
           resetAction={
             settings.confirmThreadDelete !== DEFAULT_UNIFIED_SETTINGS.confirmThreadDelete ? (
@@ -3178,7 +3202,7 @@ export function GeneralSettingsPanel() {
 
         {isElectron ? (
           <SettingsRow
-            {...searchableSetting("quit-confirmation")}
+            {...searchableSetting("quit-confirmation", t)}
             description="Hold mode also quits on two quick presses."
             resetAction={
               settings.confirmQuit !== DEFAULT_UNIFIED_SETTINGS.confirmQuit ? (
@@ -3219,11 +3243,11 @@ export function GeneralSettingsPanel() {
         ) : null}
       </SettingsSection>
 
-      <SettingsSection id="text-generation" title="Text generation">
+      <SettingsSection id="text-generation" title={t("Text generation")}>
         <SettingsRow
           serverScoped
           settingKeys={["textGenerationModelSelection"]}
-          {...searchableSetting("text-generation-model")}
+          {...searchableSetting("text-generation-model", t)}
           description="Used for thread titles and other generated text on connected devices with this provider. Source control can override it."
           resetAction={
             hasServerTargets && isTextGenerationModelDirty ? (
@@ -3331,7 +3355,7 @@ export function GeneralSettingsPanel() {
         />
       </SettingsSection>
 
-      <SettingsSection id="about" title="About">
+      <SettingsSection id="about" title={t("About")}>
         {isElectron || HOSTED_APP_CHANNEL ? (
           <AboutVersionSection />
         ) : (
@@ -3344,7 +3368,7 @@ export function GeneralSettingsPanel() {
           </>
         )}
         <SettingsRow
-          {...searchableSetting("privacy-policy")}
+          {...searchableSetting("privacy-policy", t)}
           description="How we handle your data, including the anonymous usage data T3 Code collects."
           control={
             <Button
@@ -3357,9 +3381,9 @@ export function GeneralSettingsPanel() {
           }
         />
       </SettingsSection>
-      <SettingsSection title="Diagnostics">
+      <SettingsSection title={t("Diagnostics")}>
         <SettingsRow
-          {...searchableSetting("diagnostics")}
+          {...searchableSetting("diagnostics", t)}
           description={
             isEnvironmentScope
               ? "Inspect processes, resource use, and logs on this environment."
@@ -3378,7 +3402,7 @@ export function GeneralSettingsPanel() {
           }
         />
         <SettingsRow
-          {...searchableSetting("open-source-licenses")}
+          {...searchableSetting("open-source-licenses", t)}
           description="Notices for dependencies, assets, and optional tools used by T3 Code."
           control={
             <Button
@@ -3398,6 +3422,7 @@ export function GeneralSettingsPanel() {
 }
 
 export function ArchivedThreadsPanel() {
+  const { t } = useLocale();
   const { scope } = useSettingsScope();
   const { unarchiveThread, confirmAndDeleteThread } = useThreadActions();
   const {
@@ -3507,8 +3532,8 @@ export function ArchivedThreadsPanel() {
     <SettingsPageContainer>
       {archivedGroups.length === 0 ? (
         <SettingsSection
-          id={isLoadingArchive ? undefined : searchableSetting("archive").id}
-          title={searchableSetting("archive").title}
+          id={isLoadingArchive ? undefined : searchableSetting("archive", t).id}
+          title={searchableSetting("archive", t).title}
         >
           <SettingsRow
             title={
@@ -3536,7 +3561,7 @@ export function ArchivedThreadsPanel() {
         archivedGroups.map(({ project, threads: projectThreads }, index) => (
           <SettingsSection
             key={`${project.environmentId}:${project.id}`}
-            id={index === 0 ? searchableSetting("archive").id : undefined}
+            id={index === 0 ? searchableSetting("archive", t).id : undefined}
             title={project.title}
             icon={<ProjectFavicon project={project} />}
           >

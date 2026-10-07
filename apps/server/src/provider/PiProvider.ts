@@ -287,7 +287,9 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
   }
 
   const versionOutput = versionResult.success.value;
-  const version = parseGenericCliVersion(`${versionOutput.stdout}\n${versionOutput.stderr}`);
+  const versionText = `${versionOutput.stdout}\n${versionOutput.stderr}`;
+  const isOmp = /\bomp(?:\/|\s+v?)\d/i.test(versionText);
+  const version = parseGenericCliVersion(versionText);
   if (versionOutput.code !== 0) {
     return buildServerProvider({
       presentation: PI_PRESENTATION,
@@ -320,7 +322,7 @@ export const checkPiProviderStatus = Effect.fn("checkPiProviderStatus")(function
     });
   }
 
-  if (compareSemverVersions(version, MINIMUM_PI_VERSION) < 0) {
+  if (!isOmp && compareSemverVersions(version, MINIMUM_PI_VERSION) < 0) {
     return buildServerProvider({
       presentation: PI_PRESENTATION,
       enabled: piSettings.enabled,

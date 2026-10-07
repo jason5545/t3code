@@ -22,6 +22,7 @@ import {
   PiAdapterV2Driver,
   type PiAdapterV2DriverEnv,
 } from "../../orchestration-v2/Adapters/PiAdapterV2.ts";
+import { isOmpBinary } from "../../orchestration-v2/Adapters/piRpcDialect.ts";
 import { ProviderDriverError } from "../Errors.ts";
 import {
   buildInitialPiProviderSnapshot,
@@ -55,6 +56,12 @@ const UPDATE = makePackageManagedProviderMaintenanceResolver({
   npmPackageName: "@earendil-works/pi-coding-agent",
   // Pi's updater covers its own installer and npm, pnpm, yarn, and bun globals.
   nativeUpdate: { args: ["update", "--self"] },
+});
+
+const OMP_UPDATE = makePackageManagedProviderMaintenanceResolver({
+  provider: DRIVER_KIND,
+  npmPackageName: "@oh-my-pi/pi-coding-agent",
+  nativeUpdate: { args: ["update"] },
 });
 
 export type PiDriverEnv =
@@ -112,10 +119,13 @@ export const PiDriver: ProviderDriver<PiSettings, PiDriverEnv> = {
       });
       const effectiveConfig = { ...config, enabled } satisfies PiSettings;
       const resolveMaintenance = yield* makeCachedProviderMaintenanceResolution(
-        resolveProviderMaintenanceCapabilitiesEffect(UPDATE, {
-          binaryPath: effectiveConfig.binaryPath,
-          env: processEnv,
-        }).pipe(
+        resolveProviderMaintenanceCapabilitiesEffect(
+          isOmpBinary(effectiveConfig.binaryPath) ? OMP_UPDATE : UPDATE,
+          {
+            binaryPath: effectiveConfig.binaryPath,
+            env: processEnv,
+          },
+        ).pipe(
           Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
           Effect.provideService(FileSystem.FileSystem, fileSystem),
           Effect.provideService(Path.Path, pathService),

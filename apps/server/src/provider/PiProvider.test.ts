@@ -33,12 +33,12 @@ function processHandle(input: {
   });
 }
 
-function piProbeSpawner(version: string) {
+function piProbeSpawner(version: string, name = "pi") {
   return ChildProcessSpawner.make((command) => {
     const args = ChildProcess.isStandardCommand(command) ? command.args : [];
     return Effect.succeed(
       args.includes("--version")
-        ? processHandle({ stdout: `pi ${version}\n` })
+        ? processHandle({ stdout: `${name}${name.endsWith("/") ? "" : " "}${version}\n` })
         : processHandle({ stderr: "RPC startup failed", exitCode: 1 }),
     );
   });
@@ -52,6 +52,20 @@ const settings = {
 } as const;
 
 describe("PiProvider", () => {
+  it.effect("accepts OMP versioning independently of Pi", () =>
+    Effect.gen(function* () {
+      const snapshot = yield* checkPiProviderStatus({ ...settings, binaryPath: "omp" }).pipe(
+        Effect.provideService(
+          ChildProcessSpawner.ChildProcessSpawner,
+          piProbeSpawner("18.7.0", "omp/"),
+        ),
+      );
+      assert.equal(snapshot.status, "ready");
+      assert.equal(snapshot.version, "18.7.0");
+      assert.equal(snapshot.auth.status, "unknown");
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
   it.effect("requires the first published Pi version with entries and settlement hooks", () =>
     Effect.gen(function* () {
       const snapshot = yield* checkPiProviderStatus(settings).pipe(

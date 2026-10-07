@@ -33,6 +33,7 @@ import {
   PreviewZoomFactor,
 } from "./preview.ts";
 import {
+  DEFAULT_PROVIDER_INSTANCES,
   ProviderInstanceConfig,
   ProviderInstanceId,
   type ProviderDriverKind,
@@ -1450,7 +1451,7 @@ export const ServerSettings = Schema.Struct({
   // (forks, downgrades, in-flight PR branches) round-trip without loss.
   // See providerInstance.ts for the forward/backward compatibility invariant.
   providerInstances: Schema.Record(ProviderInstanceId, ProviderInstanceConfig).pipe(
-    Schema.withDecodingDefault(Effect.succeed({})),
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_PROVIDER_INSTANCES)),
   ),
   observability: ObservabilitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   bitbucket: BitbucketSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),

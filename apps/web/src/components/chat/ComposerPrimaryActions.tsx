@@ -1,9 +1,11 @@
+import { useLocale } from "../../locale/LocaleProvider";
 import { memo, type MouseEventHandler, type PointerEventHandler } from "react";
 import { CheckIcon, ChevronDownIcon, ChevronLeftIcon, PlayIcon } from "lucide-react";
 import { CornerUpRight, ListPlus } from "lucide";
 import { MorphIcon } from "~/components/MorphIcon";
 import { useEnvironmentIdentificationMode } from "~/hooks/useSettings";
 import { cn } from "~/lib/utils";
+import type { Translator } from "../../locale/locale";
 import { useShortcutModifierState } from "../../shortcutModifierState";
 import { StageBackdropButtonArt, useSidebarStageBackdropVariant } from "../SidebarStageBackdrop";
 import { Button } from "../ui/button";
@@ -51,22 +53,25 @@ interface ComposerPrimaryActionsProps {
   onImplementPlanInNewThread: () => void;
 }
 
-const formatPendingPrimaryActionLabel = (input: {
-  compact: boolean;
-  isLastQuestion: boolean;
-  isResponding: boolean;
-  questionIndex: number;
-}) => {
+const formatPendingPrimaryActionLabel = (
+  t: Translator,
+  input: {
+    compact: boolean;
+    isLastQuestion: boolean;
+    isResponding: boolean;
+    questionIndex: number;
+  },
+) => {
   if (input.isResponding) {
-    return "Submitting...";
+    return t("Submitting...");
   }
   if (input.compact) {
-    return input.isLastQuestion ? "Submit" : "Next";
+    return input.isLastQuestion ? t("Submit") : t("Next");
   }
   if (!input.isLastQuestion) {
-    return "Next question";
+    return t("Next question");
   }
-  return input.questionIndex > 0 ? "Submit answers" : "Submit answer";
+  return input.questionIndex > 0 ? t("Submit answers") : t("Submit answer");
 };
 
 // The composer's labeled primary actions (Submit, Refine, Implement) share the send button's
@@ -102,6 +107,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   onInterrupt,
   onImplementPlanInNewThread,
 }: ComposerPrimaryActionsProps) {
+  const { t } = useLocale();
   const pointerFocusProps = preserveComposerFocusOnPointerDown
     ? { onPointerDown: preventPointerFocus }
     : undefined;
@@ -132,7 +138,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
             )}
             {...pointerFocusProps}
             onClick={onInterrupt}
-            aria-label="Stop generation"
+            aria-label={t("Stop generation")}
           />
         }
       >
@@ -140,7 +146,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           <rect x="2" y="2" width="8" height="8" rx="1.5" />
         </svg>
       </TooltipTrigger>
-      <TooltipPopup>Interrupt</TooltipPopup>
+      <TooltipPopup>{t("Interrupt")}</TooltipPopup>
     </Tooltip>
   );
 
@@ -156,7 +162,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
               {...pointerFocusProps}
               onClick={onPreviousPendingQuestion}
               disabled={pendingAction.isResponding}
-              aria-label="Previous question"
+              aria-label={t("Previous question")}
             >
               <ChevronLeftIcon className="size-3.5" />
             </Button>
@@ -168,7 +174,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
               onClick={onPreviousPendingQuestion}
               disabled={pendingAction.isResponding}
             >
-              Previous
+              {t("Previous")}
             </Button>
           )
         ) : null}
@@ -182,7 +188,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
             (pendingAction.isLastQuestion ? !pendingAction.isComplete : !pendingAction.canAdvance)
           }
         >
-          {formatPendingPrimaryActionLabel({
+          {formatPendingPrimaryActionLabel(t, {
             compact,
             isLastQuestion: pendingAction.isLastQuestion,
             isResponding: pendingAction.isResponding,
@@ -202,7 +208,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           {...pointerFocusProps}
           disabled={isSendBusy || isSendDisabled || isConnecting || isEnvironmentUnavailable}
         >
-          {isConnecting || isSendBusy ? "Sending..." : "Refine"}
+          {isConnecting || isSendBusy ? t("Sending...") : t("Refine")}
         </button>
       );
     }
@@ -215,7 +221,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           {...pointerFocusProps}
           disabled={isSendBusy || isSendDisabled || isConnecting || isEnvironmentUnavailable}
         >
-          {isConnecting || isSendBusy ? "Sending..." : "Implement"}
+          {isConnecting || isSendBusy ? t("Sending...") : t("Implement")}
         </button>
         <Menu>
           <MenuTrigger
@@ -226,7 +232,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
                   messageActionPillClassName,
                   "h-9 rounded-l-none border-l border-message-action-foreground/20 px-2 sm:h-8",
                 )}
-                aria-label="Implementation actions"
+                aria-label={t("Implementation actions")}
                 {...pointerFocusProps}
                 disabled={isSendBusy || isSendDisabled || isConnecting || isEnvironmentUnavailable}
               />
@@ -239,7 +245,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
               disabled={isSendBusy || isSendDisabled || isConnecting || isEnvironmentUnavailable}
               onClick={() => void onImplementPlanInNewThread()}
             >
-              Implement in a new thread
+              {t("Implement in a new thread")}
             </MenuItem>
           </MenuPopup>
         </Menu>
@@ -253,30 +259,36 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
 
   const showResume = canResume && !hasSendableContent && !isEditingQueuedMessage;
   const submitLabel = showResume
-    ? "Resume thread"
+    ? t("Resume thread")
     : isEditingQueuedMessage
-      ? "Update queued message"
+      ? t("Update queued message")
       : isQueuing
-        ? "Queue message"
+        ? t("Queue message")
         : isRunning
-          ? "Steer message"
-          : "Submit message";
+          ? t("Steer message")
+          : t("Submit message");
   const submitStatus = isEnvironmentUnavailable
-    ? "Environment disconnected"
+    ? t("Environment disconnected")
     : (sendDisabledReason ??
       (isConnecting
-        ? "Connecting"
+        ? t("Connecting")
         : isPreparingWorktree
-          ? "Preparing worktree"
+          ? t("Preparing worktree")
           : isSendBusy
             ? isEditingQueuedMessage
-              ? "Updating queued message"
-              : "Submitting message"
+              ? t("Updating queued message")
+              : t("Submitting message")
             : null));
   const submitTooltip =
     submitStatus ??
     (isRunning && !isEditingQueuedMessage
-      ? `Click to ${followUpBehavior}, Ctrl/⌘-click${alternateShortcutLabel ? ` or ${alternateShortcutLabel}` : ""} to ${alternateAction}`
+      ? t("Click to {action}, Ctrl/⌘-click{shortcut} to {alternate}", {
+          action: t(followUpBehavior),
+          shortcut: alternateShortcutLabel
+            ? t(" or {shortcut}", { shortcut: alternateShortcutLabel })
+            : "",
+          alternate: alternateAction === "steer" ? t("steer") : t("queue"),
+        })
       : submitLabel);
 
   const sendButton = (

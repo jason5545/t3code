@@ -2,7 +2,11 @@ import { describe, expect, it } from "vite-plus/test";
 import * as Schema from "effect/Schema";
 
 import type { ProjectId } from "./baseSchemas.ts";
-import { ProviderDriverKind, ProviderInstanceId } from "./providerInstance.ts";
+import {
+  DEFAULT_PROVIDER_INSTANCES,
+  ProviderDriverKind,
+  ProviderInstanceId,
+} from "./providerInstance.ts";
 import {
   ClientSettingsSchema,
   ClientSettingsPatch,
@@ -745,13 +749,17 @@ describe("ClientSettings pull request merge methods", () => {
 });
 
 describe("ServerSettings.providerInstances (slice-2 invariant)", () => {
-  it("defaults to an empty record so legacy configs without the key still decode", () => {
-    expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual({});
+  it("preserves explicitly empty maps rather than restoring OMP", () => {
+    expect(decodeServerSettings({ providerInstances: {} }).providerInstances).toEqual({});
+    expect(decodeServerSettingsPatch({ providerInstances: {} }).providerInstances).toEqual({});
+  });
+  it("defaults to OMP on the Pi driver when legacy configs omit the key", () => {
+    expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual(DEFAULT_PROVIDER_INSTANCES);
   });
 
   it("decodes a fully empty config (legacy on-disk shape) without complaint", () => {
     const decoded = decodeServerSettings({});
-    expect(decoded.providerInstances).toEqual({});
+    expect(decoded.providerInstances).toEqual(DEFAULT_PROVIDER_INSTANCES);
     // Legacy `providers` struct is still hydrated with its per-driver defaults
     // so existing call sites keep working through the migration.
     expect(decoded.providers.codex.enabled).toBe(true);

@@ -1,3 +1,4 @@
+import { useLocale } from "../../locale/LocaleProvider";
 import { SettingsGroup } from "./SettingsGroup";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
@@ -603,6 +604,7 @@ export function EnvironmentProviderSettings({
    */
   readonly readOnly?: boolean;
 }) {
+  const { t } = useLocale();
   const settings = useEnvironmentSettings(environmentId);
   // Provider instances hold per-machine credentials and binaries, so this
   // page always edits exactly the environment it displays.
@@ -1192,7 +1194,7 @@ export function EnvironmentProviderSettings({
   return (
     <>
       <SettingsSection
-        {...searchableSetting("providers")}
+        {...searchableSetting("providers", t)}
         variant="plain"
         headerAction={
           <div className="flex min-w-0 items-center gap-2">
@@ -1214,10 +1216,10 @@ export function EnvironmentProviderSettings({
                         onClick={() => void refreshProviders()}
                       >
                         <RefreshIcon refreshing={isRefreshingProviders} />
-                        <span className="sr-only">Refresh provider status</span>
+                        <span className="sr-only">{t("Refresh provider status")}</span>
                         <span className="hidden min-w-0 truncate sm:inline">
                           {isRefreshingProviders ? (
-                            "Refreshing providers"
+                            t("Refreshing providers")
                           ) : (
                             <ProviderLastChecked lastCheckedAt={lastCheckedAt} />
                           )}
@@ -1225,7 +1227,7 @@ export function EnvironmentProviderSettings({
                       </Button>
                     }
                   />
-                  <TooltipPopup side="top">Refresh provider status</TooltipPopup>
+                  <TooltipPopup side="top">{t("Refresh provider status")}</TooltipPopup>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger
@@ -1234,13 +1236,13 @@ export function EnvironmentProviderSettings({
                         size="icon-xs"
                         variant="ghost-muted"
                         onClick={() => setIsAddInstanceDialogOpen(true)}
-                        aria-label="Add provider"
+                        aria-label={t("Add provider")}
                       >
                         <PlusIcon />
                       </Button>
                     }
                   />
-                  <TooltipPopup side="top">Add provider</TooltipPopup>
+                  <TooltipPopup side="top">{t("Add provider")}</TooltipPopup>
                 </Tooltip>
               </>
             )}
@@ -1253,7 +1255,7 @@ export function EnvironmentProviderSettings({
         {readOnly ? (
           <SettingsGroup divided={false} className="overflow-hidden">
             <SettingsRow
-              title="Limited permissions"
+              title={t("Limited permissions")}
               description={`This session can view ${environmentLabel}'s providers but can't change their settings.`}
             />
           </SettingsGroup>
@@ -1302,7 +1304,7 @@ export function EnvironmentProviderSettings({
         readOnly={readOnly}
       />
 
-      <SettingsSection title="Advanced">
+      <SettingsSection title={t("Advanced")}>
         <SettingsRow
           id={searchableSetting("provider-health-check-interval").id}
           title={

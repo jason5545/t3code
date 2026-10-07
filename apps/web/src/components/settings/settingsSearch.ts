@@ -1,3 +1,5 @@
+import type { TranslationKey } from "../../locale/messages";
+import { isTranslationKey, type Translator } from "../../locale/locale";
 import { isElectron } from "~/env";
 import { isMacPlatform, isWindowsPlatform, normalizeSearchText } from "~/lib/utils";
 import { STATIC_KEYBINDING_COMMANDS, type KeybindingCommand } from "@t3tools/contracts";
@@ -86,7 +88,7 @@ export interface SettingsSearchAvailability {
  * Section labels in sidebar order. The sidebar nav and the search-result
  * subtitles both render from this record, so each label exists once.
  */
-export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
+export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, TranslationKey>> = {
   "/settings/projects": "Project",
   "/settings/general": "General",
   "/settings/appearance": "Appearance",
@@ -134,6 +136,12 @@ const KEYBINDING_SEARCH_ITEMS = STATIC_KEYBINDING_COMMANDS.toSorted((left, right
  * that may not be mounted point at their nearest stable section instead.
  */
 export const SETTINGS_SEARCH_ITEMS = [
+  {
+    id: "interface-language",
+    title: "Interface language",
+    to: "/settings/general",
+    searchTerms: ["locale language English Traditional Chinese Taiwan 繁體中文 台灣 語言"],
+  },
   {
     id: "storage-worktrees",
     title: "Worktree cleanup",
@@ -1033,12 +1041,15 @@ export function isSettingsOverviewVisible(search: SettingsScopeSearch): boolean 
  * spread (or pick from) this instead of restating the strings, so the catalog
  * and the rendered settings cannot drift apart.
  */
-export function searchableSetting(id: SettingsSearchItemId): {
+export function searchableSetting(
+  id: SettingsSearchItemId,
+  t?: Translator,
+): {
   readonly id: string;
   readonly title: string;
 } {
   const { id: anchorId, title } = SEARCH_ITEMS_BY_ID.get(id)!;
-  return { id: anchorId, title };
+  return { id: anchorId, title: t && isTranslationKey(title) ? t(title) : title };
 }
 
 export function filterAvailableSettingsSearchItems(
@@ -1062,6 +1073,7 @@ export function filterAvailableSettingsSearchItems(
 export function searchSettings(
   query: string,
   items: ReadonlyArray<SettingsSearchItem> = SETTINGS_SEARCH_ITEMS,
+  t?: Translator,
 ): ReadonlyArray<SettingsSearchItem> {
   const normalizedQuery = normalizeSearchText(query);
   if (normalizedQuery.length === 0) return [];
@@ -1075,8 +1087,15 @@ export function searchSettings(
       if (item.windowsOnly && !isWindowsPlatform(platform)) return [];
 
       const title = normalizeSearchText(item.title);
+      const section = SETTINGS_SECTION_LABELS[item.to];
       const fields = [
         title,
+        ...(t
+          ? [
+              normalizeSearchText(isTranslationKey(item.title) ? t(item.title) : item.title),
+              normalizeSearchText(isTranslationKey(section) ? t(section) : section),
+            ]
+          : []),
         normalizeSearchText(SETTINGS_SECTION_LABELS[item.to]),
         ...(item.searchTerms ?? []).map(normalizeSearchText),
       ];

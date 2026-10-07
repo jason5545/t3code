@@ -4,6 +4,7 @@ import { ElectronBrowserHost } from "./browser/ElectronBrowserHost";
 import { QuitHoldOverlay } from "./components/QuitHoldOverlay";
 import { AppAtomRegistryProvider } from "./rpc/atomRegistry";
 import type { AppRouter } from "./router";
+import { LocaleProvider } from "./locale/LocaleProvider";
 
 /**
  * Owns renderer-wide providers. The Electron browser host intentionally sits
@@ -12,10 +13,12 @@ import type { AppRouter } from "./router";
  */
 export function AppRoot({ router }: { readonly router: AppRouter }) {
   return (
-    <AppAtomRegistryProvider>
-      <RouterProvider router={router} />
-      <ElectronBrowserHost />
-      <QuitHoldOverlay />
-    </AppAtomRegistryProvider>
+    <LocaleProvider>
+      <AppAtomRegistryProvider>
+        <RouterProvider router={router} />
+        <ElectronBrowserHost />
+        <QuitHoldOverlay />
+      </AppAtomRegistryProvider>
+    </LocaleProvider>
   );
 }

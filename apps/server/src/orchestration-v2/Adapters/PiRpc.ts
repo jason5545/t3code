@@ -31,6 +31,7 @@ import { HostProcessPlatform } from "@t3tools/shared/hostProcess";
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
 
 import { signalProcessGroup } from "../../process/processGroup.ts";
+import { makePiRpcDialect } from "./piRpcDialect.ts";
 
 export class PiRpcError extends Schema.TaggedError<PiRpcError>()("PiRpcError", {
   operation: Schema.String,
@@ -217,7 +218,11 @@ export const makePiRpcConnection = Effect.fnUntraced(function* (options: PiRpcSp
   const platform = yield* HostProcessPlatform;
   const scope = yield* Effect.scope;
 
-  const spawnCommand = yield* resolveSpawnCommand(options.command, [...options.args], {
+  const dialect = makePiRpcDialect(options.command);
+  // OMP supports native --fork even though its public help omits it. Do not
+  // replace it with --resume: opening the source can write to or relocate it.
+  const args = dialect.launchArgs(options.args);
+  const spawnCommand = yield* resolveSpawnCommand(options.command, [...args], {
     env: options.env,
   }).pipe(Effect.mapError((cause) => new PiRpcError({ operation: "spawn", cause })));
   const child = yield* spawner
@@ -357,14 +362,16 @@ export const makePiRpcConnection = Effect.fnUntraced(function* (options: PiRpcSp
               });
               continue;
             }
-            yield* routeRecord(record);
+            for (const normalized of dialect.incoming(record)) yield* routeRecord(normalized);
           }
         }),
       ),
     );
     for (const line of frame("\n")) {
       const trailing = parsePiRecord(line);
-      if (trailing !== undefined) yield* routeRecord(trailing);
+      if (trailing !== undefined) {
+        for (const normalized of dialect.incoming(trailing)) yield* routeRecord(normalized);
+      }
     }
   }).pipe(
     Effect.matchCauseEffect({
@@ -431,7 +438,7 @@ export const makePiRpcConnection = Effect.fnUntraced(function* (options: PiRpcSp
     Effect.gen(function* () {
       const accepted = yield* Queue.offer(
         outgoing,
-        new TextEncoder().encode(`${encodeJsonLine(record)}\n`),
+        new TextEncoder().encode(`${encodeJsonLine(dialect.outgoing(record))}\n`),
       );
       // A refused offer means `failTransport` already closed the queue, so the
       // write can never land; surface the transport error instead of
