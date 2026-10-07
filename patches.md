@@ -19,7 +19,7 @@ Upstream baseline: `bfec2387b8102975c84690f99be0f5f834fd0cbe`.
 - Translates primary navigation/settings headings, settings search, chat/composer and approval controls, code/message copy controls, empty states and common provider controls.
 - User content, code, paths and provider/model labels are not translated.
 - Coverage is intentionally partial. Some detailed descriptions, secondary dialogs/errors and the mobile interface remain English.
-- Desktop packaging retains the `zh-TW` Electron locale resources.
+- Desktop packaging retains both Chromium `zh-TW.pak` (Windows/Linux) and `zh_TW.lproj` (macOS). Electron Builder compares locale basenames literally, so both separator spellings are listed. The initial unpublished build exposed this mismatch; it was corrected before release.
 
 ## Development-signed fork nightly
 

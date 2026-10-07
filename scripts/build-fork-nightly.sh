@@ -27,5 +27,5 @@ out="release/fork-nightly/$T3CODE_DESKTOP_VERSION"
 mkdir -p "$out"
 node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch "$arch" --signed --verbose --keep-stage --build-version "$T3CODE_DESKTOP_VERSION" --output-dir "$out"
 printf 'VERSION=%s\nSOURCE_COMMIT=%s\nARCH=%s\nSIGNING=Apple Development (not notarized)\nUPDATE_REPOSITORY=jason5545/t3code\n' "$T3CODE_DESKTOP_VERSION" "$(git rev-parse HEAD)" "$arch" > "$out/build-provenance.txt"
-(cd "$out" && shasum -a 256 *.dmg *.zip *.yml > SHA256SUMS.txt)
+(cd "$out" && shasum -a 256 *.dmg *.zip *.blockmap *.yml build-provenance.txt > SHA256SUMS.txt)
 printf 'Build ready for verification: %s\n' "$PWD/$out"

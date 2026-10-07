@@ -542,7 +542,21 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
   });
 
   it("limits Electron locales and excludes separately packaged resources", () => {
-    assert.deepStrictEqual(DESKTOP_ELECTRON_LANGUAGES, ["en-US", "zh-TW"]);
+    assert.deepStrictEqual(DESKTOP_ELECTRON_LANGUAGES, ["en-US", "zh-TW", "zh_TW"]);
+    // Verify both actual file basenames against electron-builder's literal
+    // matching rule. Hyphens alone incorrectly delete macOS's zh_TW.lproj.
+    for (const locale of ["en", "en-US", "zh-TW", "zh_TW"]) {
+      const language = locale.toLowerCase();
+      assert.isTrue(
+        DESKTOP_ELECTRON_LANGUAGES.some(
+          (wanted) =>
+            wanted.toLowerCase() === language ||
+            wanted.toLowerCase().startsWith(`${language}-`) ||
+            wanted.toLowerCase().startsWith(`${language}_`),
+        ),
+        `Preserves Electron locale ${locale}`,
+      );
+    }
     // Every platform staging input is emitted once at resources/, so adding one
     // without its exclusion silently packs a second copy into app.asar. The
     // snapshot below cannot catch that on its own: adding a resource and
