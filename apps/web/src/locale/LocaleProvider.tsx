@@ -30,13 +30,29 @@ const LocaleContext = createContext<LocaleContextValue>({
   t: (key, params) => translate("en", key, params),
 });
 
-export function LocaleProvider({ children }: { readonly children: ReactNode }) {
+const reloadPage = () => window.location.reload();
+
+/**
+ * Most interface text is translated at build time with the locale read at
+ * startup, so a stored change reloads the page instead of mixing languages.
+ */
+export function LocaleProvider({
+  children,
+  reload = reloadPage,
+}: {
+  readonly children: ReactNode;
+  readonly reload?: () => void;
+}) {
   const [locale, updateLocale] = useState<Locale>(() => readLocalePreference());
-  const setLocale = useCallback((next: Locale) => {
-    if (!isLocale(next)) return;
-    updateLocale(next);
-    persistLocalePreference(next);
-  }, []);
+  const [startupLocale] = useState(locale);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      if (!isLocale(next)) return;
+      updateLocale(next);
+      if (persistLocalePreference(next) && next !== startupLocale) reload();
+    },
+    [reload, startupLocale],
+  );
 
   useEffect(() => {
     if (typeof document !== "undefined") document.documentElement.lang = locale;
@@ -44,13 +60,14 @@ export function LocaleProvider({ children }: { readonly children: ReactNode }) {
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key === null || event.key === LOCALE_STORAGE_KEY) {
-        updateLocale(readLocalePreference());
-      }
+      if (event.key !== null && event.key !== LOCALE_STORAGE_KEY) return;
+      const next = readLocalePreference();
+      updateLocale(next);
+      if (next !== startupLocale) reload();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [reload, startupLocale]);
 
   const value = useMemo<LocaleContextValue>(
     () => ({

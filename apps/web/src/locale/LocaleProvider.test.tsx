@@ -11,6 +11,7 @@ import { LOCALE_STORAGE_KEY } from "./locale";
 import { LocaleProvider, useLocale } from "./LocaleProvider";
 
 let renderer: ReactTestRenderer | null = null;
+const reload = vi.fn();
 
 const Probe = memo(function Probe() {
   const { locale, setLocale, t } = useLocale();
@@ -22,7 +23,7 @@ const Probe = memo(function Probe() {
 async function mountProbe() {
   await act(() => {
     renderer = create(
-      <LocaleProvider>
+      <LocaleProvider reload={reload}>
         <Probe />
       </LocaleProvider>,
     );
@@ -34,6 +35,7 @@ function button() {
 }
 
 beforeEach(() => {
+  reload.mockClear();
   localStorage.clear();
   document.documentElement.lang = "en";
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -51,7 +53,7 @@ afterEach(async () => {
 });
 
 describe("LocaleProvider", () => {
-  it("updates a memoized consumer, document lang, and persisted selection without reloading", async () => {
+  it("updates a memoized consumer, document lang, and persisted selection, then reloads", async () => {
     await mountProbe();
     expect(button().children).toEqual(["設定"]);
     expect(document.documentElement.lang).toBe("zh-TW");
@@ -61,6 +63,7 @@ describe("LocaleProvider", () => {
     expect(button().children).toEqual(["Settings"]);
     expect(document.documentElement.lang).toBe("en");
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("en");
+    expect(reload).toHaveBeenCalledTimes(1);
 
     await act(() => renderer!.unmount());
     renderer = null;
@@ -72,6 +75,7 @@ describe("LocaleProvider", () => {
     expect(button().children).toEqual(["設定"]);
     expect(document.documentElement.lang).toBe("zh-TW");
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("zh-TW");
+    expect(reload).toHaveBeenCalledTimes(2);
   });
 
   it("reacts to another window's selection and preference removal and removes its listener", async () => {
@@ -83,12 +87,14 @@ describe("LocaleProvider", () => {
       window.dispatchEvent(new StorageEvent("storage", { key: "unrelated" }));
     });
     expect(button().children).toEqual(["設定"]);
+    expect(reload).not.toHaveBeenCalled();
 
     await act(() => {
       window.dispatchEvent(new StorageEvent("storage", { key: LOCALE_STORAGE_KEY }));
     });
     expect(button().children).toEqual(["Settings"]);
     expect(document.documentElement.lang).toBe("en");
+    expect(reload).toHaveBeenCalledTimes(1);
 
     localStorage.clear();
     await act(() => {
@@ -112,6 +118,7 @@ describe("LocaleProvider", () => {
     await act(() => button().props.onClick());
     expect(button().children).toEqual(["Settings"]);
     expect(document.documentElement.lang).toBe("en");
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("renders settings navigation and the device-local language selector in zh-TW", () => {

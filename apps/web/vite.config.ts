@@ -1,3 +1,4 @@
+import * as NodeURL from "node:url";
 import * as NodeZlib from "node:zlib";
 
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
@@ -14,6 +15,7 @@ import {
   DEV_PROXIED_PATH_PREFIXES,
 } from "@t3tools/shared/devProxy";
 
+import autoTranslate from "../../scripts/i18n/autoTranslate.cjs";
 import { loadRepoEnv } from "../../scripts/lib/public-config";
 import { thirdPartyLicensesPlugin } from "../../scripts/lib/third-party-licenses";
 import { tailwindPlugins } from "./vite/tailwind";
@@ -181,6 +183,25 @@ export default defineConfig(() => {
         // whereas the previous version of the plugin parsed all files with a .ts extension.
         // This is causing our packages/ directory to fail to parse, as they are not relative to the CWD.
         parserOpts: { plugins: ["typescript", "jsx"] },
+        plugins: [
+          [
+            autoTranslate,
+            {
+              catalogFile: NodeURL.fileURLToPath(
+                new URL("./src/locale/zh-TW.json", import.meta.url),
+              ),
+              runtimeFile: NodeURL.fileURLToPath(
+                new URL("./src/locale/autoTranslateRuntime.ts", import.meta.url),
+              ),
+              roots: [
+                NodeURL.fileURLToPath(new URL("./src", import.meta.url)),
+                NodeURL.fileURLToPath(
+                  new URL("../../packages/client-runtime/src", import.meta.url),
+                ),
+              ],
+            },
+          ],
+        ],
         presets: [reactCompilerPreset()],
       }),
       tailwindPlugins(bundledDev),

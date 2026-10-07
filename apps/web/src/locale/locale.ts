@@ -43,14 +43,18 @@ export function readLocalePreference(
   return defaultLocale(language);
 }
 
+/** Returns whether the selection was stored, so it survives a reload. */
 export function persistLocalePreference(
   locale: Locale,
   storage: LocaleStorage | undefined = browserLocaleStorage(),
-): void {
+): boolean {
+  if (!storage) return false;
   try {
-    storage?.setItem(LOCALE_STORAGE_KEY, locale);
+    storage.setItem(LOCALE_STORAGE_KEY, locale);
+    return true;
   } catch {
     // The in-memory selection remains usable even when persistence is denied.
+    return false;
   }
 }
 
