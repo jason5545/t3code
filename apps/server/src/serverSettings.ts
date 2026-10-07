@@ -495,6 +495,8 @@ const ATOMIC_SETTINGS_KEYS: ReadonlySet<string> = new Set([
   "sourceControlWriterModelSelection",
   "textGenerationModelSelection",
   "pullRequestMergeMethod",
+  // Built-in default instances must survive being re-added or removed by the user.
+  "providerInstances",
 ]);
 
 // Preserve both enabled states because provider history cannot recover a new opt-in.
