@@ -66,8 +66,8 @@ The script selects the single Apple Development identity in the keychain, uses N
 ## Local Mac deployment (2026-10-08)
 
 - Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
-- Installed `0.0.45-nightly.20261008.1791440146` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
-- Installed binary was built from `1840e67fa3d72392ed72f47ce788c702ec3aaf33` and signed with the owner's existing Apple Development certificate; complete bundle verification passed after installation.
+- Installed `0.0.45-nightly.20261008.1791441738` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
+- Installed binary was built from `a629104a348c473073233efbc1639270f002de62` and signed with the owner's existing Apple Development certificate; complete bundle verification passed after installation.
 - Old app and existing local profiles are preserved in a private local backup outside the repository. No existing user profile was overwritten or manually migrated. Local user paths are not part of this public documentation.
 - Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. Private profile backups are kept outside the repository; DMG/ZIP and local logs remain ignored and are not pushed.
 - No release or release tag is created for this deployment.
