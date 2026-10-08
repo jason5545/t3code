@@ -3,6 +3,7 @@ import type {
   ServerProviderVersionAdvisory,
   ServerProviderCompatibilityAdvisory,
 } from "@t3tools/contracts";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 /**
  * Visual treatment for each server-reported provider status. Centralized so
@@ -44,45 +45,47 @@ export function getProviderSummary(provider: ServerProvider | undefined) {
     return {
       headline: "Disabled",
       detail:
-        provider.message ?? "This provider is installed but disabled for new sessions in T3 Code.",
+        localizeServerMessage(provider.message) ??
+        "This provider is installed but disabled for new sessions in T3 Code.",
     };
   }
   if (!provider.installed) {
     return {
       headline: "Not found",
-      detail: provider.message ?? "CLI not detected on PATH.",
+      detail: localizeServerMessage(provider.message) ?? "CLI not detected on PATH.",
     };
   }
   if (provider.auth.status === "unauthenticated") {
     const authLabel = provider.auth.label ?? provider.auth.type;
     return {
       headline: authLabel ? `Not authenticated · ${authLabel}` : "Not authenticated",
-      detail: provider.message ?? null,
+      detail: localizeServerMessage(provider.message) ?? null,
     };
   }
   if (provider.status === "warning") {
     return {
       headline: "Needs attention",
       detail:
-        provider.message ?? "The provider is installed, but the server could not fully verify it.",
+        localizeServerMessage(provider.message) ??
+        "The provider is installed, but the server could not fully verify it.",
     };
   }
   if (provider.status === "error") {
     return {
       headline: "Unavailable",
-      detail: provider.message ?? "The provider failed its startup checks.",
+      detail: localizeServerMessage(provider.message) ?? "The provider failed its startup checks.",
     };
   }
   if (provider.auth.status === "authenticated") {
     const authLabel = provider.auth.label ?? provider.auth.type;
     return {
       headline: authLabel ? `Authenticated · ${authLabel}` : "Authenticated",
-      detail: provider.message ?? null,
+      detail: localizeServerMessage(provider.message) ?? null,
     };
   }
   return {
     headline: "Available",
-    detail: provider.message ?? null,
+    detail: localizeServerMessage(provider.message) ?? null,
   };
 }
 
@@ -137,7 +140,7 @@ export function getProviderVersionAdvisoryPresentation(
     return {
       title: COMPATIBILITY_TITLES[compatibility.status],
       detail:
-        compatibility.message ??
+        localizeServerMessage(compatibility.message) ??
         (recommendation ? `Use ${recommendation} for full support.` : "Update for full support."),
       updateCommand:
         targetVersion || latestIsIncompatible ? null : (advisory?.updateCommand ?? null),
@@ -161,7 +164,7 @@ export function getProviderVersionAdvisoryPresentation(
   return {
     title: label,
     detail:
-      advisory.message ??
+      localizeServerMessage(advisory.message) ??
       (versionLabel
         ? `${label}: install ${versionLabel}.`
         : `${label}: install the latest provider version.`),

@@ -5,6 +5,7 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from "../ui/alert";
 import { Button, InlineButton } from "../ui/button";
 import { formatProviderDriverKindLabel } from "../../providerModels";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 /** Unsupported and broken versions fail mid-turn, so they warn even when ready. */
 function getIncompatibleVersion(status: ServerProvider) {
@@ -66,9 +67,9 @@ export function getProviderStatusMessage(status: ServerProvider): string {
     status.compatibilityAdvisory?.status === "broken" &&
     status.compatibilityAdvisory.message
   ) {
-    return status.compatibilityAdvisory.message;
+    return localizeServerMessage(status.compatibilityAdvisory.message);
   }
-  if (status.message) return status.message;
+  if (status.message) return localizeServerMessage(status.message);
   const providerName = status.displayName?.trim() || formatProviderDriverKindLabel(status.driver);
   if (!status.installed && hasProviderSetup(status)) {
     return `Open provider setup to install ${formatProviderDriverKindLabel(status.driver)} on this environment.`;
@@ -109,7 +110,7 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
     : incompatible
       ? `${providerName} ${status.version ?? ""} is ${incompatible.status === "broken" ? "known to be broken" : "unsupported"}`
       : `${providerName} provider status`;
-  const message = incompatible?.message ?? getProviderStatusMessage(status);
+  const message = localizeServerMessage(incompatible?.message) ?? getProviderStatusMessage(status);
   const isWarning =
     incompatible?.status !== "broken" && (status.status === "warning" || incompatible !== null);
 
