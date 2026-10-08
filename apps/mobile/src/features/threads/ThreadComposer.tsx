@@ -127,6 +127,7 @@ import {
   useThreadSettingsSheetPresentation,
   type NavigationWithFinishTransitioning,
 } from "./use-thread-settings-sheet-presentation";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 /**
  * Height of the collapsed composer (pill + vertical padding, excluding safe-area inset).
@@ -803,7 +804,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                 : "px-3 py-2 text-xs text-foreground"
             }
           >
-            {selectedProviderStatus.compatibilityAdvisory.message}
+            {localizeServerMessage(selectedProviderStatus.compatibilityAdvisory.message)}
           </Text>
         ) : null}
         {modelUnavailable ? (

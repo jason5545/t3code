@@ -31,6 +31,7 @@ import {
   findEnvironmentUpdate,
   supportsEnvironmentUpdate,
 } from "./environment-maintenance";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 export function SettingsEnvironmentDetailRouteScreen({
   route,
@@ -345,12 +346,14 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                           ) : null}
                           {provider.compatibilityAdvisory?.message ? (
                             <Text selectable className="text-sm text-foreground-muted">
-                              {provider.compatibilityAdvisory.message}
+                              {localizeServerMessage(provider.compatibilityAdvisory.message)}
                             </Text>
                           ) : null}
                           {provider.unavailableReason || provider.message ? (
                             <Text selectable className="text-sm text-foreground-muted">
-                              {provider.unavailableReason ?? provider.message}
+                              {localizeServerMessage(
+                                provider.unavailableReason ?? provider.message,
+                              )}
                             </Text>
                           ) : null}
                           {provider.versionAdvisory?.status === "behind_latest" &&

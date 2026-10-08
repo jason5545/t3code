@@ -1,8 +1,6 @@
 import { translateProviderStatusMessage } from "@t3tools/client-runtime/providerStatusMessages";
 
-import { readLocalePreference } from "./locale";
-
-const useChinese = readLocalePreference() === "zh-TW";
+import { useChinese } from "./autoTranslateRuntime";
 
 /** Shows a server-written provider status message in the interface language. */
 export function localizeServerMessage(message: string): string;

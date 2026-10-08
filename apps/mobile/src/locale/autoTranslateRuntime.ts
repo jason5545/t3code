@@ -4,7 +4,7 @@ import { createElement, Fragment, type ReactNode } from "react";
  * Called by code that `scripts/i18n/autoTranslate.cjs` rewrites at build time.
  * Mobile follows the device language: Traditional Chinese tags get zh-TW.
  */
-const useChinese = (() => {
+export const useChinese = (() => {
   try {
     return /^zh-(?:tw|hk|mo|hant)(?:-|$)/i.test(Intl.DateTimeFormat().resolvedOptions().locale);
   } catch {

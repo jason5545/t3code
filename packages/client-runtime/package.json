@@ -251,6 +251,10 @@
       "types": "./src/state/sharedSettings.ts",
       "default": "./src/state/sharedSettings.ts"
     },
+    "./providerStatusMessages": {
+      "types": "./src/providerStatusMessages.ts",
+      "default": "./src/providerStatusMessages.ts"
+    },
     "./state/shell": {
       "types": "./src/state/shell.ts",
       "default": "./src/state/shell.ts"
