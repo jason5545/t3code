@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `bfec2387b8102975c84690f99be0f5f834fd0cbe`.
+Upstream baseline: `e803242d936af3e052757d59ab32bc7c4fcc2390`.
 
 ## 1. OMP provider
 
@@ -61,11 +61,11 @@ The script selects the single Apple Development identity in the keychain, uses N
 - Installed OMP metadata RPC smoke passed for state, command catalog and model catalog in a temporary HOME, with no model-generation request.
 - Apple Development keychain identity successfully signed and verified a temporary executable. Final app signature must also be verified before publication.
 
-## Local Mac deployment (2026-10-07)
+## Local Mac deployment (2026-10-08)
 
 - Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
-- Installed `0.0.45-nightly.20261007.1791347413` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
-- Installed binary was built from `261d9ac8cc1df819883b57989d10f91d14b08324` and signed with the owner's existing Apple Development certificate; complete bundle verification passed after installation.
+- Installed `0.0.45-nightly.20261008.1791438432` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
+- Installed binary was built from `e9f2699c61f4f6ee40f149abeb4f9fe607a5f093` and signed with the owner's existing Apple Development certificate; complete bundle verification passed after installation.
 - Old app and existing local profiles are preserved in a private local backup outside the repository. No existing user profile was overwritten or manually migrated. Local user paths are not part of this public documentation.
 - Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. Private profile backups are kept outside the repository; DMG/ZIP and local logs remain ignored and are not pushed.
 - No release or release tag is created for this deployment.
