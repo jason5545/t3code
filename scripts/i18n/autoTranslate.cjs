@@ -20,6 +20,11 @@
  * `untranslated.json` beside this file keeps text English: `everywhere` for
  * names and identifiers, `files` for positions whose value code compares
  * against the English literal (translating them would change behavior).
+ *
+ * `displayFiles.json` lists files whose helpers build display copy outside
+ * those positions (status summaries, banner titles). There, returned values,
+ * variable initializers, array elements and `detail`/`message`/`reason`
+ * properties are display text too.
  */
 
 const fs = require("node:fs");
@@ -40,6 +45,8 @@ const PLACEHOLDER = /\{([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*|\d+)\}/g;
 const TEST_FILE = /\.(?:test|browser|stories)\.[cm]?[jt]sx?$|[/\\]test-fixtures\.[jt]sx?$/;
 const REPO_ROOT = nodePath.resolve(__dirname, "../..");
 const UNTRANSLATED_FILE = nodePath.join(__dirname, "untranslated.json");
+const DISPLAY_FILES_FILE = nodePath.join(__dirname, "displayFiles.json");
+const DISPLAY_FILE_PROPERTY = /^(?:detail|message|reason|body)$/;
 
 const jsonCache = new Map();
 
@@ -268,12 +275,16 @@ module.exports = function autoTranslate(babel, options) {
               )
               .filter((segment) => segment !== "");
       const message = buildMessage(segments);
-      if (!message) return;
-      const replacement = translation(state, message, path, kind, "string");
+      const replacement = message && translation(state, message, path, kind, "string");
       if (replacement) path.replaceWith(replacement);
+      else if (state.displayFile && node.type === "TemplateLiteral") {
+        for (const expression of path.get("expressions")) translateValue(state, expression, kind);
+      }
       return;
     }
-    if (node.type === "ConditionalExpression") {
+    if (node.type === "ArrayExpression" && state.displayFile) {
+      for (const element of path.get("elements")) translateValue(state, element, kind);
+    } else if (node.type === "ConditionalExpression") {
       translateValue(state, path.get("consequent"), kind);
       translateValue(state, path.get("alternate"), kind);
     } else if (node.type === "LogicalExpression") {
@@ -355,11 +366,22 @@ module.exports = function autoTranslate(babel, options) {
       if (DATA_PROPERTIES.has(key)) return;
       if (
         DISPLAY_PROPERTY.test(key) ||
+        (state.displayFile && DISPLAY_FILE_PROPERTY.test(key)) ||
         (sink === "toast" && TOAST_PROPERTY.test(key)) ||
         (sink === "alert" && key === "text")
       ) {
         translateValue(state, path.get("value"), sink ? `${sink}:${key}` : `prop:${key}`);
       }
+    },
+    ReturnStatement(path, state) {
+      if (state.displayFile) translateValue(state, path.get("argument"), "return");
+    },
+    ArrowFunctionExpression(path, state) {
+      if (state.displayFile && !path.get("body").isBlockStatement())
+        translateValue(state, path.get("body"), "return");
+    },
+    VariableDeclarator(path, state) {
+      if (state.displayFile) translateValue(state, path.get("init"), "variable");
     },
     CallExpression(path, state) {
       const callee = calleePath(path.node.callee);
@@ -380,13 +402,13 @@ module.exports = function autoTranslate(babel, options) {
         const filename = (pass.filename ?? pass.file.opts.filename ?? "").replace(/\?.*$/, "");
         if (!isTranslatableFile(filename, options)) return;
         const keepEnglish = readJson(UNTRANSLATED_FILE, {}).files ?? {};
+        const relativeFile = nodePath.relative(REPO_ROOT, filename).replace(/\\/g, "/");
         const state = {
           filename,
+          displayFile: (readJson(DISPLAY_FILES_FILE, {}).files ?? []).includes(relativeFile),
           used: new Set(),
           catalog: collect ? {} : readJson(options.catalogFile, {}),
-          keepEnglish: new Set(
-            keepEnglish[nodePath.relative(REPO_ROOT, filename).replace(/\\/g, "/")] ?? [],
-          ),
+          keepEnglish: new Set(keepEnglish[relativeFile] ?? []),
         };
         programPath.traverse(visitor, state);
         if (state.used.size === 0) return;

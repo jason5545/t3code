@@ -12,17 +12,61 @@ import {
   type EnvironmentCatalogState,
   enabledEnvironmentIds,
 } from "@t3tools/client-runtime/state/connections";
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId, OrchestrationV2ShellSnapshot } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 
 import { environmentCatalog } from "../connection/catalog";
 import { connectionAtomRuntime } from "../connection/runtime";
 import { isHostedStaticApp } from "../hostedPairing";
+import { __t3_t } from "../locale/autoTranslateRuntime";
 
 export const shellEnvironment = createShellEnvironmentAtoms(connectionAtomRuntime);
 export const environmentShell = createEnvironmentShellAtoms(connectionAtomRuntime);
-export const environmentSnapshotAtom = createEnvironmentSnapshotAtom(environmentShell.stateAtom);
+const rawEnvironmentSnapshotAtom = createEnvironmentSnapshotAtom(environmentShell.stateAtom);
+
+// The server names every environment's Scratch project "No project". It is
+// stored data, so build-time translation never sees it; relabel it here.
+const SCRATCH_PROJECT_TITLE = "No project";
+const scratchProjectTitle = __t3_t(SCRATCH_PROJECT_TITLE, "無專案");
+type ProjectShells = OrchestrationV2ShellSnapshot["projects"];
+// Keyed by the server's arrays and objects so unchanged projects keep their identity.
+const localizedProjectLists = new WeakMap<ProjectShells, ProjectShells>();
+const localizedProjects = new WeakMap<ProjectShells[number], ProjectShells[number]>();
+
+function localizeProject(project: ProjectShells[number]): ProjectShells[number] {
+  if (project.title !== SCRATCH_PROJECT_TITLE) return project;
+  let localized = localizedProjects.get(project);
+  if (!localized) {
+    localized = { ...project, title: scratchProjectTitle };
+    localizedProjects.set(project, localized);
+  }
+  return localized;
+}
+
+function localizeScratchProjectTitle(
+  snapshot: OrchestrationV2ShellSnapshot | null,
+): OrchestrationV2ShellSnapshot | null {
+  if (
+    snapshot === null ||
+    scratchProjectTitle === SCRATCH_PROJECT_TITLE ||
+    !snapshot.projects.some((project) => project.title === SCRATCH_PROJECT_TITLE)
+  ) {
+    return snapshot;
+  }
+  let projects = localizedProjectLists.get(snapshot.projects);
+  if (!projects) {
+    projects = snapshot.projects.map(localizeProject);
+    localizedProjectLists.set(snapshot.projects, projects);
+  }
+  return { ...snapshot, projects };
+}
+
+export const environmentSnapshotAtom = Atom.family((environmentId: EnvironmentId) =>
+  Atom.make((get) =>
+    localizeScratchProjectTitle(get(rawEnvironmentSnapshotAtom(environmentId))),
+  ).pipe(Atom.withLabel(`environment-snapshot-localized:${environmentId}`)),
+);
 
 export const allEnvironmentShellsBootstrappedAtom = Atom.make((get) => {
   const catalog = AsyncResult.value(get(environmentCatalog.catalogAtom));

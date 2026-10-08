@@ -1,0 +1,14 @@
+{
+  "files": [
+    "apps/web/src/components/chat/ProviderStatusBanner.tsx",
+    "apps/web/src/components/settings/providerStatus.ts",
+    "apps/web/src/components/ProviderUpdateLaunchNotification.logic.ts",
+    "apps/web/src/components/ProviderUpdateEnvironmentRows.tsx",
+    "apps/web/src/components/settings/ProviderAuthenticationSection.tsx",
+    "apps/web/src/components/settings/ProviderSetupSection.tsx",
+    "apps/web/src/components/settings/ProviderInstanceCard.tsx",
+    "apps/web/src/components/settings/ProviderSettingsPanel.tsx",
+    "apps/web/src/components/settings/ProviderModelsSection.tsx",
+    "apps/web/src/components/settings/AddProviderInstanceDialog.tsx"
+  ]
+}

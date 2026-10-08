@@ -133,6 +133,21 @@ describe("autoTranslate", () => {
     expect(transform(source)).toContain(`__t3_t("New thread", "新增對話")`);
   });
 
+  it("treats returned and assigned text as display copy only in display files", () => {
+    const source = [
+      `function a(busy) { return busy ? "Cancel" : "Undo"; }`,
+      "const b = `Rename ${thread.title}`;",
+      `const c = () => ["Could not save"];`,
+      `const d = { detail: "Add provider" };`,
+    ].join("\n");
+    const output = transform(source, "components/chat/ProviderStatusBanner.tsx");
+    expect(output).toContain(`return busy ? __t3_t("Cancel", "取消") : __t3_t("Undo", "復原");`);
+    expect(output).toContain(`__t3_tf(["Rename ", 0], ["重新命名 ", 0], [thread.title])`);
+    expect(output).toContain(`[__t3_t("Could not save", "無法儲存")]`);
+    expect(output).toContain(`detail: __t3_t("Add provider", "新增供應商")`);
+    expect(transform(source)).toBe(untouched(source));
+  });
+
   it("keeps English when a translation invents a placeholder", () => {
     const source = "const a = <p>Broken {name}</p>;";
     expect(transform(source)).toBe(untouched(source));
