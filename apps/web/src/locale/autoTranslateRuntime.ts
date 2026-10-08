@@ -6,7 +6,7 @@ import { readLocalePreference } from "./locale";
  * Called by code that `scripts/i18n/autoTranslate.cjs` rewrites at build time.
  * The locale is read once at startup; changing it reloads the page.
  */
-const useChinese = readLocalePreference() === "zh-TW";
+export const useChinese = readLocalePreference() === "zh-TW";
 
 /** Template parts: literal text, or an index into the values array. */
 type Parts = ReadonlyArray<string | number>;
