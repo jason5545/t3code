@@ -67,6 +67,9 @@ vi.mock("./settingsLayout", async (importOriginal) => {
 });
 
 vi.mock("./SettingsScopeSentence", () => ({ SettingsScopeSentence: () => null }));
+vi.mock("../../locale/LocaleProvider", () => ({
+  useLocale: () => ({ t: (text: string) => text }),
+}));
 vi.mock("react/compiler-runtime", async () => {
   const { reactHookHarness } = await import("../../test/reactHookHarness");
   return { c: reactHookHarness.useMemoCache };
