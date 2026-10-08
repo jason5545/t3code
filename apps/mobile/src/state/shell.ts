@@ -1,7 +1,7 @@
 import {
   createEnvironmentShellAtoms,
   createEnvironmentShellSummaryAtom,
-  createEnvironmentSnapshotAtom,
+  createLocalizedEnvironmentSnapshotAtom,
   createShellEnvironmentAtoms,
   type EnvironmentShellState,
 } from "@t3tools/client-runtime/state/shell";
@@ -12,10 +12,15 @@ import { Atom } from "effect/reactivity";
 
 import { environmentCatalog } from "../connection/catalog";
 import { connectionAtomRuntime } from "../connection/runtime";
+import { __t3_t } from "../locale/autoTranslateRuntime";
 
 export const shellEnvironment = createShellEnvironmentAtoms(connectionAtomRuntime);
 export const environmentShell = createEnvironmentShellAtoms(connectionAtomRuntime);
-export const environmentSnapshotAtom = createEnvironmentSnapshotAtom(environmentShell.stateAtom);
+// The server stores the Scratch project's title in English.
+export const environmentSnapshotAtom = createLocalizedEnvironmentSnapshotAtom(
+  environmentShell.stateAtom,
+  __t3_t("No project", "無專案"),
+);
 export const environmentShellSummaryAtom = createEnvironmentShellSummaryAtom({
   catalogValueAtom: environmentCatalog.catalogValueAtom,
   shellStateValueAtom: environmentShell.stateValueAtom,
