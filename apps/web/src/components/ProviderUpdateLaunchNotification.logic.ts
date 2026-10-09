@@ -13,6 +13,8 @@ import {
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
 
+import { localizeServerMessage } from "../locale/serverMessages";
+
 export type ProviderUpdateCandidate = ServerProvider & {
   readonly versionAdvisory: NonNullable<ServerProvider["versionAdvisory"]> & {
     readonly status: "behind_latest";
@@ -271,7 +273,7 @@ export function getProviderUpdateRejectedToastView(
     phase: "failed",
     type: "error",
     title: providerCount === 1 ? "Provider update failed" : "Provider updates failed",
-    description: message,
+    description: localizeServerMessage(message),
   };
 }
 
@@ -358,14 +360,18 @@ export function getProviderUpdateRunToastView(
     const label = `${run.machineLabel} · ${PROVIDER_DISPLAY_NAMES[run.driver] ?? run.driver}`;
     if (run.result._tag === "Failure") {
       const error = squashAtomCommandFailure(run.result);
-      return [`${label}: ${error instanceof Error ? error.message : "Provider update failed."}`];
+      return [
+        `${label}: ${error instanceof Error ? localizeServerMessage(error.message) : "Provider update failed."}`,
+      ];
     }
     const updateState = run.result.value.providers.find(
       (provider) => provider.instanceId === run.instanceId,
     )?.updateState;
     return updateState?.status === "succeeded"
       ? []
-      : [`${label}: ${updateState?.message ?? "Provider update did not finish."}`];
+      : [
+          `${label}: ${localizeServerMessage(updateState?.message) ?? "Provider update did not finish."}`,
+        ];
   });
   if (failureLines.length === 0) {
     return {
@@ -591,7 +597,7 @@ function getFailedProviderUpdateDescription(providers: ReadonlyArray<ServerProvi
   if (providers.length === 1) {
     const provider = providers[0]!;
     if (provider.updateState?.message) {
-      return provider.updateState.message;
+      return localizeServerMessage(provider.updateState.message);
     }
   }
   return `${formatProviderList(providers)} failed to update. Check provider settings for details.`;
@@ -807,7 +813,7 @@ export function resolveEnvironmentUpdateRowStatus(input: {
   readonly isPending: boolean;
 }): ProviderUpdateRowStatus {
   if (input.error) {
-    return { kind: "failed", text: input.error };
+    return { kind: "failed", text: localizeServerMessage(input.error) };
   }
   if (input.result) {
     switch (input.result.phase) {

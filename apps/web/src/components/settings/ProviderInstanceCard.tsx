@@ -59,6 +59,7 @@ import { SettingsRow, SettingsSection } from "./settingsLayout";
 import { AcpSessionManagementSection } from "./AcpSessionManagementSection";
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { readCodexSetupMode } from "./CodexSetupSection.logic";
+import { localizeServerMessage } from "../../locale/serverMessages";
 import {
   getProviderVersionAdvisoryPresentation,
   PROVIDER_STATUS_STYLES,
@@ -598,12 +599,12 @@ export function ProviderInstanceCard({
   // between the click and the server's first report.
   const updateProgress = isUpdating
     ? ((updateState?.status === "queued" || updateState?.status === "running"
-        ? updateState.message
+        ? localizeServerMessage(updateState.message)
         : null) ?? "Starting update")
     : null;
   const updateProblem =
     !isUpdating && (updateState?.status === "failed" || updateState?.status === "unchanged")
-      ? updateState.message
+      ? localizeServerMessage(updateState.message)
       : null;
   const hasCompatibilityWarning =
     compatibility !== undefined &&

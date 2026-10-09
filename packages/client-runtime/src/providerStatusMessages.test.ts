@@ -12,6 +12,18 @@ describe("translateProviderStatusMessage", () => {
     ).toBe("不支援 Pi 0.9.1。請更新到 Pi 0.10.0 或更新版本。");
   });
 
+  it("translates provider update progress and failures", () => {
+    expect(translateProviderStatusMessage("Running npm install -g @openai/codex@latest")).toBe(
+      "正在執行 npm install -g @openai/codex@latest",
+    );
+    expect(translateProviderStatusMessage("Update command exited with code 1.")).toBe(
+      "更新指令以代碼 1 結束。",
+    );
+    expect(translateProviderStatusMessage("Update timed out — try again.")).toBe(
+      "更新逾時，請再試一次。",
+    );
+  });
+
   it("returns null for unknown text", () => {
     expect(translateProviderStatusMessage("spawn omp ENOENT")).toBeNull();
   });

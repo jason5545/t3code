@@ -116,6 +116,42 @@ const RULES: ReadonlyArray<Rule> = [
     `Provider installation changed\\. Refresh and try again\\.`,
     () => "供應商安裝已變更。請重新整理後再試一次。",
   ),
+  // Provider update progress and results from the server's maintenance runner.
+  rule(`Checking for the latest version`, () => "正在檢查最新版本"),
+  rule(`Running (.+)`, (m) => `正在執行 ${m[1]}`),
+  rule(`Verifying the installed version`, () => "正在確認已安裝的版本"),
+  rule(`Update timed out\\.`, () => "更新逾時。"),
+  rule(`Update command exited with code (-?\\d+)\\.`, (m) => `更新指令以代碼 ${m[1]} 結束。`),
+  rule(`Update command failed\\.`, () => "更新指令失敗。"),
+  rule(`Update command failed to run\\.`, () => "無法執行更新指令。"),
+  rule(`Failed to run update command (.+?): (.+)`, (m) => `無法執行更新指令 ${m[1]}：${m[2]}`),
+  rule(`An update is already running for this provider\\.`, () => "這個供應商已有更新正在進行。"),
+  rule(`This provider does not support one-click updates\\.`, () => "這個供應商不支援一鍵更新。"),
+  rule(
+    `This version is no longer recommended or this installer cannot install a specific version\\. Refresh provider settings\\.`,
+    () => "這個版本已不建議使用，或這個安裝程式無法安裝指定版本。請重新整理供應商設定。",
+  ),
+  rule(
+    `The latest provider version is incompatible with this T3 Code release\\. Review provider settings\\.`,
+    () => "最新的供應商版本與這個 T3 Code 版本不相容。請檢查供應商設定。",
+  ),
+  rule(
+    `Update command completed, but T3 Code could not verify the provider version\\.`,
+    () => "更新指令已完成，但 T3 Code 無法確認供應商版本。",
+  ),
+  rule(
+    `Update command completed, but T3 Code still detects an outdated provider version\\.`,
+    () => "更新指令已完成，但 T3 Code 仍偵測到舊版供應商。",
+  ),
+  rule(`Provider updated\\.`, () => "供應商已更新。"),
+  // Client-side update errors that reach the same display paths as server text.
+  rule(`Provider update failed\\.`, () => "供應商更新失敗。"),
+  rule(`Update timed out — try again\\.`, () => "更新逾時，請再試一次。"),
+  rule(
+    `This environment isn’t connected — try again once it reconnects\\.`,
+    () => "這個環境尚未連線，重新連線後再試一次。",
+  ),
+  rule(`This connection cannot manage provider accounts\\.`, () => "此連線無法管理供應商帳號。"),
 ];
 
 /** The zh-TW text for a known server provider status message, or null. */
