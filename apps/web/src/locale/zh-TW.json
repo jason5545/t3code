@@ -5338,5 +5338,11 @@
   "Applies to the route marked In use. Other routes may have different permissions and have not been checked.": "適用於標示為「使用中」的路徑。其他路徑的權限可能不同，且尚未檢查。",
   "Filter usage environments": "篩選用量環境",
   "Updating {0}…": "正在更新 {0}…",
-  "Updating {waiting.length} environments…": "正在更新 {waiting.length} 個環境…"
+  "Updating {waiting.length} environments…": "正在更新 {waiting.length} 個環境…",
+  "Allow retry": "允許重試",
+  "Restore prompt": "還原提示詞",
+  "Open draft": "開啟草稿",
+  "Delete anyway": "仍要刪除",
+  "Open project": "開啟專案",
+  "Updated": "已更新"
 }

@@ -39,6 +39,8 @@ const DATA_PROPERTIES = new Set(["rangeLabel", "sectionTitle", "terminalLabel"])
 // Toast payloads are display-only, so their body and action text are safe too.
 const TOAST_PROPERTY = /^(?:children|message|detail)$/;
 const TOAST_METHODS = new Set(["add", "update", "promise"]);
+// Toast buttons keep their label in `children`, often built inside a helper such as stackedThreadToast.
+const ACTION_PROPS = /^(?:actionProps|secondaryActionProps)$/;
 const VERBATIM_ELEMENTS = new Set(["code", "pre", "kbd", "samp", "script", "style", "Kbd"]);
 const STRING_CHILD_ELEMENTS = new Set(["option", "title", "textarea"]);
 const PLACEHOLDER = /\{([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*|\d+)\}/g;
@@ -46,7 +48,7 @@ const TEST_FILE = /\.(?:test|browser|stories)\.[cm]?[jt]sx?$|[/\\]test-fixtures\
 const REPO_ROOT = nodePath.resolve(__dirname, "../..");
 const UNTRANSLATED_FILE = nodePath.join(__dirname, "untranslated.json");
 const DISPLAY_FILES_FILE = nodePath.join(__dirname, "displayFiles.json");
-const DISPLAY_FILE_PROPERTY = /^(?:detail|message|reason|body)$/;
+const DISPLAY_FILE_PROPERTY = /^(?:detail|message|reason|body|text)$/;
 
 const jsonCache = new Map();
 
@@ -195,6 +197,17 @@ function enclosingSink(path) {
   if (/(?:^|\.)toastManager$/.test(object) && TOAST_METHODS.has(method)) return "toast";
   if (callee === "Alert.alert" || callee === "Alert.prompt") return "alert";
   return null;
+}
+
+function isActionPropsObject(objectPath) {
+  let property = objectPath.parentPath;
+  // `actionProps: canUpdate ? { children: "Update" } : { children: "Settings" }`
+  while (property?.isConditionalExpression() || property?.isLogicalExpression()) {
+    property = property.parentPath;
+  }
+  if (!property?.isObjectProperty() || property.node.computed) return false;
+  const key = property.node.key;
+  return ACTION_PROPS.test(key.type === "Identifier" ? key.name : String(key.value));
 }
 
 module.exports = function autoTranslate(babel, options) {
@@ -368,6 +381,7 @@ module.exports = function autoTranslate(babel, options) {
         DISPLAY_PROPERTY.test(key) ||
         (state.displayFile && DISPLAY_FILE_PROPERTY.test(key)) ||
         (sink === "toast" && TOAST_PROPERTY.test(key)) ||
+        (key === "children" && isActionPropsObject(path.parentPath)) ||
         (sink === "alert" && key === "text")
       ) {
         translateValue(state, path.get("value"), sink ? `${sink}:${key}` : `prop:${key}`);

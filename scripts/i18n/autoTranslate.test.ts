@@ -127,6 +127,17 @@ describe("autoTranslate", () => {
     expect(output).toContain(`text: __t3_t("Cancel", "取消")`);
   });
 
+  it("translates toast button labels built inside a helper", () => {
+    const output = transform(
+      [
+        `toastManager.add(stackedThreadToast({ title: "Could not save", actionProps: { children: "Undo" }, data: { secondaryActionProps: { children: "Cancel" } } }));`,
+        `stackedThreadToast({ actionProps: canUndo ? { children: "Undo" } : { children: "Cancel" } });`,
+      ].join("\n"),
+    );
+    expect(output.match(/children: __t3_t\("Undo", "復原"\)/g)).toHaveLength(2);
+    expect(output.match(/children: __t3_t\("Cancel", "取消"\)/g)).toHaveLength(2);
+  });
+
   it("keeps English where code compares the value", () => {
     const source = `const a = { title: "New thread" };`;
     expect(transform(source, "components/ChatView.logic.ts")).toBe(untouched(source));
