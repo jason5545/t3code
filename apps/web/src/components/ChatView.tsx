@@ -1,5 +1,6 @@
 import { ThreadFind, ThreadFindCanvas, type ThreadFindControls } from "./chat/ThreadFindProvider";
 import { THREAD_FIND_BAR_RESERVED_HEIGHT } from "./chat/ThreadFindBar";
+import { localizeProviderOptionLabel } from "../locale/serverMessages";
 import { usageLimitRecoveryBannerItem } from "./chat/UsageLimitRecoveryBanner";
 import {
   resolveBackgroundDraftWorkspaceOptions,
@@ -4279,10 +4280,12 @@ export default function ChatView(props: ChatViewProps) {
   const providerSubagentEffortLabel =
     activeThread === undefined
       ? null
-      : formatModelSelectionEffort(
-          activeThread.modelSelection,
-          providerSubagentModels,
-          reportedModelSelection,
+      : localizeProviderOptionLabel(
+          formatModelSelectionEffort(
+            activeThread.modelSelection,
+            providerSubagentModels,
+            reportedModelSelection,
+          ),
         );
   const mountComposerContextStrip = shouldShowComposerContextStrip({
     isDraftHeroState,

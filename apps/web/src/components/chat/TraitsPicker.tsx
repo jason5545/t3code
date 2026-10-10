@@ -29,6 +29,7 @@ import {
 } from "../ui/menu";
 import { useComposerDraftStore, DraftId } from "../../composerDraftStore";
 import { getProviderModelCapabilities } from "../../providerModels";
+import { localizeProviderOptionLabel } from "../../locale/serverMessages";
 import { cn } from "~/lib/utils";
 import { Badge } from "../ui/badge";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -379,9 +380,11 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
               {index > 0 ? <MenuDivider /> : null}
               <MenuGroup>
                 <div className="px-2 pt-1.5 pb-1 font-medium text-muted-foreground text-xs">
-                  {descriptor.label}
+                  {localizeProviderOptionLabel(descriptor.label)}
                 </div>
-                <div className="px-2 pb-1.5 text-muted-foreground/80 text-xs">{value}</div>
+                <div className="px-2 pb-1.5 text-muted-foreground/80 text-xs">
+                  {localizeProviderOptionLabel(value)}
+                </div>
               </MenuGroup>
             </div>
           );
@@ -403,7 +406,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
             {index > 0 ? <MenuDivider /> : null}
             <MenuGroup>
               <div className="px-2 pt-1.5 pb-1 font-medium text-muted-foreground text-xs">
-                {descriptor.label}
+                {localizeProviderOptionLabel(descriptor.label)}
               </div>
               {ultrathinkInBodyText && descriptor.id === primarySelectDescriptor?.id ? (
                 <div className="px-2 pb-1.5 text-muted-foreground/80 text-xs">
@@ -428,7 +431,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                     <span className="flex w-full min-w-0 flex-col">
                       <span className="flex w-full min-w-0 items-center justify-between gap-3">
                         <span className="min-w-0 truncate">
-                          {option.label}
+                          {localizeProviderOptionLabel(option.label)}
                           {option.isDefault ? (
                             <>
                               {" "}
@@ -458,7 +461,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
             {index > 0 || selectDescriptors.length > 0 ? <MenuDivider /> : null}
             <MenuGroup>
               <div className="px-2 py-1.5 font-medium text-muted-foreground text-xs">
-                {descriptor.label}
+                {localizeProviderOptionLabel(descriptor.label)}
               </div>
               <MenuRadioGroup
                 value={selectedValue}
@@ -531,7 +534,7 @@ export function buildTraitsTriggerDisplay(input: {
       input.ultrathinkPromptControlled && descriptor.id === input.primarySelectDescriptorId
         ? "Ultrathink"
         : descriptor.type === "boolean"
-          ? `${descriptor.label} ${descriptor.currentValue === true ? "On" : "Off"}`
+          ? `${localizeProviderOptionLabel(descriptor.label)} ${localizeProviderOptionLabel(descriptor.currentValue === true ? "On" : "Off")}`
           : getProviderOptionCurrentLabel(
               descriptor,
               input.modelSelection,
@@ -546,7 +549,7 @@ export function buildTraitsTriggerDisplay(input: {
       ) {
         reasoningLabelIndex = labels.length;
       }
-      labels.push(label);
+      labels.push(localizeProviderOptionLabel(label));
     }
   }
 
@@ -554,13 +557,14 @@ export function buildTraitsTriggerDisplay(input: {
   // off an empty label list alone would also catch descriptors that resolved to
   // no label at all, printing a bogus "Normal" for a model without fast mode.
   if (labels.length === 0 && fastModeFallbackLabel !== null) {
-    return { label: fastModeFallbackLabel };
+    return { label: localizeProviderOptionLabel(fastModeFallbackLabel) };
   }
   if (speedLabel) {
+    const localizedSpeedLabel = localizeProviderOptionLabel(speedLabel);
     if (reasoningLabelIndex >= 0) {
-      labels[reasoningLabelIndex] = `${labels[reasoningLabelIndex]} ${speedLabel}`;
+      labels[reasoningLabelIndex] = `${labels[reasoningLabelIndex]} ${localizedSpeedLabel}`;
     } else {
-      labels.push(speedLabel);
+      labels.push(localizedSpeedLabel);
     }
   }
   return { label: labels.join(" · ") };

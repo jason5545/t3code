@@ -162,3 +162,45 @@ export function translateProviderStatusMessage(message: string): string | null {
   }
   return null;
 }
+
+/**
+ * Model option names and values (reasoning effort, speed, thinking) also come
+ * from the server. Only exact, known labels are translated; client code that
+ * compares labels such as "Fast" must keep reading the English source.
+ */
+const PROVIDER_OPTION_LABELS: Readonly<Record<string, string>> = {
+  Reasoning: "推理",
+  "Reasoning effort": "推理程度",
+  Thinking: "思考",
+  Effort: "思考程度",
+  Mode: "模式",
+  "Fast Mode": "快速模式",
+  "Fast mode": "快速模式",
+  "Service Tier": "服務層級",
+  "Context Window": "上下文視窗",
+  None: "無",
+  Off: "關閉",
+  On: "開啟",
+  Minimal: "最低",
+  Low: "低",
+  Medium: "中",
+  High: "高",
+  "Extra High": "超高",
+  Max: "最高",
+  Ultra: "極限",
+  "Low Effort": "低",
+  "Medium Effort": "中",
+  "High Effort": "高",
+  "Extra High Effort": "超高",
+  Default: "預設",
+  Standard: "標準",
+  Normal: "一般",
+  Fast: "快速",
+  Ultrafast: "超快速",
+  Flex: "彈性",
+};
+
+/** The zh-TW text for a known server model option label, or null. */
+export function translateProviderOptionLabel(label: string): string | null {
+  return PROVIDER_OPTION_LABELS[label] ?? null;
+}

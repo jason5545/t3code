@@ -27,6 +27,7 @@ import { ThreadHoverCard } from "../ThreadHoverCard";
 import { MiddleTruncate } from "../ui/middle-truncate";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
 import { cn } from "~/lib/utils";
+import { localizeProviderOptionLabel } from "~/locale/serverMessages";
 import { deriveProviderInstanceEntries, shouldShowInstanceBadge } from "../../providerInstances";
 
 /** Geometry and preview limits stay identical in lineage and timeline tooltips. */
@@ -73,9 +74,16 @@ export function SubagentTooltipContent(props: {
     childModel === (modelSlug ?? model) && childSelection?.instanceId === props.providerInstanceId
       ? childSelection
       : undefined;
-  const effort = ["reasoningEffort", "effort", "reasoning", "variant"]
+  const effortValue = ["reasoningEffort", "effort", "reasoning", "variant"]
     .map((id) => getModelSelectionStringOptionValue(matchingSelection, id))
     .find(Boolean);
+  const effort = effortValue
+    ? localizeProviderOptionLabel(
+        providerModel?.capabilities?.optionDescriptors
+          ?.flatMap((descriptor) => (descriptor.type === "select" ? descriptor.options : []))
+          .find((option) => option.id === effortValue)?.label ?? effortValue,
+      )
+    : undefined;
   const speed = provider
     ? providerModel?.capabilities?.optionDescriptors
         ?.map((descriptor) => {

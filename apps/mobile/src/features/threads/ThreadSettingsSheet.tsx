@@ -42,6 +42,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SymbolView } from "../../components/AppSymbol";
 import { AppText as Text } from "../../components/AppText";
+import { localizeProviderOptionLabel } from "../../locale/serverMessages";
 import { AndroidScreenHeader } from "../../components/AndroidScreenHeader";
 import { AndroidAnchoredMenu } from "../../components/AndroidAnchoredMenu";
 import { MaterialButton } from "../../components/MaterialButton";
@@ -772,12 +773,16 @@ function ThreadSettingsOptionsItem(props: {
                 layout={THREAD_SETTINGS_OPTIONS_LAYOUT_TRANSITION}
               >
                 <DisclosureRow
-                  label={descriptor.label}
-                  value={getProviderOptionCurrentLabel(
-                    descriptor,
-                    session.displayedModelSelection,
-                    session.reportedModelSelection,
-                  )}
+                  label={localizeProviderOptionLabel(descriptor.label)}
+                  value={
+                    localizeProviderOptionLabel(
+                      getProviderOptionCurrentLabel(
+                        descriptor,
+                        session.displayedModelSelection,
+                        session.reportedModelSelection,
+                      ),
+                    ) ?? undefined
+                  }
                   onPress={() => props.onOpenSubmenu({ kind: "descriptor", id: descriptor.id })}
                 />
               </Animated.View>
@@ -791,7 +796,7 @@ function ThreadSettingsOptionsItem(props: {
               layout={THREAD_SETTINGS_OPTIONS_LAYOUT_TRANSITION}
             >
               <SwitchRow
-                label={descriptor.label}
+                label={localizeProviderOptionLabel(descriptor.label)}
                 value={descriptor.currentValue ?? false}
                 onValueChange={(value) => session.applyOptionChange(descriptor.id, value)}
               />
@@ -1031,7 +1036,7 @@ function ThreadSettingsChoiceContent(props: {
         ? {
             rows: selectableChoices(activeDescriptor).map((choice) => ({
               id: choice.id,
-              label: choice.label,
+              label: localizeProviderOptionLabel(choice.label),
               description: undefined,
               selected:
                 choice.id ===
@@ -1257,9 +1262,11 @@ function ThreadSettingsModelsScreen() {
             const title =
               submenu.kind === "runtime"
                 ? "Runtime"
-                : (session.displayedDescriptors.find(
-                    (descriptor) => descriptor.type === "select" && descriptor.id === submenu.id,
-                  )?.label ?? "Option");
+                : localizeProviderOptionLabel(
+                    session.displayedDescriptors.find(
+                      (descriptor) => descriptor.type === "select" && descriptor.id === submenu.id,
+                    )?.label ?? "Option",
+                  );
             navigation.navigate("ThreadSettingsChoice", { ...submenu, title });
           }}
         />

@@ -149,6 +149,7 @@ import { useThreadQueuedCount } from "./ThreadQueueControl";
 import type { ThreadContentPresentation } from "./threadContentPresentation";
 import { resolveThreadFeedSubmissionAnchor } from "./thread-feed-live-follow";
 import { useGlobalVoiceInput } from "../voice-input/VoiceInputProvider";
+import { localizeProviderOptionLabel } from "../../locale/serverMessages";
 
 export interface ThreadDetailScreenProps {
   readonly worktreeSetup?: WorktreeSetupCardProps | null;
@@ -1400,10 +1401,12 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
                           providerSubagentCatalogModel?.name ??
                           formatModelSlugName(props.selectedThread.modelSelection.model)
                         }
-                        effortLabel={formatModelSelectionEffort(
-                          props.selectedThread.modelSelection,
-                          providerSubagentProvider?.models,
-                          reportedModelSelection,
+                        effortLabel={localizeProviderOptionLabel(
+                          formatModelSelectionEffort(
+                            props.selectedThread.modelSelection,
+                            providerSubagentProvider?.models,
+                            reportedModelSelection,
+                          ),
                         )}
                         status={props.providerSubagentStatus ?? null}
                         onOpenParent={

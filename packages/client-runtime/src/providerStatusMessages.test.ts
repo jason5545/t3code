@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { translateProviderStatusMessage } from "./providerStatusMessages.ts";
+import {
+  translateProviderOptionLabel,
+  translateProviderStatusMessage,
+} from "./providerStatusMessages.ts";
 
 describe("translateProviderStatusMessage", () => {
   it("translates known provider status messages and keeps their values", () => {
@@ -26,5 +29,13 @@ describe("translateProviderStatusMessage", () => {
 
   it("returns null for unknown text", () => {
     expect(translateProviderStatusMessage("spawn omp ENOENT")).toBeNull();
+  });
+});
+
+describe("translateProviderOptionLabel", () => {
+  it("translates known reasoning and speed labels only", () => {
+    expect(translateProviderOptionLabel("Extra High")).toBe("超高");
+    expect(translateProviderOptionLabel("Reasoning")).toBe("推理");
+    expect(translateProviderOptionLabel("gpt-6-sol")).toBeNull();
   });
 });
