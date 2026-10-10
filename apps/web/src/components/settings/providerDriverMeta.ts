@@ -1,12 +1,12 @@
 import {
   DEFAULT_PROVIDER_INSTANCES,
   ProviderInstanceId,
-  AcpRegistrySettings,
   AntigravitySettings,
   ClaudeSettings,
   CodexSettings,
   ProviderDriverKind,
 } from "@t3tools/contracts";
+import { acpRegistryClient } from "@t3tools/provider-acp-registry/client";
 import {
   makeProviderClientRegistry,
   type ProviderClientDefinition,
@@ -39,12 +39,7 @@ export const providerClients = makeProviderClientRegistry([
   },
   museClient,
   piClient,
-  {
-    driverKind: ProviderDriverKind.make("acpRegistry"),
-    label: "ACP Registry",
-    settingsSchema: AcpRegistrySettings,
-    hasDefaultInstance: false,
-  },
+  acpRegistryClient,
 ]);
 
 /** Creation presets are instance choices, not additional protocol drivers. */
