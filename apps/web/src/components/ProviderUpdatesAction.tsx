@@ -60,6 +60,7 @@ export function ProviderUpdatesAction() {
           candidates.map(async (candidate): Promise<ProviderUpdateRun> => ({
             machineLabel: label,
             driver: candidate.driver,
+            displayName: candidate.displayName,
             instanceId: candidate.instanceId,
             result: await updateProvider({
               environmentId,

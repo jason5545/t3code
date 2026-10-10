@@ -125,6 +125,31 @@ describe("provider update launch notification logic", () => {
     ).toHaveLength(2);
   });
 
+  it("names OMP and keeps it apart from Pi although both run on the Pi driver", () => {
+    const pi = provider({ driver: driver("pi"), latestVersion: "0.81.0" });
+    const omp = {
+      ...provider({
+        driver: driver("pi"),
+        instanceId: instanceId("omp"),
+        latestVersion: "18.8.0",
+        updateCommand: "npm install -g @oh-my-pi/pi-coding-agent",
+      }),
+      displayName: "OMP",
+    };
+
+    const candidates = collectProviderUpdateCandidates([pi, omp]);
+    expect(candidates.map((candidate) => candidate.instanceId).toSorted()).toEqual(["omp", "pi"]);
+    expect(canOneClickUpdateProviderCandidate(omp as ProviderUpdateCandidate, [pi, omp])).toBe(
+      true,
+    );
+    expect(
+      getProviderUpdateInitialToastView({
+        updateProviders: [omp as ProviderUpdateCandidate],
+        oneClickProviders: [omp as ProviderUpdateCandidate],
+      }).title,
+    ).toBe("Update Available: OMP v18.8.0");
+  });
+
   it("disables one-click updates when provider instances disagree on the update command", () => {
     const candidate = updateCandidate({
       driver: driver("claudeAgent"),

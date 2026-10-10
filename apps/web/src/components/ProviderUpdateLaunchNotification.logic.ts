@@ -7,6 +7,7 @@ import {
   type ProviderInstanceId,
   type ServerProvider,
 } from "@t3tools/contracts";
+import { providerIconKind } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -73,6 +74,21 @@ function formatVersion(value: string): string {
   return value.startsWith("v") ? value : `v${value}`;
 }
 
+/**
+ * OMP runs on the Pi driver but is its own CLI and package, so update prompts
+ * group and name it apart from Pi instead of by driver alone.
+ */
+function providerUpdateKind(provider: Pick<ServerProvider, "driver" | "displayName">): string {
+  return providerIconKind(provider.driver, provider.displayName) ?? provider.driver;
+}
+
+function providerUpdateName(provider: Pick<ServerProvider, "driver" | "displayName">): string {
+  if (providerUpdateKind(provider) === "omp") {
+    return provider.displayName?.trim() || "OMP";
+  }
+  return PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
+}
+
 function chooseRepresentativeProvider(
   current: ServerProvider | undefined,
   candidate: ServerProvider,
@@ -91,12 +107,13 @@ function chooseRepresentativeProvider(
 }
 
 function dedupeProvidersByDriver<T extends ServerProvider>(providers: ReadonlyArray<T>): T[] {
-  const latestProviderByDriver = new Map<ProviderDriverKind, T>();
+  const latestProviderByDriver = new Map<string, T>();
 
   for (const provider of providers) {
+    const kind = providerUpdateKind(provider);
     latestProviderByDriver.set(
-      provider.driver,
-      chooseRepresentativeProvider(latestProviderByDriver.get(provider.driver), provider) as T,
+      kind,
+      chooseRepresentativeProvider(latestProviderByDriver.get(kind), provider) as T,
     );
   }
 
@@ -116,8 +133,10 @@ function dedupeProvidersByInstanceId<T extends ServerProvider>(providers: Readon
   return [...latestProviderByInstanceId.values()];
 }
 
-function getProviderUpdatedTitle(provider: Pick<ServerProvider, "driver" | "version">): string {
-  const providerName = PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
+function getProviderUpdatedTitle(
+  provider: Pick<ServerProvider, "driver" | "displayName" | "version">,
+): string {
+  const providerName = providerUpdateName(provider);
   return provider.version
     ? `${providerName} updated: ${formatVersion(provider.version)}`
     : `${providerName} updated`;
@@ -130,9 +149,9 @@ function getProviderUpdatedDescription(providerCount: number): string {
 }
 
 function getProviderFailedUpdateTitle(
-  provider: Pick<ServerProvider, "driver" | "versionAdvisory">,
+  provider: Pick<ServerProvider, "driver" | "displayName" | "versionAdvisory">,
 ): string {
-  const providerName = PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
+  const providerName = providerUpdateName(provider);
   const attemptedVersion = provider.versionAdvisory?.latestVersion;
   return attemptedVersion
     ? `${providerName} ${formatVersion(attemptedVersion)} update failed`
@@ -185,7 +204,10 @@ export function hasOneClickUpdateProviderCandidate(
     return false;
   }
 
-  const driverProviders = providers.filter((provider) => provider.driver === candidate.driver);
+  const candidateKind = providerUpdateKind(candidate);
+  const driverProviders = providers.filter(
+    (provider) => providerUpdateKind(provider) === candidateKind,
+  );
   if (driverProviders.length === 0) {
     return false;
   }
@@ -220,17 +242,17 @@ export function providerUpdateNotificationKey(
   const parts = dedupeProvidersByDriver(providers)
     .map((provider) => {
       const advisory = provider.versionAdvisory;
-      return [provider.driver, advisory.latestVersion].join(":");
+      return [providerUpdateKind(provider), advisory.latestVersion].join(":");
     })
     .toSorted();
 
   return parts.length > 0 ? parts.join("|") : null;
 }
 
-function formatProviderList(providers: ReadonlyArray<Pick<ServerProvider, "driver">>) {
-  const names = providers.map(
-    (provider) => PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver,
-  );
+function formatProviderList(
+  providers: ReadonlyArray<Pick<ServerProvider, "driver" | "displayName">>,
+) {
+  const names = providers.map(providerUpdateName);
   if (names.length <= 2) {
     return names.join(" and ");
   }
@@ -337,6 +359,7 @@ export function getProviderUpdateProgressToastView(input: {
 export interface ProviderUpdateRun {
   readonly machineLabel: string;
   readonly driver: ProviderDriverKind;
+  readonly displayName?: string | undefined;
   readonly instanceId: ProviderInstanceId;
   readonly result: AtomCommandResult<
     { readonly providers: ReadonlyArray<ServerProvider> },
@@ -357,7 +380,7 @@ export function getProviderUpdateRunToastView(
     return null;
   }
   const failureLines = settled.flatMap((run) => {
-    const label = `${run.machineLabel} · ${PROVIDER_DISPLAY_NAMES[run.driver] ?? run.driver}`;
+    const label = `${run.machineLabel} · ${providerUpdateName(run)}`;
     if (run.result._tag === "Failure") {
       const error = squashAtomCommandFailure(run.result);
       return [
@@ -462,11 +485,12 @@ export function getProviderUpdateSidebarPillView(
   const activeProviders = dedupedProviders.filter(isProviderUpdateActive);
   if (activeProviders.length > 0) {
     const activeProvider = activeProviders[0]!;
-    const activeProviderName =
-      PROVIDER_DISPLAY_NAMES[activeProvider.driver] ?? activeProvider.driver;
+    const activeProviderName = providerUpdateName(activeProvider);
     return {
       key: `loading:${activeProviders
-        .map((provider) => `${provider.driver}:${provider.updateState?.status ?? "idle"}`)
+        .map(
+          (provider) => `${providerUpdateKind(provider)}:${provider.updateState?.status ?? "idle"}`,
+        )
         .toSorted()
         .join("|")}`,
       tone: "loading",
@@ -495,7 +519,7 @@ export function getProviderUpdateSidebarPillView(
       key: `failed:${failedProviders
         .map(
           (provider) =>
-            `${provider.driver}:${provider.updateState?.finishedAt ?? "pending"}:${provider.updateState?.message ?? ""}`,
+            `${providerUpdateKind(provider)}:${provider.updateState?.finishedAt ?? "pending"}:${provider.updateState?.message ?? ""}`,
         )
         .toSorted()
         .join("|")}`,
@@ -514,13 +538,12 @@ export function getProviderUpdateSidebarPillView(
   );
   if (unchangedProviders.length > 0) {
     const unchangedProvider = unchangedProviders[0]!;
-    const unchangedProviderName =
-      PROVIDER_DISPLAY_NAMES[unchangedProvider.driver] ?? unchangedProvider.driver;
+    const unchangedProviderName = providerUpdateName(unchangedProvider);
     terminalCandidates.push({
       key: `unchanged:${unchangedProviders
         .map(
           (provider) =>
-            `${provider.driver}:${provider.updateState?.finishedAt ?? "pending"}:${provider.updateState?.message ?? ""}`,
+            `${providerUpdateKind(provider)}:${provider.updateState?.finishedAt ?? "pending"}:${provider.updateState?.message ?? ""}`,
         )
         .toSorted()
         .join("|")}`,
@@ -545,7 +568,7 @@ export function getProviderUpdateSidebarPillView(
       key: `succeeded:${succeededProviders
         .map(
           (provider) =>
-            `${provider.driver}:${provider.updateState?.finishedAt ?? "pending"}:${provider.updateState?.message ?? ""}`,
+            `${providerUpdateKind(provider)}:${provider.updateState?.finishedAt ?? "pending"}:${provider.updateState?.message ?? ""}`,
         )
         .toSorted()
         .join("|")}`,
@@ -587,7 +610,7 @@ function getProviderUpdateInitialToastTitle(
 ): string {
   if (providers.length === 1) {
     const provider = providers[0]!;
-    const providerName = PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
+    const providerName = providerUpdateName(provider);
     return `Update Available: ${providerName} ${formatVersion(provider.versionAdvisory.latestVersion)}`;
   }
   return `Updates Available: ${providers.length} providers`;
@@ -663,18 +686,19 @@ export function firstRejectedProviderUpdateMessage(
 export function collectProviderUpdateOutcomeSnapshots(
   results: ReadonlyArray<PromiseSettledResult<LocalProviderUpdateOutcome>>,
 ): ServerProvider[] {
-  const worstByDriver = new Map<ProviderDriverKind, ServerProvider>();
+  const worstByDriver = new Map<string, ServerProvider>();
   for (const result of results) {
     if (result.status !== "fulfilled" || result.value.provider === null) {
       continue;
     }
     const provider = result.value.provider;
-    const current = worstByDriver.get(provider.driver);
+    const kind = providerUpdateKind(provider);
+    const current = worstByDriver.get(kind);
     if (
       !current ||
       providerUpdateOutcomeSeverity(provider) > providerUpdateOutcomeSeverity(current)
     ) {
-      worstByDriver.set(provider.driver, provider);
+      worstByDriver.set(kind, provider);
     }
   }
   return [...worstByDriver.values()];
@@ -772,7 +796,10 @@ export function localEnvironmentUpdateNotificationKey(
   const parts = environmentGroupsWithUpdates(groups)
     .map((group) => {
       const providerParts = group.candidates
-        .map((candidate) => `${candidate.driver}:${candidate.versionAdvisory.latestVersion}`)
+        .map(
+          (candidate) =>
+            `${providerUpdateKind(candidate)}:${candidate.versionAdvisory.latestVersion}`,
+        )
         .toSorted()
         .join(",");
       return `${group.environmentId}=${providerParts}`;
@@ -789,9 +816,7 @@ export interface ProviderUpdateRowStatus {
 }
 
 function environmentProviderNames(group: LocalEnvironmentUpdateGroup): string {
-  return group.candidates
-    .map((candidate) => PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver)
-    .join(", ");
+  return group.candidates.map(providerUpdateName).join(", ");
 }
 
 /**
