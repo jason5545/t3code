@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `b707eeb052782cfd8b1ff0445f84b2aaf01da38b`.
+Upstream baseline: `bd2346eda2e2c380d1844869c7fd16c279d2190f`.
 
 ## 1. OMP provider
 
@@ -10,7 +10,7 @@ Upstream baseline: `b707eeb052782cfd8b1ff0445f84b2aaf01da38b`.
 - New/legacy settings that omit `providerInstances` receive the OMP default. Explicit instance maps, including an empty map, remain unchanged. Existing users can add OMP in Settings → Providers.
 - Sparse settings persistence compares `providerInstances` as a whole. Per-field stripping would drop a user-added OMP identical to the default, and turn removing it into an omitted key that restores the default.
 - The creation wizard offers Pi and OMP separately, with independent drafts.
-- OMP shows its own π mark and gradient from omp.sh instead of Pi's glyph. Instances share the `pi` driver, so `providerIconKind` treats a Pi instance whose name starts with "OMP" as OMP; web and mobile icons use it. Mobile surfaces that only know the driver (usage, environment provider lists) still show Pi.
+- OMP shows its own π mark and gradient from omp.sh instead of Pi's glyph. Instances share the `pi` driver, so `providerIconKind` treats a Pi instance whose name starts with "OMP" as OMP; web and mobile icons use it. Mobile surfaces that only know the driver (usage, environment provider lists) still show Pi. Web provider update prompts (toast, sidebar pill, Update all summary) also group and name by `providerIconKind`, so OMP updates are labelled OMP and do not collapse into Pi's.
 - OMP JSONL dialect adapts command discovery, correlated prompt admission/completion, background settlement, queue state, and before-user branch semantics. Pi remains a passthrough.
 - Compatible protocol was inspected from installed OMP `18.7.0`; tests cover these adaptations. No model-generation request was used during verification.
 
