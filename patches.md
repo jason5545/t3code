@@ -12,6 +12,7 @@ Upstream baseline: `bd2346eda2e2c380d1844869c7fd16c279d2190f`.
 - The creation wizard offers Pi and OMP separately, with independent drafts.
 - OMP shows its own π mark and gradient from omp.sh instead of Pi's glyph. Instances share the `pi` driver, so `providerIconKind` treats a Pi instance whose name starts with "OMP" as OMP; web and mobile icons use it. Mobile surfaces that only know the driver (usage, environment provider lists) still show Pi. Web provider update prompts (toast, sidebar pill, Update all summary) also group and name by `providerIconKind`, so OMP updates are labelled OMP and do not collapse into Pi's.
 - OMP JSONL dialect adapts command discovery, correlated prompt admission/completion, background settlement, queue state, and before-user branch semantics. Pi remains a passthrough.
+- The T3 MCP extension's `$skill` input hook reads the skill file from `sourceInfo.path` (Pi) or `path` (OMP `getCommands()`), and skips a skill command with neither. Reading only `sourceInfo.path` threw on OMP, reported as `pi-t3-mcp-extension failed during input`, whenever a message carried a selected skill chip. OMP `18.7.0` and `18.8.7` share this shape.
 - Compatible protocol was inspected from installed OMP `18.7.0`; tests cover these adaptations. No model-generation request was used during verification.
 
 ## 2. Taiwan Traditional Chinese interface

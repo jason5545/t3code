@@ -16,7 +16,8 @@ type RequestHook = (
 interface SkillCommand {
   readonly name: string;
   readonly source: string;
-  readonly sourceInfo: { readonly path: string };
+  readonly sourceInfo?: { readonly path: string };
+  readonly path?: string;
 }
 
 type InputHook = (
@@ -427,6 +428,25 @@ describe("Pi skill references", () => {
       assert.equal(result?.text.split("BETA_INSTRUCTIONS").length, 2);
       assert.include(result?.text ?? "", `References are relative to ${directory}.`);
       assert.strictEqual(result?.images, images);
+    } finally {
+      await NodeFSP.rm(directory, { recursive: true });
+    }
+  });
+
+  it("loads OMP skill commands, which report the skill file as path", async () => {
+    const directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "pi-skill-mentions-"));
+    try {
+      const path = NodePath.join(directory, "alpha.md");
+      await NodeFSP.writeFile(path, "ALPHA_INSTRUCTIONS");
+      const hook = await loadInputHook([
+        { name: "skill:alpha", source: "skill", path },
+        { name: "skill:pathless", source: "skill" },
+      ]);
+      const text = "Use $pathless and $alpha";
+      const result = await hook({ text }, { ui: { notify: assert.fail } });
+      assert.isTrue(result?.text.startsWith(text + "\n\n"));
+      assert.include(result?.text ?? "", "ALPHA_INSTRUCTIONS");
+      assert.notInclude(result?.text ?? "", '<skill name="pathless"');
     } finally {
       await NodeFSP.rm(directory, { recursive: true });
     }

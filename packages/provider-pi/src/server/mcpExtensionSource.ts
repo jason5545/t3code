@@ -225,8 +225,10 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
       if (name === undefined || seen.has(name)) continue;
       const command = commands.find((candidate) => candidate.name === "skill:" + name);
       if (command === undefined) continue;
+      // Pi reports the skill file as sourceInfo.path; OMP reports it as path.
+      const path = command.sourceInfo?.path ?? (command as { path?: string }).path;
+      if (typeof path !== "string") continue;
       seen.add(name);
-      const path = command.sourceInfo.path;
       try {
         const body = stripFrontmatter(await NodeFSP.readFile(path, "utf8")).trim();
         blocks.push(
