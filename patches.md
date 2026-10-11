@@ -68,12 +68,12 @@ The script selects the single Apple Development identity in the keychain, uses N
 - Installed OMP metadata RPC smoke passed for state, command catalog and model catalog in a temporary HOME, with no model-generation request.
 - Apple Development keychain identity successfully signed and verified a temporary executable. Final app signature must also be verified before publication.
 
-## Local Mac deployment (2026-10-11)
+## Local Mac deployment (2026-10-12)
 
 - Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
-- Installed `0.0.45-nightly.20261011.1791705830` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path. It includes the upstream sync to `29e09df979`, the Pi/OMP context-usage fixes (stopped turns, OMP streaming usage) the translated command palette hints and variable-built labels, translated menu options from label lookup tables, and text returned by label helpers.
-- Installed binary was built from `98256bbe47` and signed with the owner's existing Apple Development certificate; checksums, bundle ID, the bundled fork update feed and complete bundle verification passed after installation.
-- The earlier build of the same day (`ffa12c16c9`, stale OMP model fix alone) was verified after relaunch: the OMP provider snapshot (OMP `18.8.9`, ready and authenticated) listed only the models the local oMLX server serves, and the four deleted oMLX models that the previous cache carried were gone.
+- Installed `0.0.45-nightly.20261011.1791761398` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path. It includes the upstream sync to `c1d528a342`, OMP todo lists, live streaming of unbroken thinking, and translations for the interface text the sync added (327 strings, mostly mobile pull request browsing and review guides).
+- Installed binary was built from `11153a8fcb` and signed with the owner's existing Apple Development certificate; checksums, bundle ID, the bundled fork update feed and complete bundle verification passed after installation.
+- `ProviderRegistry.test.ts` has three Codex/Cursor probe cases that time out on the owner's Mac. They time out the same way with upstream's `ProviderRegistry.ts`, so the fork's Pi model-retention change does not cause them.
 - Quit the app and confirm its process is gone before replacing the bundle. `pgrep -f` treats the parentheses in `T3 Code (Nightly)` as a regex group, so match a plain substring such as `T3 Code`; otherwise the wait returns at once and a relaunch can hand off to the instance that is still quitting.
 - Every deployment replaces the app bundle in place and keeps no copy of the old app, because any build can be reproduced from its source commit. After installing, delete superseded builds under `release/fork-nightly/` and keep only the installed one. No existing user profile is overwritten or manually migrated. Local user paths are not part of this public documentation.
 - Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. Private profile backups are kept outside the repository; DMG/ZIP and local logs remain ignored and are not pushed.
