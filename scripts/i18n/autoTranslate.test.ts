@@ -187,6 +187,19 @@ describe("autoTranslate", () => {
     expect(output).toContain(`const ROUTES = {\n  cancel: "Cancel"\n};`);
   });
 
+  it("translates what label helpers return, but not inside components", () => {
+    const source = [
+      `function resolveModeLabel(mode) { const fallback = "Undo"; return mode === "a" ? "Cancel" : fallback; }`,
+      `const resolveOtherLabel = () => "Cancel";`,
+      `function SidebarTitle() { const mode = "Cancel"; return mode; }`,
+    ].join("\n");
+    const output = transform(source);
+    expect(output).toContain(`const fallback = __t3_t("Undo", "復原");`);
+    expect(output).toContain(`mode === "a" ? __t3_t("Cancel", "取消") : fallback`);
+    expect(output).toContain(`const resolveOtherLabel = () => __t3_t("Cancel", "取消");`);
+    expect(output).toContain(`const mode = "Cancel";`);
+  });
+
   it("keeps English when a translation invents a placeholder", () => {
     const source = "const a = <p>Broken {name}</p>;";
     expect(transform(source)).toBe(untouched(source));

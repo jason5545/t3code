@@ -36,6 +36,8 @@ const DISPLAY_PROPERTY =
   /^(?:title|label|description|placeholder|subtitle|tooltip|hint|heading|headline|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Description|Hint)$/;
 // Variables and default parameters named for display text, wherever they are declared.
 const DISPLAY_VARIABLE = /^(?:placeholder)$|[a-z](?:Label|Placeholder|Tooltip)$/;
+const DISPLAY_FUNCTION =
+  /^[a-z][A-Za-z0-9]*[a-z](?:Label|Title|Subtitle|Placeholder|Tooltip|Description)$/;
 // Lookup tables such as `const SORT_ORDER_LABELS = { manual: "Manual" }` that feed menu options.
 const DISPLAY_MAP =
   /^(?:labels|titles|descriptions)$|[A-Z_](?:LABELS?|TITLES?|SUBTITLES?|DESCRIPTIONS?|TEXT)$|[a-z](?:Labels?|Titles?|Subtitles?|Descriptions?)$/;
@@ -206,6 +208,14 @@ function enclosingSink(path) {
 
 function isDisplayVariable(name) {
   return DISPLAY_VARIABLE.test(name) && !DATA_PROPERTIES.has(name);
+}
+
+/** Helpers such as `resolveEnvModeLabel(mode)` whose name says they return display text. */
+function isDisplayFunction(functionPath) {
+  if (!functionPath) return false;
+  let id = functionPath.node.id;
+  if (!id && functionPath.parentPath.isVariableDeclarator()) id = functionPath.parentPath.node.id;
+  return id?.type === "Identifier" && DISPLAY_FUNCTION.test(id.name);
 }
 
 function isActionPropsObject(objectPath) {
@@ -397,10 +407,11 @@ module.exports = function autoTranslate(babel, options) {
       }
     },
     ReturnStatement(path, state) {
-      if (state.displayFile) translateValue(state, path.get("argument"), "return");
+      if (state.displayFile || isDisplayFunction(path.getFunctionParent()))
+        translateValue(state, path.get("argument"), "return");
     },
     ArrowFunctionExpression(path, state) {
-      if (state.displayFile && !path.get("body").isBlockStatement())
+      if ((state.displayFile || isDisplayFunction(path)) && !path.get("body").isBlockStatement())
         translateValue(state, path.get("body"), "return");
     },
     VariableDeclarator(path, state) {
@@ -408,6 +419,8 @@ module.exports = function autoTranslate(babel, options) {
       // `const footerActionLabel = ... ? "Create" : "Select"` names its own display role.
       if (state.displayFile || (id.type === "Identifier" && isDisplayVariable(id.name)))
         translateValue(state, path.get("init"), "variable");
+      else if (isDisplayFunction(path.getFunctionParent()))
+        translateValue(state, path.get("init"), "helper-variable");
       if (id.type === "Identifier" && DISPLAY_MAP.test(id.name)) {
         let init = path.get("init");
         while (init.isTSAsExpression() || init.isTSSatisfiesExpression())

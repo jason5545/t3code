@@ -212,6 +212,32 @@
       "{props.activeCount} active {agentWord}",
       "Out of date",
       "{props.activeCount} active"
-    ]
+    ],
+    "apps/web/src/lib/composerContextRecords.ts": [
+      "Preview annotation",
+      "Pull request",
+      "{0}{1} pull request"
+    ],
+    "apps/web/src/reviewCommentContext.ts": [
+      "line",
+      "{lines.length} lines",
+      "{marker}{firstNumber} to {marker}{lastNumber}"
+    ],
+    "apps/mobile/src/features/review/reviewCommentSelection.ts": [
+      "line",
+      "{consistentMarker}{firstNumber} to {consistentMarker}{lastNumber}",
+      "{lines.length} lines"
+    ],
+    "apps/web/src/proposedPlan.ts": ["Implement plan", "Implement {title}"],
+    "apps/web/src/keybindings.ts": ["Down", "Esc", "Left", "Right", "Space", "Up"],
+    "apps/web/src/lib/snapShotShortcut.ts": ["Alt", "Ctrl", "Super"],
+    "apps/mobile/src/state/pending-new-tasks-model.ts": ["1 attachment", "{count} attachments"],
+    "apps/web/src/appearanceFonts.ts": ["SF Mono", "SF Pro"],
+    "apps/web/src/branding.logic.ts": ["Nightly"],
+    "apps/web/src/components/SidebarStageBackdrop.tsx": ["Dev", "Nightly"],
+    "apps/mobile/src/lib/mobileBranding.ts": ["Alpha", "Dev", "Nightly"],
+    "apps/mobile/src/lib/modelOptions.ts": ["Claude", "Codex", "Pi"],
+    "apps/mobile/src/features/review/reviewModel.ts": ["Diff {checkpoint.status}"],
+    "apps/web/src/components/pullRequest/pullRequestPresentation.tsx": ["ghost"]
   }
 }
