@@ -105,9 +105,16 @@ export function readJson<T>(file: string, fallback: T): T {
 function main() {
   const args = process.argv.slice(2);
   const catalog = readJson<Record<string, string>>(catalogFile, {});
-  const keptEnglish = new Set(
-    readJson<{ everywhere?: string[] }>(untranslatedFile, {}).everywhere ?? [],
+  const untranslated = readJson<{ everywhere?: string[]; files?: Record<string, string[]> }>(
+    untranslatedFile,
+    {},
   );
+  const keptEnglish = new Set(untranslated.everywhere ?? []);
+  // A key kept English in one file still counts as missing wherever else it appears.
+  const keptInFile = (candidate: Candidate) =>
+    [...candidate.files].every((location) =>
+      untranslated.files?.[location.replace(/:\d+$/, "")]?.includes(candidate.key),
+    );
   const candidates = collectCandidates();
   if (args.includes("--stale")) {
     for (const key of Object.keys(catalog))
@@ -115,7 +122,10 @@ function main() {
     return;
   }
   const missing = [...candidates.values()].filter(
-    (candidate) => !Object.hasOwn(catalog, candidate.key) && !keptEnglish.has(candidate.key),
+    (candidate) =>
+      !Object.hasOwn(catalog, candidate.key) &&
+      !keptEnglish.has(candidate.key) &&
+      !keptInFile(candidate),
   );
   const translated = [...candidates.keys()].filter((key) => Object.hasOwn(catalog, key)).length;
   console.log(

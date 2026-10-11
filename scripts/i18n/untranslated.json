@@ -193,6 +193,25 @@
     "apps/web/src/components/RightPanelTabs.tsx": ["Browser"],
     "apps/web/src/state/sourceControlActions.ts": ["Running source control action"],
     "apps/web/src/components/usage/usagePriceTable.ts": ["Mixed", "Unavailable"],
-    "apps/mobile/src/components/ComposerContextSheet.tsx": ["HTML", "Styles"]
+    "apps/mobile/src/components/ComposerContextSheet.tsx": ["HTML", "Styles"],
+    "apps/web/src/components/CommandPalette.logic.ts": [
+      "size-4 text-icon-muted",
+      "size-4",
+      "submenu-browse",
+      "submenu",
+      "root-browse"
+    ],
+    "apps/web/src/components/chat/composerSubmission.ts": ["character", "characters"],
+    "apps/mobile/src/features/threads/ThreadFeed.tsx": ["text", "PDF"],
+    "apps/mobile/src/widgets/AgentActivity.tsx": [
+      "Done",
+      "Failed",
+      "Agent work failed",
+      "Agent work completed",
+      "Agent status out of date",
+      "{props.activeCount} active {agentWord}",
+      "Out of date",
+      "{props.activeCount} active"
+    ]
   }
 }

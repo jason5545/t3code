@@ -34,6 +34,8 @@ const DISPLAY_ATTRIBUTE =
   /^(?:title|label|description|placeholder|subtitle|detail|message|tooltip|hint|heading|headline|summary|alt|aria-label|aria-description|aria-valuetext|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Message|Description|Hint|Reason|Text)$/;
 const DISPLAY_PROPERTY =
   /^(?:title|label|description|placeholder|subtitle|tooltip|hint|heading|headline|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Description|Hint)$/;
+// Variables and default parameters named for display text, wherever they are declared.
+const DISPLAY_VARIABLE = /^(?:placeholder)$|[a-z](?:Label|Placeholder|Tooltip)$/;
 // Context-record fields that reach agents or get parsed back, despite their names.
 const DATA_PROPERTIES = new Set(["rangeLabel", "sectionTitle", "terminalLabel"]);
 // Toast payloads are display-only, so their body and action text are safe too.
@@ -197,6 +199,10 @@ function enclosingSink(path) {
   if (/(?:^|\.)toastManager$/.test(object) && TOAST_METHODS.has(method)) return "toast";
   if (callee === "Alert.alert" || callee === "Alert.prompt") return "alert";
   return null;
+}
+
+function isDisplayVariable(name) {
+  return DISPLAY_VARIABLE.test(name) && !DATA_PROPERTIES.has(name);
 }
 
 function isActionPropsObject(objectPath) {
@@ -395,7 +401,16 @@ module.exports = function autoTranslate(babel, options) {
         translateValue(state, path.get("body"), "return");
     },
     VariableDeclarator(path, state) {
-      if (state.displayFile) translateValue(state, path.get("init"), "variable");
+      const id = path.node.id;
+      // `const footerActionLabel = ... ? "Create" : "Select"` names its own display role.
+      if (state.displayFile || (id.type === "Identifier" && isDisplayVariable(id.name)))
+        translateValue(state, path.get("init"), "variable");
+    },
+    AssignmentPattern(path, state) {
+      // Default props such as `escapeLabel = "Close"`.
+      const left = path.node.left;
+      if (left.type === "Identifier" && isDisplayVariable(left.name))
+        translateValue(state, path.get("right"), "default");
     },
     CallExpression(path, state) {
       const callee = calleePath(path.node.callee);

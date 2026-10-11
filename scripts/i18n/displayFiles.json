@@ -9,6 +9,8 @@
     "apps/web/src/components/settings/ProviderInstanceCard.tsx",
     "apps/web/src/components/settings/ProviderSettingsPanel.tsx",
     "apps/web/src/components/settings/ProviderModelsSection.tsx",
-    "apps/web/src/components/settings/AddProviderInstanceDialog.tsx"
+    "apps/web/src/components/settings/AddProviderInstanceDialog.tsx",
+    "apps/web/src/components/CommandPalette.logic.ts",
+    "apps/web/src/components/chat/ComposerServerUpdateStatus.tsx"
   ]
 }

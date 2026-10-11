@@ -159,6 +159,21 @@ describe("autoTranslate", () => {
     expect(transform(source)).toBe(untouched(source));
   });
 
+  it("translates variables and default props named for display text in any file", () => {
+    const source = [
+      `const footerActionLabel = busy ? "Cancel" : "Undo";`,
+      `function Footer({ escapeLabel = "Cancel" }) { return escapeLabel; }`,
+    ].join("\n");
+    const output = transform(source);
+    expect(output).toContain(
+      `const footerActionLabel = busy ? __t3_t("Cancel", "取消") : __t3_t("Undo", "復原");`,
+    );
+    expect(output).toContain(`escapeLabel = __t3_t("Cancel", "取消")`);
+    // Context-record fields reach agents, so the name alone does not make them display text.
+    const data = `const terminalLabel = "Cancel";`;
+    expect(transform(data)).toBe(untouched(data));
+  });
+
   it("keeps English when a translation invents a placeholder", () => {
     const source = "const a = <p>Broken {name}</p>;";
     expect(transform(source)).toBe(untouched(source));
