@@ -68,9 +68,10 @@ The script selects the single Apple Development identity in the keychain, uses N
 ## Local Mac deployment (2026-10-11)
 
 - Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
-- Installed `0.0.45-nightly.20261011.1791683844` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
-- Installed binary was built from `ffa12c16c9d100f5d83db4177aef9c9c82346a8d` and signed with the owner's existing Apple Development certificate; checksums and complete bundle verification passed after installation.
-- After relaunch, the OMP provider snapshot (OMP `18.8.9`, ready and authenticated) listed only the models the local oMLX server serves; the four deleted oMLX models that the previous cache carried were gone.
+- Installed `0.0.45-nightly.20261011.1791684685` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path. It includes the upstream sync to `29e09df979`.
+- Installed binary was built from `80d3724f405a580e001b5115356ab3ee6d4caf03` and signed with the owner's existing Apple Development certificate; checksums and complete bundle verification passed after installation.
+- The earlier build of the same day (`ffa12c16c9`, stale OMP model fix alone) was verified after relaunch: the OMP provider snapshot (OMP `18.8.9`, ready and authenticated) listed only the models the local oMLX server serves, and the four deleted oMLX models that the previous cache carried were gone.
+- Quit the app and confirm its process is gone before replacing the bundle. `pgrep -f` treats the parentheses in `T3 Code (Nightly)` as a regex group, so match a plain substring such as `T3 Code`; otherwise the wait returns at once and a relaunch can hand off to the instance that is still quitting.
 - Every deployment replaces the app bundle in place and keeps no copy of the old app, because any build can be reproduced from its source commit. After installing, delete superseded builds under `release/fork-nightly/` and keep only the installed one. No existing user profile is overwritten or manually migrated. Local user paths are not part of this public documentation.
 - Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. Private profile backups are kept outside the repository; DMG/ZIP and local logs remain ignored and are not pushed.
 - No release or release tag is created for this deployment.
