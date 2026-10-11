@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `29e09df979955a22e2ad35bd58a13518861b9551` (merged 2026-10-11).
+Upstream baseline: `c1d528a342ef14fa960a8cc6283d6324b4488f5c` (merged 2026-10-12).
 
 ## 1. OMP provider
 
@@ -15,6 +15,8 @@ Upstream baseline: `29e09df979955a22e2ad35bd58a13518861b9551` (merged 2026-10-11
 - The T3 MCP extension's `$skill` input hook reads the skill file from `sourceInfo.path` (Pi) or `path` (OMP `getCommands()`), and skips a skill command with neither. Reading only `sourceInfo.path` threw on OMP, reported as `pi-t3-mcp-extension failed during input`, whenever a message carried a selected skill chip. OMP `18.7.0` and `18.8.7` share this shape.
 - A completed Pi/OMP discovery probe (ready and authenticated) replaces the cached model list, like ACP Registry. The registry used to merge every Pi snapshot with the previous one, so models deleted from a local server (oMLX) stayed in the picker forever through the provider status cache; failed or readiness-only probes still keep the previous models (`shouldRetainMissingProviderModels` in `apps/server/src/provider/ProviderRegistry.ts`).
 - The context window meter (Settings → General → Legacy features, off by default upstream) works for Pi/OMP in two more cases. Stop always terminates the Pi/OMP process, and finalizing after termination skipped `get_session_stats`, so every stopped turn lost its usage and a thread whose turns were all stopped never showed the meter. Stop now reads the stats right after the session-tree refs, before terminating, and skips the read when the refs read already failed, so a hung process does not wait twice. OMP's `message_update` carries cumulative usage only on `message.usage`, while the adapter reads Pi's top-level `usage` (Pi `0.84.2`+), so the meter never moved during an OMP turn; the OMP dialect now lifts it. OMP `18.8.9`'s Anthropic stream sets usage at `message_start`; providers that report usage only at response end move the meter once per assistant message. The lift was checked against the installed binary, not a recorded live stream.
+- OMP's `todo` tool shows as the thread's todo list, like Claude's TodoWrite. A successful call reports every phase in `result.details.phases`; the Pi adapter mirrors it into the turn's `todo_list` plan (`ompTodoSteps` in `packages/provider-pi/src/server/rpcDialect.ts`). A `view` call or a failed call leaves the list alone. `in_progress` runs, `completed` and `abandoned` are done, `pending` and `blocked` wait, and tasks carry their phase name when there is more than one phase. Pi has no todo tool, so nothing changes there. Shape checked against OMP `18.9.2` source.
+- Thinking streams live for models that think in one unbroken paragraph. Paragraph streaming (the default `responseStreamingMode`) held reasoning until a blank line, list item or closing fence, so the local models behind OMP showed no thought until it ended, even though the Pi adapter received every `thinking_delta`. `apps/server/src/orchestration-v2/assistantStreaming.ts` now passes reasoning's whole text on the existing 400ms throttle for every provider; assistant text keeps paragraph buffering, and `turn` mode still streams nothing.
 - Compatible protocol was inspected from installed OMP `18.7.0`; tests cover these adaptations. No model-generation request was used during verification.
 
 ## 2. Taiwan Traditional Chinese interface
