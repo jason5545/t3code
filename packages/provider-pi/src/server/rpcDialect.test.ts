@@ -172,6 +172,20 @@ describe("Pi RPC dialect", () => {
       hasPendingAsyncWork: true,
     });
   });
+  it("lifts the streaming message's usage to the event like Pi", () => {
+    const omp = makePiRpcDialect("omp");
+    const usage = { input: 1200, output: 30, cacheRead: 800, cacheWrite: 0, totalTokens: 2030 };
+    const update = {
+      type: "message_update",
+      message: { role: "assistant", content: [], usage },
+      assistantMessageEvent: { type: "text_delta", contentIndex: 0, delta: "Hi" },
+    };
+    expect(omp.incoming(update)).toEqual([{ ...update, usage }]);
+    const lifted = { ...update, usage: { totalTokens: 5 } };
+    expect(omp.incoming(lifted)).toEqual([lifted]);
+    const withoutUsage = { type: "message_update", message: { role: "assistant" } };
+    expect(omp.incoming(withoutUsage)).toEqual([withoutUsage]);
+  });
   it("cuts before discarded user entries rather than retaining the next turn's input", () => {
     const omp = makePiRpcDialect("omp");
     expect(omp.outgoing({ type: "fork", id: "t3-1", entryId: "next-user" })).toEqual({

@@ -73,6 +73,12 @@ export function makePiRpcDialect(command: string): PiRpcDialect {
     },
     incoming: (record) => {
       if (record.type === "session_settled") return [{ ...record, type: "agent_settled" }];
+      // Pi lifts the streaming message's cumulative usage to the event; OMP
+      // only carries it on the partial message, which the live meter reads.
+      if (record.type === "message_update" && record.usage === undefined) {
+        const usage = object(object(record.message)?.usage);
+        if (usage !== undefined) return [{ ...record, usage }];
+      }
       if (record.type === "response") {
         if (record.command === "get_available_commands") {
           return [{ ...record, command: "get_commands" }];

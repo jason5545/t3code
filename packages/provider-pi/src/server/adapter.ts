@@ -442,6 +442,8 @@ interface ActivePiTurn {
   rejectedPromptFailure: ReturnType<typeof makeProviderFailure> | null;
   /** Session-tree refs read just before Stop terminates Pi, when no read is possible later. */
   stopTreeRefs?: PiTurnTreeRefs | null;
+  /** Context usage read alongside `stopTreeRefs`, so a stopped turn still feeds the meter. */
+  stopTokenUsage?: OrchestrationV2ProviderTurnTokenUsage | undefined;
 }
 
 interface PiTurnTreeRefs {
@@ -1629,7 +1631,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           turn.stopTreeRefs !== undefined ? turn.stopTreeRefs : yield* captureTurnTreeRefs();
         const tokenUsage = readUsage
           ? yield* readTokenUsage(turn.latestCompactionAfterTokens, completedAt)
-          : undefined;
+          : turn.stopTokenUsage;
         const failure = interrupted ? null : (turn.rejectedPromptFailure ?? turn.failure);
         yield* emit({
           type: "provider_turn.updated",
@@ -2857,6 +2859,13 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
                 Effect.gen(function* () {
                   if (threadState?.activeTurn === turn && turn.stopTreeRefs === undefined) {
                     turn.stopTreeRefs = yield* captureTurnTreeRefs(2_000);
+                    // A failed tree read means Pi is not answering; skip a second timeout.
+                    if (turn.stopTreeRefs !== null) {
+                      turn.stopTokenUsage = yield* readTokenUsage(
+                        turn.latestCompactionAfterTokens,
+                        yield* DateTime.now,
+                      );
+                    }
                   }
                   yield* connection.terminate;
                 }),

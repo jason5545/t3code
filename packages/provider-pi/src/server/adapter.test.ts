@@ -2751,6 +2751,51 @@ describe("PiAdapterV2", () => {
     }).pipe(Effect.scoped, Effect.provide(layerTest)),
   );
 
+  it.effect("keeps context usage on a turn Stop terminates", () =>
+    Effect.gen(function* () {
+      const fake = yield* makeFakePi;
+      const { runtime, takeEvent } = yield* openRuntime(fake);
+      const providerThread = yield* runtime.ensureThread({
+        threadId: THREAD_ID,
+        modelSelection: modelSelection("default"),
+        runtimePolicy,
+      });
+      yield* startTurn(runtime, providerThread);
+      yield* fake.takeRequest("prompt");
+      yield* fake.emit({ type: "agent_start" });
+      const running = yield* takeEvent(
+        (event) =>
+          event.type === "provider_turn.updated" && event.providerTurn.status === "running",
+      );
+      const providerTurnId =
+        running.type === "provider_turn.updated" ? running.providerTurn.id : undefined;
+      assert.isDefined(providerTurnId);
+      fake.queueStats({
+        contextUsage: { tokens: 42_000, contextWindow: 200_000 },
+        tokens: { input: 40_000, cacheRead: 1_500, output: 500 },
+      });
+      yield* runtime.interruptTurn({
+        providerThread,
+        providerTurnId: providerTurnId!,
+        requestRuntimeRestart: true,
+      });
+      yield* fake.closeStdout;
+      const stopped = yield* takeEvent(
+        (event) =>
+          event.type === "provider_turn.updated" && event.providerTurn.status === "interrupted",
+      );
+      assert.isTrue(stopped.type === "provider_turn.updated");
+      if (stopped.type !== "provider_turn.updated") return;
+      assert.deepInclude(stopped.providerTurn.tokenUsage, {
+        usedTokens: 42_000,
+        maxTokens: 200_000,
+        inputTokens: 40_000,
+        cachedInputTokens: 1_500,
+        outputTokens: 500,
+      });
+    }).pipe(Effect.scoped, Effect.provide(layerTest)),
+  );
+
   it.effect("steers /compact as RPC compact instead of a prompt", () =>
     Effect.gen(function* () {
       const fake = yield* makeFakePi;
