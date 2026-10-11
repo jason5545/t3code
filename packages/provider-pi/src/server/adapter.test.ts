@@ -2084,6 +2084,81 @@ describe("PiAdapterV2", () => {
       }).pipe(Effect.scoped, Effect.provide(layerTest)),
   );
 
+  it.effect("mirrors OMP todo results into the turn's todo list", () =>
+    Effect.gen(function* () {
+      const fake = yield* makeFakePi;
+      const { runtime, takeEvent } = yield* openRuntime(fake);
+      const providerThread = yield* runtime.ensureThread({
+        threadId: THREAD_ID,
+        modelSelection: modelSelection("default"),
+        runtimePolicy,
+      });
+      yield* startTurn(runtime, providerThread);
+      yield* fake.takeRequest("prompt");
+      yield* fake.emit({ type: "agent_start" });
+      const todo = (toolCallId: string, details: unknown, isError = false) =>
+        fake.emit({
+          type: "tool_execution_end",
+          toolCallId,
+          toolName: "todo",
+          result: { content: [{ type: "text", text: "ok" }], details },
+          isError,
+        });
+      const takePlan = takeEvent((event) => event.type === "plan.updated");
+      yield* todo("todo-1", {
+        op: "init",
+        storage: "session",
+        phases: [
+          {
+            name: "Fix",
+            tasks: [
+              { content: "Find the bug", status: "in_progress" },
+              { content: "Patch it", status: "pending" },
+            ],
+          },
+        ],
+      });
+      const first = yield* takePlan;
+      if (first.type !== "plan.updated" || first.plan.kind !== "todo_list")
+        return yield* Effect.die("Expected a todo plan");
+      assert.deepEqual(
+        first.plan.steps.map(({ text, status }) => ({ text, status })),
+        [
+          { text: "Find the bug", status: "running" },
+          { text: "Patch it", status: "pending" },
+        ],
+      );
+      assert.equal(first.plan.status, "active");
+      const item = yield* takeEvent(
+        (event) => event.type === "turn_item.updated" && event.turnItem.type === "todo_list",
+      );
+      if (item.type !== "turn_item.updated" || item.turnItem.type !== "todo_list")
+        return yield* Effect.die("Expected a todo list item");
+      assert.equal(item.turnItem.planId, first.plan.id);
+
+      // A view or failed call leaves the list alone; the next change updates the same plan.
+      yield* todo("todo-2", { op: "view", storage: "session", phases: [] });
+      yield* todo("todo-3", { op: "done", phases: [] }, true);
+      yield* todo("todo-4", {
+        op: "done",
+        storage: "session",
+        phases: [
+          { name: "Fix", tasks: [{ content: "Find the bug", status: "completed" }] },
+          { name: "Verify", tasks: [{ content: "Old idea", status: "abandoned" }] },
+        ],
+      });
+      const second = yield* takeEvent((event) => event.type === "plan.updated");
+      if (second.type !== "plan.updated" || second.plan.kind !== "todo_list")
+        return yield* Effect.die("Expected a todo plan");
+      assert.equal(second.plan.id, first.plan.id);
+      assert.equal(second.plan.status, "completed");
+      assert.deepEqual(
+        second.plan.steps.map(({ text }) => text),
+        ["Fix: Find the bug", "Verify: Old idea"],
+      );
+    }).pipe(Effect.scoped, Effect.provide(layerTest)),
+  );
+
   it.effect(
     "delivers realistic MCP screenshots through the bridge, JSONL transport, and adapter",
     () =>

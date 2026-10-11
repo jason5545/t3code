@@ -34,6 +34,7 @@ import {
   type ChatAttachment,
   type ModelSelection,
   type OrchestrationV2ExecutionNode,
+  type OrchestrationV2PlanStep,
   type OrchestrationV2ProviderCapabilities,
   type OrchestrationV2ProviderFailure,
   type OrchestrationV2ProviderRef,
@@ -44,6 +45,7 @@ import {
   type OrchestrationV2RuntimeRequest,
   type OrchestrationV2TurnItem,
   type OrchestrationV2UserInputQuestion,
+  type PlanId,
   type ProviderApprovalDecision,
   type ProviderInstanceId,
   type OrchestrationV2ProviderTurnTokenUsage,
@@ -97,6 +99,7 @@ import {
   resolvePiLaunchArgs,
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
+import { ompTodoSteps, type OmpTodoStep } from "./rpcDialect.ts";
 
 export const PI_PROVIDER = ProviderDriverKind.make("pi");
 const PI_DRIVER_KIND = PI_PROVIDER;
@@ -176,8 +179,9 @@ const PiProviderCapabilitiesV2 = {
     approvalsCanOriginateFromSubagents: false,
   },
   planning: {
-    emitsPlanUpdated: false,
-    emitsTodoList: false,
+    // OMP's `todo` tool reports its list in result details; Pi has no todo tool.
+    emitsPlanUpdated: true,
+    emitsTodoList: true,
     emitsProposedPlan: false,
     supportsStructuredQuestions: true,
     planDeltasHaveItemIds: false,
@@ -410,6 +414,8 @@ interface ActivePiTurn {
    * tool keeps one start timestamp and reports a real duration.
    */
   readonly toolStartedAt: Map<string, DateTime.Utc>;
+  /** The turn's OMP todo list; each `todo` call replaces its steps. */
+  todoPlanId: PlanId | null;
   interrupted: boolean;
   /** Cancellation of the latest native run; new work can recover before settlement. */
   nativeAborted: boolean;
@@ -1173,6 +1179,67 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
         if (toolName === "subagent") {
           yield* emitSubagentTasks(turn, toolCallId, resultRecord, completed);
         }
+        if (toolName === "todo" && completed && !isError) {
+          const steps = ompTodoSteps(recordField(resultRecord, "details"));
+          if (steps !== undefined) yield* emitTodoList(turn, steps);
+        }
+      });
+
+      /** Mirror OMP's todo list into the turn's plan, like other providers' todo tools. */
+      const emitTodoList = Effect.fnUntraced(function* (
+        turn: ActivePiTurn,
+        todos: ReadonlyArray<OmpTodoStep>,
+      ) {
+        const now = yield* DateTime.now;
+        if (turn.todoPlanId === null) {
+          turn.todoPlanId = yield* idAllocator.allocate.plan({
+            threadId: turn.turnInput.threadId,
+            runId: turn.turnInput.runId,
+            driver: PI_PROVIDER,
+          });
+        }
+        const planId = turn.todoPlanId;
+        const nativeItemId = `${turn.providerTurn.id}:todo`;
+        const steps: Array<OrchestrationV2PlanStep> = todos.map((todo, index) => ({
+          id: `${nativeItemId}:${index + 1}`,
+          ...todo,
+        }));
+        const completed = steps.length > 0 && steps.every((step) => step.status === "completed");
+        const base = baseItemFields(turn, nativeItemId, turn.startedAt, now);
+        yield* emitItemNode(
+          turn,
+          nativeItemId,
+          "todo_list",
+          completed ? "completed" : "running",
+          turn.startedAt,
+          completed ? now : null,
+        );
+        yield* emit({
+          type: "plan.updated",
+          driver: PI_PROVIDER,
+          plan: {
+            id: planId,
+            threadId: turn.turnInput.threadId,
+            runId: turn.turnInput.runId,
+            nodeId: base.nodeId,
+            status: completed ? "completed" : "active",
+            kind: "todo_list",
+            steps,
+          },
+        });
+        yield* emit({
+          type: "turn_item.updated",
+          driver: PI_PROVIDER,
+          turnItem: {
+            ...base,
+            status: completed ? "completed" : "running",
+            title: "Todo list",
+            completedAt: completed ? now : null,
+            type: "todo_list",
+            planId,
+            steps,
+          },
+        });
       });
 
       /**
@@ -2655,6 +2722,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               streamItems: new Map(),
               toolArgs: new Map(),
               toolStartedAt: new Map(),
+              todoPlanId: null,
               interrupted: false,
               nativeAborted: false,
               sawAgentActivity: false,

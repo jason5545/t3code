@@ -88,7 +88,12 @@ export function splitBufferedAssistantText(text: string): { ready: string; rest:
   return { ready: text.slice(0, boundary), rest: text.slice(boundary) };
 }
 
-/** Buffer assistant messages and reasoning alike, keeping unfinished markdown out of the read model. */
+/**
+ * Buffer assistant messages at markdown block boundaries, keeping unfinished
+ * markdown out of the read model. Reasoning streams its whole text on the same
+ * throttle: some models (OMP's local models) think in one unbroken paragraph,
+ * which would otherwise show nothing until the thought ends.
+ */
 export function makeAssistantStreamingFilter(mode: ResponseStreamingMode) {
   const delivered = new Map<string, { text: string; at: number }>();
   return (
@@ -117,7 +122,10 @@ export function makeAssistantStreamingFilter(mode: ResponseStreamingMode) {
     if (mode === "turn") return null;
     const previous = delivered.get(key);
     if (previous && now - previous.at < 400) return null;
-    const { ready } = splitBufferedAssistantText(message.text);
+    const ready =
+      event.type === "turn_item.updated" && event.turnItem.type === "reasoning"
+        ? message.text
+        : splitBufferedAssistantText(message.text).ready;
     if (!ready || ready === previous?.text) return null;
     delivered.set(key, { text: ready, at: now });
     if (event.type === "message.updated")

@@ -8,6 +8,46 @@ export function isOmpBinary(command: string): boolean {
   return /(?:^|[/\\])omp(?:\.(?:exe|cmd|bat))?$/i.test(command.trim());
 }
 
+export interface OmpTodoStep {
+  readonly text: string;
+  readonly status: "pending" | "running" | "completed";
+}
+
+/**
+ * Flatten the phases a successful OMP `todo` call reports in `details`.
+ * `view` only reads the list, and other shapes are not OMP's todo tool, so
+ * both return undefined. Abandoned tasks are closed; blocked ones still wait.
+ * Phase names prefix their tasks only when there is more than one phase.
+ */
+export function ompTodoSteps(details: unknown): ReadonlyArray<OmpTodoStep> | undefined {
+  const record = object(details);
+  if (record === undefined || record.op === "view" || !Array.isArray(record.phases)) {
+    return undefined;
+  }
+  const phases = record.phases.map(object);
+  if (phases.some((phase) => phase === undefined || !Array.isArray(phase.tasks))) return undefined;
+  const named = phases.length > 1;
+  return phases.flatMap((phase) =>
+    (phase!.tasks as ReadonlyArray<unknown>).flatMap((value) => {
+      const task = object(value);
+      const content = typeof task?.content === "string" ? task.content.trim() : "";
+      if (content === "") return [];
+      const name = typeof phase!.name === "string" ? phase!.name.trim() : "";
+      return [
+        {
+          text: named && name !== "" ? `${name}: ${content}` : content,
+          status:
+            task!.status === "completed" || task!.status === "abandoned"
+              ? "completed"
+              : task!.status === "in_progress"
+                ? "running"
+                : "pending",
+        } as const,
+      ];
+    }),
+  );
+}
+
 export interface PiRpcDialect {
   readonly launchArgs: (args: ReadonlyArray<string>) => ReadonlyArray<string>;
   readonly outgoing: (record: PiRpcRecord) => PiRpcRecord;
