@@ -13,6 +13,7 @@ Upstream baseline: `bd2346eda2e2c380d1844869c7fd16c279d2190f`.
 - OMP shows its own π mark and gradient from omp.sh instead of Pi's glyph. Instances share the `pi` driver, so `providerIconKind` treats a Pi instance whose name starts with "OMP" as OMP; web and mobile icons use it. Mobile surfaces that only know the driver (usage, environment provider lists) still show Pi. Web provider update prompts (toast, sidebar pill, Update all summary) also group and name by `providerIconKind`, so OMP updates are labelled OMP and do not collapse into Pi's.
 - OMP JSONL dialect adapts command discovery, correlated prompt admission/completion, background settlement, queue state, and before-user branch semantics. Pi remains a passthrough.
 - The T3 MCP extension's `$skill` input hook reads the skill file from `sourceInfo.path` (Pi) or `path` (OMP `getCommands()`), and skips a skill command with neither. Reading only `sourceInfo.path` threw on OMP, reported as `pi-t3-mcp-extension failed during input`, whenever a message carried a selected skill chip. OMP `18.7.0` and `18.8.7` share this shape.
+- A completed Pi/OMP discovery probe (ready and authenticated) replaces the cached model list, like ACP Registry. The registry used to merge every Pi snapshot with the previous one, so models deleted from a local server (oMLX) stayed in the picker forever through the provider status cache; failed or readiness-only probes still keep the previous models (`shouldRetainMissingProviderModels` in `apps/server/src/provider/ProviderRegistry.ts`).
 - Compatible protocol was inspected from installed OMP `18.7.0`; tests cover these adaptations. No model-generation request was used during verification.
 
 ## 2. Taiwan Traditional Chinese interface
@@ -64,11 +65,12 @@ The script selects the single Apple Development identity in the keychain, uses N
 - Installed OMP metadata RPC smoke passed for state, command catalog and model catalog in a temporary HOME, with no model-generation request.
 - Apple Development keychain identity successfully signed and verified a temporary executable. Final app signature must also be verified before publication.
 
-## Local Mac deployment (2026-10-10)
+## Local Mac deployment (2026-10-11)
 
 - Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
-- Installed `0.0.45-nightly.20261010.1791623847` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
-- Installed binary was built from `6e2246f3d3490c3a78500cdf09dfe7fc77171190` and signed with the owner's existing Apple Development certificate; complete bundle verification passed after installation.
+- Installed `0.0.45-nightly.20261011.1791683844` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path.
+- Installed binary was built from `ffa12c16c9d100f5d83db4177aef9c9c82346a8d` and signed with the owner's existing Apple Development certificate; checksums and complete bundle verification passed after installation.
+- After relaunch, the OMP provider snapshot (OMP `18.8.9`, ready and authenticated) listed only the models the local oMLX server serves; the four deleted oMLX models that the previous cache carried were gone.
 - Every deployment replaces the app bundle in place and keeps no copy of the old app, because any build can be reproduced from its source commit. After installing, delete superseded builds under `release/fork-nightly/` and keep only the installed one. No existing user profile is overwritten or manually migrated. Local user paths are not part of this public documentation.
 - Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. Private profile backups are kept outside the repository; DMG/ZIP and local logs remain ignored and are not pushed.
 - No release or release tag is created for this deployment.
