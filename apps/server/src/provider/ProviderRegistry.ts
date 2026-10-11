@@ -209,12 +209,16 @@ export function upsertProviderWorkspaceSnapshot(
 }
 
 const shouldRetainMissingProviderModels = (provider: ServerProvider): boolean => {
-  if (provider.driver === ProviderDriverKind.make("acpRegistry")) {
-    // ACP Registry discovery probes return the agent's complete inventory, so
-    // a completed probe (ready and authenticated) replaces the model list —
-    // otherwise agents that rename or collapse models leave stale entries
-    // pinned forever through the snapshot cache. Readiness-only and failed
-    // probe snapshots only know the "default" placeholder and stay partial.
+  if (
+    provider.driver === ProviderDriverKind.make("acpRegistry") ||
+    provider.driver === ProviderDriverKind.make("pi")
+  ) {
+    // ACP Registry and Pi/OMP discovery probes return the agent's complete
+    // inventory, so a completed probe (ready and authenticated) replaces the
+    // model list — otherwise renamed, collapsed, or deleted models (local
+    // servers drop them) stay pinned forever through the snapshot cache.
+    // Readiness-only and failed probe snapshots only know placeholders or
+    // settings-derived models and stay partial.
     return !(
       provider.installed &&
       provider.status === "ready" &&
