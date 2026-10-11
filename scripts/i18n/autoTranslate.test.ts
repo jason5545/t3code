@@ -174,6 +174,19 @@ describe("autoTranslate", () => {
     expect(transform(data)).toBe(untouched(data));
   });
 
+  it("translates lookup tables that feed menu options", () => {
+    const source = [
+      `const SORT_ORDER_LABELS = { manual: "Cancel", recent: "Undo" } as const;`,
+      `const toolbarTitles: Record<string, string> = { a: "Cancel" };`,
+      `const ROUTES = { cancel: "Cancel" };`,
+    ].join("\n");
+    const output = transform(source);
+    expect(output).toContain(`manual: __t3_t("Cancel", "取消")`);
+    expect(output).toContain(`recent: __t3_t("Undo", "復原")`);
+    expect(output).toContain(`a: __t3_t("Cancel", "取消")`);
+    expect(output).toContain(`const ROUTES = {\n  cancel: "Cancel"\n};`);
+  });
+
   it("keeps English when a translation invents a placeholder", () => {
     const source = "const a = <p>Broken {name}</p>;";
     expect(transform(source)).toBe(untouched(source));

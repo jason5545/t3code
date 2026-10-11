@@ -36,6 +36,9 @@ const DISPLAY_PROPERTY =
   /^(?:title|label|description|placeholder|subtitle|tooltip|hint|heading|headline|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Description|Hint)$/;
 // Variables and default parameters named for display text, wherever they are declared.
 const DISPLAY_VARIABLE = /^(?:placeholder)$|[a-z](?:Label|Placeholder|Tooltip)$/;
+// Lookup tables such as `const SORT_ORDER_LABELS = { manual: "Manual" }` that feed menu options.
+const DISPLAY_MAP =
+  /^(?:labels|titles|descriptions)$|[A-Z_](?:LABELS?|TITLES?|SUBTITLES?|DESCRIPTIONS?|TEXT)$|[a-z](?:Labels?|Titles?|Subtitles?|Descriptions?)$/;
 // Context-record fields that reach agents or get parsed back, despite their names.
 const DATA_PROPERTIES = new Set(["rangeLabel", "sectionTitle", "terminalLabel"]);
 // Toast payloads are display-only, so their body and action text are safe too.
@@ -405,6 +408,16 @@ module.exports = function autoTranslate(babel, options) {
       // `const footerActionLabel = ... ? "Create" : "Select"` names its own display role.
       if (state.displayFile || (id.type === "Identifier" && isDisplayVariable(id.name)))
         translateValue(state, path.get("init"), "variable");
+      if (id.type === "Identifier" && DISPLAY_MAP.test(id.name)) {
+        let init = path.get("init");
+        while (init.isTSAsExpression() || init.isTSSatisfiesExpression())
+          init = init.get("expression");
+        if (init.isObjectExpression()) {
+          for (const property of init.get("properties")) {
+            if (property.isObjectProperty()) translateValue(state, property.get("value"), "map");
+          }
+        }
+      }
     },
     AssignmentPattern(path, state) {
       // Default props such as `escapeLabel = "Close"`.
