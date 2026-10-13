@@ -1,4 +1,3 @@
-import { useLocale } from "../../locale/LocaleProvider";
 import { memo, useRef } from "react";
 import { Check, Copy } from "lucide";
 import { Button } from "../ui/button";
@@ -14,19 +13,23 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 export const MessageCopyButton = memo(function MessageCopyButton({
   text,
+  label = "Copy message",
+  icon = Copy,
   extraFlavors,
   size = "xs",
   variant = "outline",
   className,
 }: {
   text: string;
+  label?: string;
+  /** The icon shown until the copy lands. */
+  icon?: typeof Copy;
   /** Additional clipboard types written beside `text/plain` when the platform allows it. */
   extraFlavors?: Readonly<Record<string, string>>;
   size?: "xs" | "icon-xs";
   variant?: "outline" | "ghost";
   className?: string;
 }) {
-  const { t } = useLocale();
   const ref = useRef<HTMLButtonElement>(null);
   const { copyToClipboard, isCopied } = useCopyToClipboard<void>({
     onCopy: () => showAnchoredCopySuccessToast(ref),
@@ -40,7 +43,7 @@ export const MessageCopyButton = memo(function MessageCopyButton({
       <TooltipTrigger
         render={
           <Button
-            aria-label={t("Copy message")}
+            aria-label={label}
             disabled={isCopied}
             onClick={() => copyToClipboard(text)}
             ref={ref}
@@ -53,11 +56,11 @@ export const MessageCopyButton = memo(function MessageCopyButton({
       >
         <MorphIcon
           className={cn("size-3", isCopied && "text-primary")}
-          icon={isCopied ? Check : Copy}
+          icon={isCopied ? Check : icon}
         />
       </TooltipTrigger>
       <TooltipPopup>
-        <p>{t("Copy message")}</p>
+        <p>{label}</p>
       </TooltipPopup>
     </Tooltip>
   );
