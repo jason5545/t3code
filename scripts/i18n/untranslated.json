@@ -202,6 +202,9 @@
       "root-browse"
     ],
     "apps/web/src/components/chat/composerSubmission.ts": ["character", "characters"],
+    "apps/mobile/src/features/prompt-links/usePromptLinkResolver.ts": [
+      "PR #{request.pullRequest.number}"
+    ],
     "apps/mobile/src/features/pull-requests/PullRequestMergeControls.tsx": ["merge"],
     "apps/mobile/src/features/pull-requests/usePullRequestThreads.ts": ["Ask about #{pr.number}"],
     "apps/mobile/src/features/threads/ThreadFeed.tsx": ["text", "PDF"],

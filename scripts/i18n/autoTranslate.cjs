@@ -23,8 +23,8 @@
  *
  * `displayFiles.json` lists files whose helpers build display copy outside
  * those positions (status summaries, banner titles). There, returned values,
- * variable initializers, array elements and `detail`/`message`/`reason`
- * properties are display text too.
+ * variable initializers, array elements and `detail`/`details`/`message`/
+ * `reason` properties are display text too.
  */
 
 const fs = require("node:fs");
@@ -55,7 +55,7 @@ const TEST_FILE = /\.(?:test|browser|stories)\.[cm]?[jt]sx?$|[/\\]test-fixtures\
 const REPO_ROOT = nodePath.resolve(__dirname, "../..");
 const UNTRANSLATED_FILE = nodePath.join(__dirname, "untranslated.json");
 const DISPLAY_FILES_FILE = nodePath.join(__dirname, "displayFiles.json");
-const DISPLAY_FILE_PROPERTY = /^(?:detail|message|reason|body|text)$/;
+const DISPLAY_FILE_PROPERTY = /^(?:detail|details|message|reason|body|text)$/;
 
 const jsonCache = new Map();
 
