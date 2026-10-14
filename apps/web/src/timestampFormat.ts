@@ -227,7 +227,22 @@ export function formatUpcomingTimestamp(
 // pass rewrites, so they pick the language here. The pass also injects its own
 // `__t3_t` import into this file, which is why this reads `useChinese` directly.
 const JUST_NOW = useChinese ? "剛剛" : "just now";
-export const RELATIVE_TIME_AGO = useChinese ? "前" : "ago";
+const DURATION_UNITS = useChinese
+  ? { s: " 秒", m: " 分鐘", h: " 小時", d: " 天" }
+  : { s: "s", m: "m", h: "h", d: "d" };
+/** Ending of a past relative label, for callers that compact "5m ago" to "5m". */
+export const RELATIVE_TIME_AGO_SUFFIX = useChinese ? "前" : " ago";
+
+function duration(amount: number, unit: keyof typeof DURATION_UNITS): string {
+  return `${amount}${DURATION_UNITS[unit]}`;
+}
+
+// Chinese attaches 前 to the unit with no space, so the whole phrase lives in
+// `value` and callers that render `value suffix` or check `suffix` stay correct.
+function agoParts(amount: number, unit: keyof typeof DURATION_UNITS): RelativeTimeParts {
+  const value = duration(amount, unit);
+  return useChinese ? { value: `${value}前`, suffix: "" } : { value, suffix: "ago" };
+}
 
 /**
  * Format a relative time string from an ISO date.
@@ -248,11 +263,11 @@ export function formatRelativeTime(isoDate: string): RelativeTimeParts | null {
   const seconds = Math.floor(diffMs / 1000);
   if (seconds < 60) return { value: JUST_NOW, suffix: null };
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return { value: `${minutes}m`, suffix: RELATIVE_TIME_AGO };
+  if (minutes < 60) return agoParts(minutes, "m");
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return { value: `${hours}h`, suffix: RELATIVE_TIME_AGO };
+  if (hours < 24) return agoParts(hours, "h");
   const days = Math.floor(hours / 24);
-  return { value: `${days}d`, suffix: RELATIVE_TIME_AGO };
+  return agoParts(days, "d");
 }
 
 export function formatRelativeTimeLabel(isoDate: string) {
@@ -280,16 +295,16 @@ export function formatElapsedDurationLabel(isoDate: string, nowMs: number = Date
 
   const seconds = Math.floor(diffMs / 1000);
   if (seconds < 5) return JUST_NOW;
-  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 60) return duration(seconds, "s");
 
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 60) return duration(minutes, "m");
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return duration(hours, "h");
 
   const days = Math.floor(hours / 24);
-  return `${days}d`;
+  return duration(days, "d");
 }
 
 /**
