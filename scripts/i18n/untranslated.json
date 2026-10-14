@@ -205,7 +205,7 @@
     "apps/mobile/src/features/prompt-links/usePromptLinkResolver.ts": [
       "PR #{request.pullRequest.number}"
     ],
-    "apps/mobile/src/features/pull-requests/PullRequestMergeControls.tsx": ["merge"],
+    "apps/mobile/src/features/pull-requests/PullRequestMergeControls.tsx": ["merge", "squash"],
     "apps/mobile/src/features/pull-requests/usePullRequestThreads.ts": ["Ask about #{pr.number}"],
     "apps/mobile/src/features/threads/ThreadFeed.tsx": ["text", "PDF"],
     "apps/mobile/src/widgets/AgentActivity.tsx": [
@@ -242,7 +242,242 @@
     "apps/web/src/components/SidebarStageBackdrop.tsx": ["Dev", "Nightly"],
     "apps/mobile/src/lib/mobileBranding.ts": ["Alpha", "Dev", "Nightly"],
     "apps/mobile/src/lib/modelOptions.ts": ["Claude", "Codex", "Pi"],
-    "apps/mobile/src/features/review/reviewModel.ts": ["Diff {checkpoint.status}"],
-    "apps/web/src/components/pullRequest/pullRequestPresentation.tsx": ["ghost"]
+    "apps/mobile/src/features/review/reviewModel.ts": [
+      "Diff {checkpoint.status}",
+      "none",
+      "non-text",
+      "large"
+    ],
+    "apps/web/src/components/pullRequest/pullRequestPresentation.tsx": ["ghost"],
+    "apps/mobile/src/features/threads/NewTaskRouteScreen.tsx": ["image", "file", "images", "files"],
+    "apps/mobile/src/features/sharing/incoming-share-model.ts": ["file", "png", "bin", "images"],
+    "apps/mobile/src/lib/composerImages.ts": [
+      "file",
+      "image",
+      "video",
+      "Failed to remove temporary pasted image"
+    ],
+    "apps/mobile/src/lib/attachmentUpload.ts": ["image", "cancel", "continue"],
+    "apps/mobile/src/features/review/nativeReviewDiffAdapter.ts": [
+      "none",
+      "modified",
+      "tsx",
+      "typescript",
+      "jsx",
+      "javascript",
+      "json",
+      "yaml",
+      "bash",
+      "diff"
+    ],
+    "apps/mobile/src/lib/threadActivity.ts": [
+      "failed",
+      "stopped",
+      "agent",
+      "check",
+      "failure",
+      "neutral",
+      "success",
+      "completed",
+      "info",
+      "thinking",
+      "tool",
+      "hammer",
+      "command",
+      "eye",
+      "zap",
+      "search",
+      "edit",
+      "globe",
+      "lock",
+      "message",
+      "code",
+      "wrench",
+      "alert"
+    ],
+    "apps/mobile/src/state/use-thread-outbox-drain.ts": [
+      "failed",
+      "abandon",
+      "persisted",
+      "edited",
+      "removed",
+      "deferred",
+      "blocked",
+      "restored",
+      "retry",
+      "empty"
+    ],
+    "apps/mobile/src/state/use-thread-composer-state.ts": ["queue", "was", "s were", "auto"],
+    "apps/mobile/src/features/home/HomeScreen.tsx": ["all", "bg-drawer", "bg-screen"],
+    "packages/client-runtime/src/state/server.ts": [
+      "downloading",
+      "The t3@{0} update {1}.",
+      "5 seconds",
+      "first"
+    ],
+    "apps/mobile/src/components/RenderErrorBoundary.tsx": [
+      "{description}\nComponent stack:\n{componentStack}"
+    ],
+    "apps/mobile/src/features/home/useThreadListActions.ts": ["user", "pinned", "active"],
+    "apps/mobile/src/features/prompt-links/prompt-link-model.ts": [
+      "prompt",
+      "repo",
+      "pr",
+      "provider",
+      "model",
+      "fill",
+      "keep",
+      "ask"
+    ],
+    "apps/mobile/src/features/pull-requests/pullRequestActions.ts": [
+      "squash",
+      "merge",
+      "ready",
+      "draft",
+      "close",
+      "reopen",
+      "revert",
+      "update-branch",
+      "approve-workflows"
+    ],
+    "apps/mobile/src/features/pull-requests/PullRequestReviewersScreen.tsx": [
+      "Remove review request from",
+      "Request review from"
+    ],
+    "apps/mobile/src/features/pull-requests/PullRequestStatusRows.tsx": [
+      "ready",
+      "draft",
+      "close",
+      "reopen",
+      "revert"
+    ],
+    "apps/mobile/src/features/pull-requests/pullRequestStatus.ts": ["check", "checks"],
+    "apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx": ["unknown"],
+    "apps/mobile/src/features/settings/SettingsScheduledTasksRouteScreen.tsx": [
+      "Could not {0} task",
+      "update"
+    ],
+    "packages/client-runtime/src/work-log/presentation.ts": [
+      "update",
+      "completed",
+      "tool",
+      "command",
+      "search",
+      "edit",
+      "Failed to {0}",
+      "Declined to {0}",
+      "Stopped {0}",
+      "PR #{number}",
+      "thread-create",
+      "browser",
+      "device",
+      "read",
+      "other",
+      "code-search",
+      "commands",
+      "time",
+      "times",
+      "tools",
+      "updates",
+      "Used {formattedNames}{0}",
+      "integration",
+      "integrations",
+      "action",
+      "actions",
+      "reasoning",
+      "pull-request",
+      "mixed",
+      "dynamic-tool",
+      "agent-tool",
+      "tone-tool"
+    ],
+    "apps/mobile/src/features/settings/scheduledTaskPresentation.ts": [
+      "week",
+      "day",
+      "hour",
+      "minute",
+      "second",
+      "millisecond",
+      "Every {unit}",
+      "Every {0}",
+      "Next run in {count} {unit}{0}"
+    ],
+    "apps/mobile/src/features/usage/UsageRouteScreen.tsx": [
+      "day",
+      "hour",
+      "no known rates",
+      "{0} premium"
+    ],
+    "apps/mobile/src/features/threads/ComposerCommandPopover.tsx": ["terminal"],
+    "apps/mobile/src/features/threads/NewTaskDraftScreen.tsx": [
+      "was",
+      "s were",
+      "a new worktree",
+      "the current checkout"
+    ],
+    "apps/mobile/src/features/threads/ThreadGitControls.tsx": ["PR #{gitStatus.pr.number}"],
+    "apps/mobile/src/features/threads/git/GitOverviewSheet.tsx": [
+      "sheet",
+      "PR #{status.pr.number} {0}",
+      "open"
+    ],
+    "apps/mobile/src/features/threads/git/gitSheetComponents.tsx": [
+      "secondary",
+      "PR #{gitStatus.pr.number} open"
+    ],
+    "apps/mobile/src/features/threads/thread-list-v2-items.tsx": [
+      "Collapses",
+      "Expands",
+      "Opens the thread",
+      "Opens the thread. Swipe left to {0}.",
+      "Opens the thread. Swipe left for {0} and snooze actions."
+    ],
+    "apps/mobile/src/features/threads/thread-work-log.tsx": [
+      "accent-foreground",
+      "work-shimmer-{0}",
+      "computer",
+      "magnifyingglass",
+      "work-group-fade-{0}",
+      "brain",
+      "hide",
+      "show",
+      "call",
+      "calls",
+      "subagent",
+      "subagents"
+    ],
+    "apps/mobile/src/features/threads/worktree-setup-card.tsx": ["skipped"],
+    "apps/mobile/src/features/updates/app-updates.ts": [
+      "installed",
+      "flush-failed",
+      "restart-failed"
+    ],
+    "apps/mobile/src/features/usage/UsageLimitsSection.tsx": [
+      "codex",
+      "claude",
+      "px-4 py-3",
+      "reset credit",
+      "reset credits"
+    ],
+    "apps/mobile/src/lib/attachmentDownload.ts": ["attachment"],
+    "apps/mobile/src/lib/threadActivityInspector.ts": [
+      "Attempt {attempt.attemptOrdinal} · {attempt.status} · {0}"
+    ],
+    "packages/client-runtime/src/state/shell.ts": ["empty", "cached"],
+    "packages/client-runtime/src/state/threads.ts": ["empty", "cached", "conversation"],
+    "packages/client-runtime/src/device/duoControl.ts": ["portrait"],
+    "packages/client-runtime/src/operations/projects.ts": ["url"],
+    "packages/client-runtime/src/state/assets.ts": ["Invalid asset collection atom key: {0}."],
+    "packages/client-runtime/src/state/gitActions.ts": [
+      "on \"{branchLabel}\". You can continue on this branch or create a feature branch and run the same action there."
+    ],
+    "packages/client-runtime/src/state/vcsAction.ts": [
+      "Source control operation '{0}' is unavailable.",
+      "execution",
+      "Source control action '{0}' failed during {phase}.",
+      "Source control action '{0}' ended without a terminal result.",
+      "Invalid source control action target key ({0} characters)."
+    ],
+    "apps/web/src/components/promptLinks/HostedPromptLinkLanding.tsx": ["Model {0}"]
   }
 }

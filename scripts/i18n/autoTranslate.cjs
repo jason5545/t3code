@@ -23,8 +23,12 @@
  *
  * `displayFiles.json` lists files whose helpers build display copy outside
  * those positions (status summaries, banner titles). There, returned values,
- * variable initializers, array elements and `detail`/`details`/`message`/
- * `reason` properties are display text too.
+ * variable initializers, array elements, `detail`/`details`/`message`/`reason`/
+ * `error`/`notice`/`statusText` properties, capitalized values in constant tables such as
+ * `const STATES = { open: "Open" }`, and sentences (text with a space) passed
+ * to calls, assigned, used as defaults, listed in arrays or given to any JSX
+ * prop (`fail("Viewer stopped.")`, `error = "Clipboard is empty."`) are
+ * display text too.
  */
 
 const fs = require("node:fs");
@@ -55,7 +59,10 @@ const TEST_FILE = /\.(?:test|browser|stories)\.[cm]?[jt]sx?$|[/\\]test-fixtures\
 const REPO_ROOT = nodePath.resolve(__dirname, "../..");
 const UNTRANSLATED_FILE = nodePath.join(__dirname, "untranslated.json");
 const DISPLAY_FILES_FILE = nodePath.join(__dirname, "displayFiles.json");
-const DISPLAY_FILE_PROPERTY = /^(?:detail|details|message|reason|body|text)$/;
+const DISPLAY_FILE_PROPERTY =
+  /^(?:detail|details|message|reason|body|text|error|notice|statusText|warning)$/;
+// `const STATES = { open: "Open" }` in a display file is a table of display labels.
+const DISPLAY_FILE_TABLE = /^[A-Z][A-Z0-9_]*$/;
 
 const jsonCache = new Map();
 
@@ -218,6 +225,21 @@ function isDisplayFunction(functionPath) {
   return id?.type === "Identifier" && DISPLAY_FUNCTION.test(id.name);
 }
 
+/**
+ * Prose such as "Could not read '{name}'." rather than class lists ("flex gap-2"),
+ * log lines ("[outbox] retrying") or identifiers: it has a space and starts with
+ * a capital, a digit, a quote or a placeholder.
+ */
+function isSentenceLiteral(node) {
+  const text =
+    node.type === "StringLiteral"
+      ? node.value
+      : node.type === "TemplateLiteral"
+        ? node.quasis.map((quasi) => quasi.value.cooked ?? "").join("{}")
+        : "";
+  return /\S\s+\S/.test(text) && /^\s*[A-Z0-9'"“‘{#(]/.test(text);
+}
+
 function isActionPropsObject(objectPath) {
   let property = objectPath.parentPath;
   // `actionProps: canUpdate ? { children: "Update" } : { children: "Settings" }`
@@ -332,6 +354,25 @@ module.exports = function autoTranslate(babel, options) {
     }
   }
 
+  /**
+   * In display files, sentences handed to helpers (`fail(detail ?? "Stream failed.")`) or
+   * assigned to a variable later shown (`error = "Clipboard is empty."`). Single words
+   * there are usually identifiers, so only text with a space counts.
+   */
+  function translateSentences(state, path, kind) {
+    const node = path?.node;
+    if (!node) return;
+    if (node.type === "ConditionalExpression") {
+      translateSentences(state, path.get("consequent"), kind);
+      translateSentences(state, path.get("alternate"), kind);
+    } else if (node.type === "LogicalExpression") {
+      translateSentences(state, path.get("left"), kind);
+      translateSentences(state, path.get("right"), kind);
+    } else if (isSentenceLiteral(node)) {
+      translateValue(state, path, kind);
+    }
+  }
+
   function elementName(node) {
     if (node.type !== "JSXElement") return "";
     const name = node.openingElement.name;
@@ -371,8 +412,15 @@ module.exports = function autoTranslate(babel, options) {
   const visitor = {
     JSXAttribute(path, state) {
       const name = path.node.name.type === "JSXIdentifier" ? path.node.name.name : "";
-      if (!DISPLAY_ATTRIBUTE.test(name) || DATA_PROPERTIES.has(name)) return;
+      if (DATA_PROPERTIES.has(name)) return;
       const value = path.get("value");
+      if (!DISPLAY_ATTRIBUTE.test(name)) {
+        // Display files also pass sentences through props such as `value` on settings rows.
+        if (!state.displayFile) return;
+        if (value.isJSXExpressionContainer())
+          return translateSentences(state, value.get("expression"), `attr:${name}`);
+        if (!value.isStringLiteral() || !isSentenceLiteral(value.node)) return;
+      }
       if (value.isStringLiteral()) {
         const message = buildMessage([value.node.value]);
         if (!message) return;
@@ -421,13 +469,20 @@ module.exports = function autoTranslate(babel, options) {
         translateValue(state, path.get("init"), "variable");
       else if (isDisplayFunction(path.getFunctionParent()))
         translateValue(state, path.get("init"), "helper-variable");
-      if (id.type === "Identifier" && DISPLAY_MAP.test(id.name)) {
+      const map = id.type === "Identifier" && DISPLAY_MAP.test(id.name);
+      // Constant tables also hold icon names and ids, so only capitalized labels count there.
+      const table =
+        !map && state.displayFile && id.type === "Identifier" && DISPLAY_FILE_TABLE.test(id.name);
+      if (map || table) {
         let init = path.get("init");
         while (init.isTSAsExpression() || init.isTSSatisfiesExpression())
           init = init.get("expression");
         if (init.isObjectExpression()) {
           for (const property of init.get("properties")) {
-            if (property.isObjectProperty()) translateValue(state, property.get("value"), "map");
+            if (!property.isObjectProperty()) continue;
+            const value = property.get("value");
+            if (map || (value.isStringLiteral() && /^[A-Z]/.test(value.node.value)))
+              translateValue(state, value, "map");
           }
         }
       }
@@ -437,6 +492,18 @@ module.exports = function autoTranslate(babel, options) {
       const left = path.node.left;
       if (left.type === "Identifier" && isDisplayVariable(left.name))
         translateValue(state, path.get("right"), "default");
+      else if (state.displayFile) translateSentences(state, path.get("right"), "default");
+    },
+    ArrayExpression(path, state) {
+      // Lists of lines joined for display, such as `[label, inUse ? "In use" : null]`.
+      // Skip the part arrays of a runtime call this plugin already produced.
+      if (state.displayFile && !path.parentPath.node._t3i18n) {
+        for (const element of path.get("elements")) translateSentences(state, element, "array");
+      }
+    },
+    AssignmentExpression(path, state) {
+      if (state.displayFile && path.node.operator === "=")
+        translateSentences(state, path.get("right"), "assignment");
     },
     CallExpression(path, state) {
       const callee = calleePath(path.node.callee);
@@ -446,6 +513,8 @@ module.exports = function autoTranslate(babel, options) {
         translateValue(state, args[1], "alert:message");
       } else if (/^(?:window\.)?(?:confirm|alert)$/.test(callee)) {
         translateValue(state, args[0], "dialog");
+      } else if (state.displayFile && !path.node._t3i18n) {
+        for (const arg of args) translateSentences(state, arg, "argument");
       }
     },
   };

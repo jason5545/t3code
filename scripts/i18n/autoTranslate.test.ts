@@ -33,6 +33,7 @@ NodeFS.writeFileSync(
     "{count} files": "{count} 個檔案",
     "{count} environment{0}": "{count} 個環境",
     "Broken {name}": "壞掉的 {other}",
+    folder: "資料夾",
   }),
 );
 afterAll(() => NodeFS.rmSync(tempDir, { recursive: true, force: true }));
@@ -158,6 +159,30 @@ describe("autoTranslate", () => {
     expect(output).toContain(`[__t3_t("Could not save", "無法儲存")]`);
     expect(output).toContain(`detail: __t3_t("Add provider", "新增供應商")`);
     expect(output).toContain(`details: [__t3_t("Could not save", "無法儲存")]`);
+    expect(transform(source)).toBe(untouched(source));
+  });
+
+  it("treats sentences and capitalized table labels as display copy in display files", () => {
+    const source = [
+      `fail(detail ?? "Could not save");`,
+      `error = busy ? "Add provider" : "Could not save";`,
+      `const lines = [label, inUse ? "Add provider" : null];`,
+      `const a = <Row value="Add provider" />;`,
+      `const STATES = { cancel: "Cancel", icon: "folder" };`,
+      `const b = { notice: "Could not save" };`,
+      `track("Cancel");`,
+    ].join("\n");
+    const output = transform(source, "components/chat/ProviderStatusBanner.tsx");
+    expect(output).toContain(`fail(detail ?? __t3_t("Could not save", "無法儲存"))`);
+    expect(output).toContain(
+      `error = busy ? __t3_t("Add provider", "新增供應商") : __t3_t("Could not save", "無法儲存")`,
+    );
+    expect(output).toContain(`[label, inUse ? __t3_t("Add provider", "新增供應商") : null]`);
+    expect(output).toContain(`value={__t3_t("Add provider", "新增供應商")}`);
+    expect(output).toContain(`cancel: __t3_t("Cancel", "取消"),\n  icon: "folder"`);
+    expect(output).toContain(`notice: __t3_t("Could not save", "無法儲存")`);
+    // A single word handed to a call is usually an identifier.
+    expect(output).toContain(`track("Cancel")`);
     expect(transform(source)).toBe(untouched(source));
   });
 
