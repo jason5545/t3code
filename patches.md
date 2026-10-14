@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `6524a8d43795dc543f7cfb572388cdea3662ad48` (merged 2026-10-13).
+Upstream baseline: `aba3a6ddc0d2625739cb65c333f6052a4a35bc71` (merged 2026-10-14).
 
 ## 1. OMP provider
 

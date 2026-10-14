@@ -6170,5 +6170,12 @@
   "Share link": "分享連結",
   "Opens one of your threads.": "會開啟你的其中一個對話。",
   "Pull request {owner}/{name}#{number}": "提取請求 {owner}/{name}#{number}",
-  "Repository {repository.owner}/{repository.name}": "存放庫 {repository.owner}/{repository.name}"
+  "Repository {repository.owner}/{repository.name}": "存放庫 {repository.owner}/{repository.name}",
+  "Create ({createShortcutLabel})": "建立（{createShortcutLabel}）",
+  "Android beta APK": "Android 測試版 APK",
+  "Scan with your phone, then download and install the APK.": "用手機掃描，然後下載並安裝 APK。",
+  "Android beta APK link": "Android 測試版 APK 連結",
+  "Expanded {props.title} preview": "展開的{props.title}預覽",
+  "Open full screen": "開啟全螢幕",
+  "Context handoff pending": "等待上下文交接"
 }
