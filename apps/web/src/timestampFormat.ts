@@ -1,5 +1,7 @@
 import { type TimestampFormat } from "@t3tools/contracts/settings";
 
+import { useChinese } from "./locale/autoTranslateRuntime";
+
 function getTimestampFormatOptions(
   timestampFormat: TimestampFormat,
   includeSeconds: boolean,
@@ -221,6 +223,12 @@ export function formatUpcomingTimestamp(
   return `${dateFormatter.format(date)} ${time}`;
 }
 
+// Relative-time parts are not in a display position the build-time translation
+// pass rewrites, so they pick the language here. The pass also injects its own
+// `__t3_t` import into this file, which is why this reads `useChinese` directly.
+const JUST_NOW = useChinese ? "剛剛" : "just now";
+export const RELATIVE_TIME_AGO = useChinese ? "前" : "ago";
+
 /**
  * Format a relative time string from an ISO date.
  * Returns `{ value: "20s", suffix: "ago" }` or `{ value: "just now", suffix: null }`
@@ -236,15 +244,15 @@ export function formatRelativeTime(isoDate: string): RelativeTimeParts | null {
   const date = parseTimestampDate(isoDate);
   if (!date) return null;
   const diffMs = Date.now() - date.getTime();
-  if (diffMs < 0) return { value: "just now", suffix: null };
+  if (diffMs < 0) return { value: JUST_NOW, suffix: null };
   const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 60) return { value: "just now", suffix: null };
+  if (seconds < 60) return { value: JUST_NOW, suffix: null };
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return { value: `${minutes}m`, suffix: "ago" };
+  if (minutes < 60) return { value: `${minutes}m`, suffix: RELATIVE_TIME_AGO };
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return { value: `${hours}h`, suffix: "ago" };
+  if (hours < 24) return { value: `${hours}h`, suffix: RELATIVE_TIME_AGO };
   const days = Math.floor(hours / 24);
-  return { value: `${days}d`, suffix: "ago" };
+  return { value: `${days}d`, suffix: RELATIVE_TIME_AGO };
 }
 
 export function formatRelativeTimeLabel(isoDate: string) {
@@ -268,10 +276,10 @@ export function formatElapsedDurationLabel(isoDate: string, nowMs: number = Date
   const date = parseTimestampDate(isoDate);
   if (!date) return "";
   const diffMs = nowMs - date.getTime();
-  if (diffMs <= 0) return "just now";
+  if (diffMs <= 0) return JUST_NOW;
 
   const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 5) return "just now";
+  if (seconds < 5) return JUST_NOW;
   if (seconds < 60) return `${seconds}s`;
 
   const minutes = Math.floor(seconds / 60);
