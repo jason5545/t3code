@@ -1,4 +1,5 @@
 import type { SubagentPillSegment } from "@t3tools/client-runtime/state/thread-subagents";
+import { formatDurationUnits } from "@t3tools/shared/durationFormat";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
 import { GlassContainer, GlassView } from "expo-glass-effect";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -545,12 +546,12 @@ export function WorkingTimer(props: { readonly startedAt: string }) {
 function formatWorkingDuration(startedAt: string, nowMs: number): string {
   const startedAtMs = Date.parse(startedAt);
   if (!Number.isFinite(startedAtMs) || nowMs <= startedAtMs) {
-    return "0s";
+    return formatDurationUnits([0, "s"]);
   }
 
   const totalSeconds = Math.floor((nowMs - startedAtMs) / 1_000);
   if (totalSeconds < 60) {
-    return `${totalSeconds}s`;
+    return formatDurationUnits([totalSeconds, "s"]);
   }
   if (totalSeconds >= 3_600) {
     return formatDuration(totalSeconds * 1_000);
@@ -558,7 +559,7 @@ function formatWorkingDuration(startedAt: string, nowMs: number): string {
 
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = String(totalSeconds % 60).padStart(2, "0");
-  return `${minutes}m ${seconds}s`;
+  return formatDurationUnits([minutes, "m"], [seconds, "s"]);
 }
 
 function ScrollToEndButton(props: { readonly disabled?: boolean; readonly onPress: () => void }) {

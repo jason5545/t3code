@@ -177,11 +177,7 @@ import {
   resolveActiveThreadRouteRef,
   resolveThreadRouteTarget,
 } from "../threadRoutes";
-import {
-  formatRelativeTimeLabel,
-  parseTimestampDate,
-  RELATIVE_TIME_AGO_SUFFIX,
-} from "../timestampFormat";
+import { formatCompactRelativeTime, parseTimestampDate } from "../timestampFormat";
 import type { SidebarThreadSummary } from "../types";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
@@ -337,16 +333,9 @@ function checkThreadOperations(
   return false;
 }
 
-function compactSidebarTimeLabel(label: string): string {
-  if (label === "just now") return "now";
-  return label.endsWith(RELATIVE_TIME_AGO_SUFFIX)
-    ? label.slice(0, -RELATIVE_TIME_AGO_SUFFIX.length)
-    : label;
-}
-
 function threadTimeLabel(thread: SidebarThreadSummary): string {
   const timestamp = thread.latestUserMessageAt ?? thread.updatedAt;
-  return compactSidebarTimeLabel(formatRelativeTimeLabel(timestamp));
+  return formatCompactRelativeTime(timestamp);
 }
 
 // Settled rows read "how long ago did this wrap up", matching their sort
@@ -354,7 +343,7 @@ function threadTimeLabel(thread: SidebarThreadSummary): string {
 // disagree.
 function settledTimeLabel(thread: SidebarThreadSummary): string {
   const timestamp = resolveSettledThreadTimestamp(thread);
-  return timestamp === null ? "" : compactSidebarTimeLabel(formatRelativeTimeLabel(timestamp));
+  return timestamp === null ? "" : formatCompactRelativeTime(timestamp);
 }
 
 // Floats at the row's right edge, vertically centered, while the jump

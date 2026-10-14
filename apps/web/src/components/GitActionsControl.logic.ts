@@ -3,6 +3,7 @@ import type {
   GitStackedAction,
   VcsStatusResult,
 } from "@t3tools/contracts";
+import { formatDurationUnits } from "@t3tools/shared/durationFormat";
 import { isTemporaryWorktreeBranch } from "@t3tools/shared/git";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import type { ChangeRequestTerminology } from "@t3tools/client-runtime/source-control-clients";
@@ -107,12 +108,12 @@ export function formatGitActionElapsed(startedAtMs: number | null, nowMs: number
 
   const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1_000));
   if (elapsedSeconds < 60) {
-    return `${elapsedSeconds}s`;
+    return formatDurationUnits([elapsedSeconds, "s"]);
   }
 
   const minutes = Math.floor(elapsedSeconds / 60);
   const seconds = elapsedSeconds % 60;
-  return `${minutes}m ${seconds}s`;
+  return formatDurationUnits([minutes, "m"], [seconds, "s"]);
 }
 
 export function buildGitActionProgressStages(input: {

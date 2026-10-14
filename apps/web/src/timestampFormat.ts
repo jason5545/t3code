@@ -1,4 +1,5 @@
 import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { type DurationUnit, formatDurationUnits } from "@t3tools/shared/durationFormat";
 
 import { useChinese } from "./locale/autoTranslateRuntime";
 
@@ -227,21 +228,21 @@ export function formatUpcomingTimestamp(
 // pass rewrites, so they pick the language here. The pass also injects its own
 // `__t3_t` import into this file, which is why this reads `useChinese` directly.
 const JUST_NOW = useChinese ? "剛剛" : "just now";
-const DURATION_UNITS = useChinese
-  ? { s: " 秒", m: " 分鐘", h: " 小時", d: " 天" }
-  : { s: "s", m: "m", h: "h", d: "d" };
-/** Ending of a past relative label, for callers that compact "5m ago" to "5m". */
-export const RELATIVE_TIME_AGO_SUFFIX = useChinese ? "前" : " ago";
 
-function duration(amount: number, unit: keyof typeof DURATION_UNITS): string {
-  return `${amount}${DURATION_UNITS[unit]}`;
+function duration(amount: number, unit: DurationUnit): string {
+  return formatDurationUnits([amount, unit]);
 }
 
-// Chinese attaches 前 to the unit with no space, so the whole phrase lives in
+// Chinese attaches 前/後 to the unit with no space, so the whole phrase lives in
 // `value` and callers that render `value suffix` or check `suffix` stay correct.
-function agoParts(amount: number, unit: keyof typeof DURATION_UNITS): RelativeTimeParts {
+function agoParts(amount: number, unit: DurationUnit): RelativeTimeParts {
   const value = duration(amount, unit);
   return useChinese ? { value: `${value}前`, suffix: "" } : { value, suffix: "ago" };
+}
+
+function leftParts(amount: number, unit: DurationUnit): RelativeTimeParts {
+  const value = duration(amount, unit);
+  return useChinese ? { value: `${value}後`, suffix: "" } : { value, suffix: "left" };
 }
 
 /**
@@ -268,6 +269,14 @@ export function formatRelativeTime(isoDate: string): RelativeTimeParts | null {
   if (hours < 24) return agoParts(hours, "h");
   const days = Math.floor(hours / 24);
   return agoParts(days, "d");
+}
+
+/** Relative age for narrow columns: "now" or 剛剛, then "5m" or "5 分鐘" without ago/前. */
+export function formatCompactRelativeTime(isoDate: string): string {
+  const relative = formatRelativeTime(isoDate);
+  if (!relative) return "";
+  if (relative.suffix === null) return useChinese ? JUST_NOW : "now";
+  return useChinese && relative.value.endsWith("前") ? relative.value.slice(0, -1) : relative.value;
 }
 
 export function formatRelativeTimeLabel(isoDate: string) {
@@ -314,16 +323,16 @@ export function formatRelativeTimeUntil(isoDate: string): RelativeTimeParts | nu
   const date = parseTimestampDate(isoDate);
   if (!date) return null;
   const diffMs = date.getTime() - Date.now();
-  if (diffMs <= 0) return { value: "Expired", suffix: null };
+  if (diffMs <= 0) return { value: useChinese ? "已過期" : "Expired", suffix: null };
   const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 5) return { value: "Soon", suffix: null };
-  if (seconds < 60) return { value: `${seconds}s`, suffix: "left" };
+  if (seconds < 5) return { value: useChinese ? "即將到期" : "Soon", suffix: null };
+  if (seconds < 60) return leftParts(seconds, "s");
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return { value: `${minutes}m`, suffix: "left" };
+  if (minutes < 60) return leftParts(minutes, "m");
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return { value: `${hours}h`, suffix: "left" };
+  if (hours < 24) return leftParts(hours, "h");
   const days = Math.floor(hours / 24);
-  return { value: `${days}d`, suffix: "left" };
+  return leftParts(days, "d");
 }
 
 export function formatRelativeTimeUntilLabel(isoDate: string): string {
@@ -357,10 +366,10 @@ export function formatExpiresInLabel(isoDate: string, nowMs: number = Date.now()
     const rem = totalSeconds % 3600;
     const minutes = Math.floor(rem / 60);
     const seconds = rem % 60;
-    const parts = [`${hours}h`];
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (seconds > 0) parts.push(`${seconds}s`);
-    return `Expires in ${parts.join(" ")}`;
+    const parts: Array<[number, DurationUnit]> = [[hours, "h"]];
+    if (minutes > 0) parts.push([minutes, "m"]);
+    if (seconds > 0) parts.push([seconds, "s"]);
+    return `Expires in ${formatDurationUnits(...parts)}`;
   }
 
   const days = Math.floor(totalSeconds / 86_400);
@@ -370,9 +379,11 @@ export function formatExpiresInLabel(isoDate: string, nowMs: number = Date.now()
   const rem = remAfterDays % 3600;
   const minutes = Math.floor(rem / 60);
   const seconds = rem % 60;
-  const tail: string[] = [];
-  if (hours > 0) tail.push(`${hours}h`);
-  if (minutes > 0) tail.push(`${minutes}m`);
-  if (seconds > 0) tail.push(`${seconds}s`);
-  return tail.length > 0 ? `Expires in ${days}d ${tail.join(" ")}` : `Expires in ${days}d`;
+  const tail: Array<[number, DurationUnit]> = [];
+  if (hours > 0) tail.push([hours, "h"]);
+  if (minutes > 0) tail.push([minutes, "m"]);
+  if (seconds > 0) tail.push([seconds, "s"]);
+  return tail.length > 0
+    ? `Expires in ${formatDurationUnits([days, "d"], ...tail)}`
+    : `Expires in ${days}d`;
 }

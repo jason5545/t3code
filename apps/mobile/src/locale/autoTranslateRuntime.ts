@@ -1,3 +1,4 @@
+import { setChineseDurations } from "@t3tools/shared/durationFormat";
 import { createElement, Fragment, type ReactNode } from "react";
 
 /**
@@ -11,6 +12,8 @@ export const useChinese = (() => {
     return false;
   }
 })();
+// Durations from @t3tools/shared follow the same choice.
+setChineseDurations(useChinese);
 
 /** Template parts: literal text, or an index into the values array. */
 type Parts = ReadonlyArray<string | number>;

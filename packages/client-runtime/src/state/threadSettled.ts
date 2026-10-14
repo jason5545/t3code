@@ -1,4 +1,5 @@
 // @effect-diagnostics globalDate:off -- UI snooze presets use local calendar boundaries and Intl labels.
+import { formatDurationUnits } from "@t3tools/shared/durationFormat";
 import * as DateTime from "effect/DateTime";
 
 interface SettlementRunLike {
@@ -313,9 +314,11 @@ export function snoozeWakeLabel(snoozedUntil: string, options: { readonly now: s
   if (Number.isNaN(wakeMs) || Number.isNaN(nowMs)) return "now";
   const remainingMs = wakeMs - nowMs;
   if (remainingMs <= 0) return "now";
-  if (remainingMs < HOUR_MS) return `${Math.max(1, Math.ceil(remainingMs / 60_000))}m`;
-  if (remainingMs < DAY_MS) return `${Math.ceil(remainingMs / HOUR_MS)}h`;
-  return `${Math.ceil(remainingMs / DAY_MS)}d`;
+  if (remainingMs < HOUR_MS) {
+    return formatDurationUnits([Math.max(1, Math.ceil(remainingMs / 60_000)), "m"]);
+  }
+  if (remainingMs < DAY_MS) return formatDurationUnits([Math.ceil(remainingMs / HOUR_MS), "h"]);
+  return formatDurationUnits([Math.ceil(remainingMs / DAY_MS), "d"]);
 }
 
 export type CustomSnoozeInput =

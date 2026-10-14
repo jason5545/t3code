@@ -1,5 +1,7 @@
 import { isOrchestrationV2WorkActive, type OrchestrationV2Subagent } from "@t3tools/contracts";
 
+import { type DurationUnit, formatDurationUnits } from "./durationFormat.ts";
+
 /** Unknown settled timing must not turn a task's age into its work duration. */
 export function deriveSubagentElapsedMs(
   agent: {
@@ -34,22 +36,22 @@ type RuntimeActivityState = {
 };
 
 export function formatDuration(durationMs: number): string {
-  if (!Number.isFinite(durationMs) || durationMs < 0) return "0ms";
-  if (durationMs < 1_000) return `${Math.max(1, Math.round(durationMs))}ms`;
+  if (!Number.isFinite(durationMs) || durationMs < 0) return formatDurationUnits([0, "ms"]);
+  if (durationMs < 1_000) return formatDurationUnits([Math.max(1, Math.round(durationMs)), "ms"]);
   if (durationMs < 10_000) {
     const tenths = Math.round(durationMs / 100) / 10;
-    return tenths >= 10 ? "10s" : `${tenths.toFixed(1)}s`;
+    return formatDurationUnits([tenths >= 10 ? 10 : tenths.toFixed(1), "s"]);
   }
-  if (durationMs < 60_000) return `${Math.round(durationMs / 1_000)}s`;
+  if (durationMs < 60_000) return formatDurationUnits([Math.round(durationMs / 1_000), "s"]);
   const totalSeconds = Math.round(durationMs / 1_000);
   const hours = Math.floor(totalSeconds / 3_600);
   const minutes = Math.floor((totalSeconds % 3_600) / 60);
   const seconds = totalSeconds % 60;
-  const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (seconds > 0) parts.push(`${seconds}s`);
-  return parts.join(" ");
+  const parts: Array<[number, DurationUnit]> = [];
+  if (hours > 0) parts.push([hours, "h"]);
+  if (minutes > 0) parts.push([minutes, "m"]);
+  if (seconds > 0) parts.push([seconds, "s"]);
+  return formatDurationUnits(...parts);
 }
 
 function isLatestRunSettled(

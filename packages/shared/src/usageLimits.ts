@@ -20,6 +20,8 @@ import {
 
 import * as DateTime from "effect/DateTime";
 
+import { formatDurationUnits, usesChineseDurations } from "./durationFormat.ts";
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -598,18 +600,20 @@ export function formatDuration(ms: number): string {
   const days = Math.floor(remaining / DAY);
   const hours = Math.floor((remaining % DAY) / HOUR);
   const minutes = Math.floor((remaining % HOUR) / MINUTE);
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+  if (days > 0) return formatDurationUnits([days, "d"], [hours, "h"]);
+  if (hours > 0) return formatDurationUnits([hours, "h"], [minutes, "m"]);
+  return formatDurationUnits([minutes, "m"]);
 }
 
 /** `resets in 2h 13m`, or null when the window has no reset. */
 export function formatResetsIn(window: ServerProviderUsageWindow, now: number): string | null {
   const resetsAt = resetMillis(window);
   if (resetsAt === null) return null;
-  if (resetsAt <= now) return "resets now";
-  if (resetsAt - now < MINUTE) return "Resets momentarily";
-  return `resets in ${formatDuration(resetsAt - now)}`;
+  const chinese = usesChineseDurations();
+  if (resetsAt <= now) return chinese ? "現在重設" : "resets now";
+  if (resetsAt - now < MINUTE) return chinese ? "即將重設" : "Resets momentarily";
+  const remaining = formatDuration(resetsAt - now);
+  return chinese ? `${remaining}後重設` : `resets in ${remaining}`;
 }
 
 /** Limit commands are served by T3 from the same snapshots as Usage → Limits. */
