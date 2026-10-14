@@ -81,6 +81,7 @@ The script selects the single Apple Development identity in the keychain, uses N
 - Every deployment replaces the app bundle in place and keeps no copy of the old app, because any build can be reproduced from its source commit. After installing, delete superseded builds under `release/fork-nightly/` and keep only the installed one. No existing user profile is overwritten or manually migrated. Local user paths are not part of this public documentation.
 - Source and `patches.md` are pushed to `jason5545/t3code`, branch `main`. Private profile backups are kept outside the repository; DMG/ZIP and local logs remain ignored and are not pushed.
 - No release or release tag is created for this deployment.
+- Redeployed the same day as `0.0.45-nightly.20261014.1792020633` from `1de8814177`: relative times now read 剛剛 and 5 分鐘前 / 2 小時前 / 3 天前 in Traditional Chinese, and the sidebar compacts them to 5 分鐘. They are assembled at runtime in `timestampFormat.ts`, outside the translator's display positions, so that file picks the language itself. Chinese folds 前 into `value` and leaves `suffix` empty, so callers that render `value suffix` with a space, or branch on `suffix`, stay correct without edits. The phone keeps `<1m`/`5m` from its own formatter and the agent-hub server was not rebuilt; only the web client changed.
 
 ## agent-hub headless server (2026-10-14)
 
