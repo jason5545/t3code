@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `aba3a6ddc0d2625739cb65c333f6052a4a35bc71` (merged 2026-10-14).
+Upstream baseline: `f87dd14dafdeecd962f7da24da79324842983e00` (merged 2026-10-15).
 
 ## 1. OMP provider
 
@@ -68,13 +68,14 @@ The script selects the single Apple Development identity in the keychain, uses N
 - Installed OMP metadata RPC smoke passed for state, command catalog and model catalog in a temporary HOME, with no model-generation request.
 - Apple Development keychain identity successfully signed and verified a temporary executable. Final app signature must also be verified before publication.
 
-## Local Mac deployment (2026-10-14)
+## Local Mac deployment (2026-10-15)
 
 - Owner instruction: do not publish a GitHub release; replace the existing Mac installation and push source to this fork.
-- Installed `0.0.45-nightly.20261014.1791947420` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path. It includes the upstream sync to `aba3a6ddc0` and translations for the interface text the sync added (7 strings: the new-project Create tooltip, the Android beta APK popover, the full-screen HTML render entry and the pending context handoff divider).
-- Installed binary was built from `bab3532659` and signed with the owner's existing Apple Development certificate; checksums, bundle ID, the bundled fork update feed and complete bundle verification passed after installation.
-- The merge applied cleanly this time, so no fork patch needed restoration; upstream's extracted `useProviderUpdates` hook still carries the fork's `displayName`, and the Update all toast still names OMP apart from Pi.
-- Locale/i18n tests (40), provider-pi protocol tests (142) and the web typecheck passed before the build.
+- Installed `0.0.45-nightly.20261014.1792018953` at `/Applications/T3 Code (Nightly).app`, retaining the existing bundle path. It includes the upstream sync to `f87dd14daf` (91 commits) and 397 new translations: the 22 interface strings the sync added, plus the mobile and `client-runtime` text that sat outside the translator's display positions (see section 2).
+- Installed binary was built from `02f042553c` and signed with the owner's existing Apple Development certificate; checksums, bundle ID, the bundled fork update feed and complete bundle verification passed after installation.
+- The merge conflicted in three fork patches. Upstream moved each Update all line into `getProviderUpdateRunOutcome`, so the fork's `providerUpdateName` (OMP apart from Pi) and `localizeServerMessage` now live there. Mobile `ProviderIcon` keeps the `providerIconKind` import beside upstream's new `useId`. The provider update checks setting keeps the fork's localized search entry with upstream's new description.
+- Locale/i18n and Update all toast tests (88), provider-pi protocol tests (164), and the web and mobile typechecks passed before the build. A trial transform of every web, mobile and `client-runtime` source with the real catalog raised no errors or placeholder mismatches.
+- The same commit was built as the Android preview APK and installed over the existing sideload with `adb install -r`; the Hermes bundle carries the new translations. `ORCHESTRATION_PROTOCOL_VERSION` is still 2, so the phone keeps working against the agent-hub server, which was not rebuilt in this round.
 - `ProviderRegistry.test.ts` has three Codex/Cursor probe cases that time out on the owner's Mac. They time out the same way with upstream's `ProviderRegistry.ts`, so the fork's Pi model-retention change does not cause them.
 - Quit the app and confirm its process is gone before replacing the bundle. `pgrep -f` treats the parentheses in `T3 Code (Nightly)` as a regex group, so match a plain substring such as `T3 Code`; otherwise the wait returns at once and a relaunch can hand off to the instance that is still quitting.
 - Every deployment replaces the app bundle in place and keeps no copy of the old app, because any build can be reproduced from its source commit. After installing, delete superseded builds under `release/fork-nightly/` and keep only the installed one. No existing user profile is overwritten or manually migrated. Local user paths are not part of this public documentation.
