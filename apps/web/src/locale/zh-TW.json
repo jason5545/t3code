@@ -6572,5 +6572,11 @@
   "No models available": "沒有可用的模型",
   "Server and provider updates": "伺服器與供應商更新",
   "Eligible usage uses your ChatGPT plan. Credit settings and limits are managed in ChatGPT.": "符合資格的用量會使用你的 ChatGPT 方案。額度設定和限制請到 ChatGPT 管理。",
-  "Agent tools": "代理程式工具"
+  "Agent tools": "代理程式工具",
+  "Open approval": "開啟核准",
+  "Open {0} from {childInput.title}": "開啟 {childInput.title} 的{0}",
+  "input": "回覆",
+  "you": "你處理",
+  "Subagent needs {need}": "子代理程式需要{need}",
+  "{children.length} subagents need {need}": "{children.length} 個子代理程式需要{need}"
 }
