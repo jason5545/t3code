@@ -31,6 +31,7 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
+import java.util.Locale
 
 class T3WorkspaceNavigationModule : Module() {
   override fun definition() = ModuleDefinition {
@@ -58,6 +59,15 @@ class T3WorkspaceNavigationModule : Module() {
     }
   }
 }
+
+// The JS bundle is translated at build time; this native bar follows the same
+// device-language rule as apps/mobile/src/locale/autoTranslateRuntime.ts.
+private val chinese = Locale.getDefault().let {
+  it.language == "zh" && (it.country in setOf("TW", "HK", "MO") || it.script == "Hant")
+}
+private val CHATS = if (chinese) "對話" else "Chats"
+private val PULL_REQUESTS = if (chinese) "提取請求" else "Pull requests"
+private val PULL_REQUESTS_SHORT = if (chinese) "PR" else "PRs"
 
 /** One Material3 selection surface moves from below the list to its leading edge. */
 class T3WorkspaceNavigationView(
@@ -121,7 +131,7 @@ class T3WorkspaceNavigationView(
                     onClick = { onTabSelected(mapOf("tab" to tab)) },
                     icon = { tabIcon(tab) },
                     label = {
-                      val title = if (tab == "threads") "Chats" else "PRs"
+                      val title = if (tab == "threads") CHATS else PULL_REQUESTS_SHORT
                       Text(title, fontSize = (12 * textScale).sp)
                     },
                     colors = NavigationRailItemDefaults.colors(
@@ -148,7 +158,7 @@ class T3WorkspaceNavigationView(
                     onClick = { onTabSelected(mapOf("tab" to tab)) },
                     icon = { tabIcon(tab) },
                     label = {
-                      val title = if (tab == "threads") "Chats" else "Pull requests"
+                      val title = if (tab == "threads") CHATS else PULL_REQUESTS
                       Text(title, fontSize = (12 * textScale).sp)
                     },
                     colors = NavigationBarItemDefaults.colors(
@@ -178,7 +188,7 @@ class T3WorkspaceNavigationView(
     }
     Icon(
       painter = painterResource(drawable),
-      contentDescription = if (tab == "threads") "Chats" else "Pull requests",
+      contentDescription = if (tab == "threads") CHATS else PULL_REQUESTS,
     )
   }
 }
