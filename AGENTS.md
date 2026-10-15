@@ -162,3 +162,15 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 
 - Don't verify with browsers or computer use unless the user explicitly agrees or requests it.
 - Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only features.
+
+## This fork
+
+This checkout is `jason5545/t3code`. Upstream owns everything above; keep fork notes in this last section so upstream merges do not conflict with them. Fork patches, build recipes and the deployment record live in [patches.md](patches.md). Commit and push straight to `origin main`; this fork does not use PRs or feature branches.
+
+### Syncing upstream
+
+A sync is finished only when the agent-hub server runs the synced commit and the record is pushed:
+
+1. Merge `upstream/main`, resolve conflicts and finish the new translations (patches.md section 2). Commit and push to `origin main`.
+2. Rebuild and restart the agent-hub server (`ssh agent-hub`) from that commit with the rebuild command in the header of `/etc/systemd/system/t3code.service`; see "agent-hub headless server" in patches.md. The restart interrupts running turns there, so check for them first. Confirm the server listens only on its tailnet address and the Mac reconnects.
+3. Update "Current deployment" in patches.md with the commit each surface runs (Mac nightly, Android APK, agent-hub), then commit and push.
