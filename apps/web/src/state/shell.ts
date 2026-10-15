@@ -23,10 +23,15 @@ import { __t3_t } from "../locale/autoTranslateRuntime";
 
 export const shellEnvironment = createShellEnvironmentAtoms(connectionAtomRuntime);
 export const environmentShell = createEnvironmentShellAtoms(connectionAtomRuntime);
-// The server stores the Scratch project's title in English.
+/** Shown for untitled threads; the English title stays in stored and sent data. */
+export const newThreadDisplayTitle = __t3_t("New thread", "新對話");
+// The server stores the Scratch project's and untitled threads' titles in English.
 export const environmentSnapshotAtom = createLocalizedEnvironmentSnapshotAtom(
   environmentShell.stateAtom,
-  __t3_t("No project", "無專案"),
+  {
+    scratchProject: __t3_t("No project", "無專案"),
+    newThread: newThreadDisplayTitle,
+  },
 );
 
 export const allEnvironmentShellsBootstrappedAtom = Atom.make((get) => {

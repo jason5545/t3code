@@ -338,7 +338,8 @@
       "reopen",
       "revert",
       "update-branch",
-      "approve-workflows"
+      "approve-workflows",
+      "delete-branch"
     ],
     "apps/mobile/src/features/pull-requests/PullRequestReviewersScreen.tsx": [
       "Remove review request from",

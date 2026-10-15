@@ -19,53 +19,87 @@ export function createEnvironmentSnapshotAtom<E>(
   );
 }
 
-type ProjectShells = OrchestrationV2ShellSnapshot["projects"];
 const SCRATCH_PROJECT_TITLE = "No project";
+const NEW_THREAD_TITLE = "New thread";
+
+/** Localized replacements for the English titles the server stores. */
+export interface DefaultTitles {
+  readonly scratchProject: string;
+  readonly newThread: string;
+}
 
 /**
- * The server names every environment's Scratch project "No project". It is
- * stored data, so build-time translation never sees it; clients pass their
- * localized title here. Results are keyed by the server's arrays and objects
- * so unchanged projects keep their identity.
+ * Renames items whose title equals `english`. Results are keyed by the
+ * server's arrays and objects so unchanged items keep their identity.
  */
-export function createScratchProjectTitleLocalizer(title: string) {
-  const projectLists = new WeakMap<ProjectShells, ProjectShells>();
-  const projects = new WeakMap<ProjectShells[number], ProjectShells[number]>();
-  const localizeProject = (project: ProjectShells[number]) => {
-    if (project.title !== SCRATCH_PROJECT_TITLE) return project;
-    let localized = projects.get(project);
+function createTitleRelabeler<T extends { readonly title: string }>(
+  english: string,
+  title: string,
+) {
+  const lists = new WeakMap<ReadonlyArray<T>, ReadonlyArray<T>>();
+  const items = new WeakMap<T, T>();
+  const relabel = (item: T): T => {
+    if (item.title !== english) return item;
+    let localized = items.get(item);
     if (!localized) {
-      localized = { ...project, title };
-      projects.set(project, localized);
+      localized = { ...item, title };
+      items.set(item, localized);
     }
     return localized;
   };
-  return (snapshot: OrchestrationV2ShellSnapshot | null): OrchestrationV2ShellSnapshot | null => {
-    if (
-      snapshot === null ||
-      title === SCRATCH_PROJECT_TITLE ||
-      !snapshot.projects.some((project) => project.title === SCRATCH_PROJECT_TITLE)
-    ) {
-      return snapshot;
-    }
-    let localized = projectLists.get(snapshot.projects);
+  return (list: ReadonlyArray<T>): ReadonlyArray<T> => {
+    if (title === english || !list.some((item) => item.title === english)) return list;
+    let localized = lists.get(list);
     if (!localized) {
-      localized = snapshot.projects.map(localizeProject);
-      projectLists.set(snapshot.projects, localized);
+      localized = list.map(relabel);
+      lists.set(list, localized);
     }
-    return { ...snapshot, projects: localized };
+    return localized;
   };
 }
 
-/** `createEnvironmentSnapshotAtom` with the Scratch project's title localized. */
+/**
+ * The server names every environment's Scratch project "No project" and
+ * untitled threads "New thread". Both are stored data, so build-time
+ * translation never sees them; clients pass their localized titles here.
+ * Clients still send the English draft title as a title seed, and the server
+ * compares against it, so only the snapshot clients read is relabeled.
+ */
+export function createDefaultTitleLocalizer(titles: DefaultTitles) {
+  type Snapshot = OrchestrationV2ShellSnapshot;
+  const projects = createTitleRelabeler<Snapshot["projects"][number]>(
+    SCRATCH_PROJECT_TITLE,
+    titles.scratchProject,
+  );
+  const threads = createTitleRelabeler<Snapshot["threads"][number]>(
+    NEW_THREAD_TITLE,
+    titles.newThread,
+  );
+  return (snapshot: Snapshot | null): Snapshot | null => {
+    if (snapshot === null) return snapshot;
+    const next = {
+      ...snapshot,
+      projects: projects(snapshot.projects),
+      threads: threads(snapshot.threads),
+      archivedThreads: threads(snapshot.archivedThreads),
+    };
+    return next.projects === snapshot.projects &&
+      next.threads === snapshot.threads &&
+      next.archivedThreads === snapshot.archivedThreads
+      ? snapshot
+      : next;
+  };
+}
+
+/** `createEnvironmentSnapshotAtom` with the server's default titles localized. */
 export function createLocalizedEnvironmentSnapshotAtom<E>(
   shellStateAtom: (
     environmentId: EnvironmentId,
   ) => Atom.Atom<AsyncResult.AsyncResult<EnvironmentShellState, E>>,
-  scratchProjectTitle: string,
+  titles: DefaultTitles,
 ) {
   const snapshotAtom = createEnvironmentSnapshotAtom(shellStateAtom);
-  const localize = createScratchProjectTitleLocalizer(scratchProjectTitle);
+  const localize = createDefaultTitleLocalizer(titles);
   return Atom.family((environmentId: EnvironmentId) =>
     Atom.make((get) => localize(get(snapshotAtom(environmentId)))).pipe(
       Atom.withLabel(`environment-snapshot-localized:${environmentId}`),

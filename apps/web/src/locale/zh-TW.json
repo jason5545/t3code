@@ -6578,5 +6578,18 @@
   "input": "回覆",
   "you": "你處理",
   "Subagent needs {need}": "子代理程式需要{need}",
-  "{children.length} subagents need {need}": "{children.length} 個子代理程式需要{need}"
+  "{children.length} subagents need {need}": "{children.length} 個子代理程式需要{need}",
+  "Still bringing attached context into this message.": "仍在將附加的上下文帶入這則訊息。",
+  "Loading thread context…": "正在載入對話上下文…",
+  "Unable to read the dropped thread": "無法讀取拖放的對話",
+  "This thread exceeds the attachment size limit. Try a shorter thread.": "這個對話超過附件大小上限，請改用較短的對話。",
+  "Check that its environment is connected and up to date, then try again.": "請確認它的環境已連線且為最新版本，再試一次。",
+  "Could not delete this branch": "無法刪除此分支",
+  "Branch deleted": "已刪除分支",
+  "Deleting branch...": "正在刪除分支…",
+  "Delete branch": "刪除分支",
+  "Reconnect to delete this branch": "重新連線以刪除此分支",
+  "Reconnect to delete this branch.": "重新連線後才能刪除此分支。",
+  "Delete settled worktrees": "刪除已結束對話的工作樹",
+  "Remove worktrees this many days after their thread settles. Set 0 days to remove them at the next cleanup. Branches and thread history are kept.": "對話結束後經過這些天數就移除其工作樹。設為 0 天會在下次清理時移除。分支與對話紀錄會保留。"
 }
