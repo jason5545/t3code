@@ -143,6 +143,19 @@ describe("autoTranslate", () => {
     expect(output).toContain(`initialValue: "Undo"`);
   });
 
+  it("translates text returned by render-prop children and tooltip variables", () => {
+    const output = transform(
+      [
+        `const a = <SelectValue>{(value) => (value === null ? "Undo" : labels[value])}</SelectValue>;`,
+        `const b = <Button onClick={() => "Undo"} />;`,
+        `const tooltip = busy ? "Cancel" : "Undo";`,
+      ].join("\n"),
+    );
+    expect(output).toContain(`value === null ? __t3_t("Undo", "復原") : labels[value]`);
+    expect(output).toContain(`onClick={() => "Undo"}`);
+    expect(output).toContain(`busy ? __t3_t("Cancel", "取消") : __t3_t("Undo", "復原")`);
+  });
+
   it("translates toast button labels built inside a helper", () => {
     const output = transform(
       [

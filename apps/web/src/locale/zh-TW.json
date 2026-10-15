@@ -6653,5 +6653,9 @@
   "Message history": "訊息紀錄",
   "This badge records that the message was queued. It stays visible after the message leaves the queue.": "此徽章表示這則訊息曾排入佇列。訊息離開佇列後，徽章仍會保留。",
   "This message was intended to steer the agent while its turn was still running.": "這則訊息用於在代理程式回合仍在執行時引導它。",
-  "This message was originally queued, then promoted to steer the agent while its turn was still running.": "這則訊息原本排在佇列中，後來改為在代理程式回合仍在執行時引導它。"
+  "This message was originally queued, then promoted to steer the agent while its turn was still running.": "這則訊息原本排在佇列中，後來改為在代理程式回合仍在執行時引導它。",
+  "PR #{number}, status pending": "PR #{number}，狀態待定",
+  "Worktree: {displayPath} ({thread.branch})": "工作樹：{displayPath}（{thread.branch}）",
+  "{entry.displayName} — New": "{entry.displayName} — 新",
+  "Checking for updates…": "正在檢查更新…"
 }

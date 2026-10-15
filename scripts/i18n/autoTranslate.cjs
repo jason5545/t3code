@@ -39,7 +39,7 @@ const DISPLAY_ATTRIBUTE =
 const DISPLAY_PROPERTY =
   /^(?:title|label|description|placeholder|subtitle|tooltip|hint|heading|headline|explanation|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Description|Hint)$/;
 // Variables and default parameters named for display text, wherever they are declared.
-const DISPLAY_VARIABLE = /^(?:placeholder)$|[a-z](?:Label|Placeholder|Tooltip)$/;
+const DISPLAY_VARIABLE = /^(?:placeholder|tooltip)$|[a-z](?:Label|Placeholder|Tooltip)$/;
 const DISPLAY_FUNCTION =
   /^[a-z][A-Za-z0-9]*[a-z](?:Label|Title|Subtitle|Placeholder|Tooltip|Description)$/;
 // Lookup tables such as `const SORT_ORDER_LABELS = { manual: "Manual" }` that feed menu options.
@@ -439,7 +439,13 @@ module.exports = function autoTranslate(babel, options) {
       if (!path.parentPath.isJSXElement() && !path.parentPath.isJSXFragment()) return;
       // Plain string children join their siblings' message in translateChildren.
       if (path.get("expression").isStringLiteral()) return;
-      translateValue(state, path.get("expression"), "jsx:expression");
+      const expression = path.get("expression");
+      // Render-prop children such as `<SelectValue>{(value) => value ?? "Mixed"}</SelectValue>`.
+      if (expression.isArrowFunctionExpression() && !expression.get("body").isBlockStatement()) {
+        translateValue(state, expression.get("body"), "jsx:render");
+        return;
+      }
+      translateValue(state, expression, "jsx:expression");
     },
     JSXElement: { exit: (path, state) => translateChildren(state, path) },
     JSXFragment: { exit: (path, state) => translateChildren(state, path) },
