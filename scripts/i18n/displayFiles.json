@@ -102,6 +102,7 @@
     "packages/client-runtime/src/voice-input/controller.ts",
     "packages/client-runtime/src/webhookAddress.ts",
     "packages/client-runtime/src/work-log/presentation.ts",
-    "apps/mobile/src/features/threads/ChatGptSharingStatus.tsx"
+    "apps/mobile/src/features/threads/ChatGptSharingStatus.tsx",
+    "apps/mobile/src/components/ui/Dialog.android.tsx"
   ]
 }

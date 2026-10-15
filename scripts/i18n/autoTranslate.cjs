@@ -5,7 +5,7 @@
  *
  * Components keep upstream's English source. This Babel plugin finds English
  * UI text in display positions (JSX text, display attributes and object
- * properties, toast and alert calls) and, when the catalog has a translation,
+ * properties, toast, alert and mobile `Dialog` calls) and, when the catalog has a translation,
  * replaces it with a runtime call that carries both languages. Syncing
  * upstream therefore never conflicts with translated component code; new
  * upstream text stays English until `node scripts/i18n/extract.ts` lists it.
@@ -37,7 +37,7 @@ const nodePath = require("node:path");
 const DISPLAY_ATTRIBUTE =
   /^(?:title|label|description|placeholder|subtitle|detail|message|tooltip|hint|heading|headline|summary|alt|aria-label|aria-description|aria-valuetext|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Message|Description|Hint|Reason|Text)$/;
 const DISPLAY_PROPERTY =
-  /^(?:title|label|description|placeholder|subtitle|tooltip|hint|heading|headline|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Description|Hint)$/;
+  /^(?:title|label|description|placeholder|subtitle|tooltip|hint|heading|headline|explanation|accessibilityLabel|accessibilityHint|ariaLabel)$|[a-z](?:Label|Tooltip|Title|Placeholder|Description|Hint)$/;
 // Variables and default parameters named for display text, wherever they are declared.
 const DISPLAY_VARIABLE = /^(?:placeholder)$|[a-z](?:Label|Placeholder|Tooltip)$/;
 const DISPLAY_FUNCTION =
@@ -50,6 +50,10 @@ const DATA_PROPERTIES = new Set(["rangeLabel", "sectionTitle", "terminalLabel"])
 // Toast payloads are display-only, so their body and action text are safe too.
 const TOAST_PROPERTY = /^(?:children|message|detail)$/;
 const TOAST_METHODS = new Set(["add", "update", "promise"]);
+// Mobile's `Dialog.alert` takes `Alert.alert`'s arguments; `Dialog.confirm`/`prompt` take one request object.
+const ALERT_CALLS = new Set(["Alert.alert", "Alert.prompt", "Dialog.alert"]);
+const DIALOG_REQUEST_CALLS = new Set(["Dialog.confirm", "Dialog.prompt"]);
+const DIALOG_REQUEST_PROPERTY = /^(?:message|confirmText|cancelText)$/;
 // Toast buttons keep their label in `children`, often built inside a helper such as stackedThreadToast.
 const ACTION_PROPS = /^(?:actionProps|secondaryActionProps)$/;
 const VERBATIM_ELEMENTS = new Set(["code", "pre", "kbd", "samp", "script", "style", "Kbd"]);
@@ -209,7 +213,8 @@ function enclosingSink(path) {
     callee.slice(callee.lastIndexOf(".") + 1),
   ];
   if (/(?:^|\.)toastManager$/.test(object) && TOAST_METHODS.has(method)) return "toast";
-  if (callee === "Alert.alert" || callee === "Alert.prompt") return "alert";
+  if (ALERT_CALLS.has(callee)) return "alert";
+  if (DIALOG_REQUEST_CALLS.has(callee)) return "dialog";
   return null;
 }
 
@@ -449,7 +454,8 @@ module.exports = function autoTranslate(babel, options) {
         (state.displayFile && DISPLAY_FILE_PROPERTY.test(key)) ||
         (sink === "toast" && TOAST_PROPERTY.test(key)) ||
         (key === "children" && isActionPropsObject(path.parentPath)) ||
-        (sink === "alert" && key === "text")
+        (sink === "alert" && key === "text") ||
+        (sink === "dialog" && DIALOG_REQUEST_PROPERTY.test(key))
       ) {
         translateValue(state, path.get("value"), sink ? `${sink}:${key}` : `prop:${key}`);
       }
@@ -508,7 +514,7 @@ module.exports = function autoTranslate(babel, options) {
     CallExpression(path, state) {
       const callee = calleePath(path.node.callee);
       const args = path.get("arguments");
-      if (callee === "Alert.alert" || callee === "Alert.prompt") {
+      if (ALERT_CALLS.has(callee)) {
         translateValue(state, args[0], "alert:title");
         translateValue(state, args[1], "alert:message");
       } else if (/^(?:window\.)?(?:confirm|alert)$/.test(callee)) {

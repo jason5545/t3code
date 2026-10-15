@@ -128,6 +128,21 @@ describe("autoTranslate", () => {
     expect(output).toContain(`text: __t3_t("Cancel", "取消")`);
   });
 
+  it("translates mobile Dialog calls like Alert calls", () => {
+    const output = transform(
+      [
+        `Dialog.alert("Could not save", undefined, [{ text: "Cancel", style: "cancel" }]);`,
+        `Dialog.confirm({ title: "Could not save", message: "Undo", confirmText: "Cancel", onConfirm });`,
+        `Dialog.prompt({ title: "Could not save", initialValue: "Undo", confirmText: "Cancel", onConfirm });`,
+      ].join("\n"),
+    );
+    expect(output).toContain(`Dialog.alert(__t3_t("Could not save", "無法儲存")`);
+    expect(output).toContain(`text: __t3_t("Cancel", "取消")`);
+    expect(output).toContain(`message: __t3_t("Undo", "復原")`);
+    expect(output.match(/confirmText: __t3_t\("Cancel", "取消"\)/g)).toHaveLength(2);
+    expect(output).toContain(`initialValue: "Undo"`);
+  });
+
   it("translates toast button labels built inside a helper", () => {
     const output = transform(
       [
