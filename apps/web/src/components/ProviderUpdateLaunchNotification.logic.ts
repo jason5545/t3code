@@ -82,7 +82,9 @@ function providerUpdateKind(provider: Pick<ServerProvider, "driver" | "displayNa
   return providerIconKind(provider.driver, provider.displayName) ?? provider.driver;
 }
 
-function providerUpdateName(provider: Pick<ServerProvider, "driver" | "displayName">): string {
+export function providerUpdateName(
+  provider: Pick<ServerProvider, "driver" | "displayName">,
+): string {
   if (providerUpdateKind(provider) === "omp") {
     return provider.displayName?.trim() || "OMP";
   }

@@ -1,4 +1,3 @@
-import { PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
 import { useMemo, useRef, useState } from "react";
 
 import { useEnvironments } from "~/state/environments";
@@ -8,6 +7,7 @@ import {
   canOneClickUpdateProviderCandidate,
   collectProviderUpdateCandidates,
   getProviderUpdateRunToastView,
+  providerUpdateName,
   type ProviderUpdateRun,
 } from "./ProviderUpdateLaunchNotification.logic";
 import { Button } from "./ui/button";
@@ -117,10 +117,7 @@ export function ProviderUpdatesAction() {
       <TooltipPopup side="top">
         {machines.map((machine) => (
           <div key={machine.environmentId}>
-            {machine.label}:{" "}
-            {machine.candidates
-              .map((candidate) => PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver)
-              .join(", ")}
+            {machine.label}: {machine.candidates.map(providerUpdateName).join(", ")}
           </div>
         ))}
       </TooltipPopup>

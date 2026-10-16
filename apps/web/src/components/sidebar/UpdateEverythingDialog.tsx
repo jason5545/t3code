@@ -2,6 +2,7 @@ import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 
+import { useChinese } from "~/locale/autoTranslateRuntime";
 import { environmentThreadShells } from "~/state/threads";
 import {
   AlertDialog,
@@ -54,6 +55,20 @@ interface UpdateEverythingDialogProps {
  * thread waiting on the user, so the text says "can resume", not "will".
  * Machines the run skips are listed with the reason, so none drop silently.
  */
+// Assembled text sits outside the positions the build-time translation pass
+// rewrites, so it picks the language here.
+const QUESTION_MARK = useChinese ? "？" : "?";
+
+function runningThreadsLabel(running: number): string {
+  if (useChinese) return `${running} 個執行中的對話`;
+  return `${running} running ${running === 1 ? "thread" : "threads"}`;
+}
+
+function skippedMachineLine(machine: SkippedMachine): string {
+  if (useChinese) return `略過 ${machine.label}：${machine.reason}`;
+  return `Skips ${machine.label}: ${machine.reason}`;
+}
+
 export function UpdateEverythingDialog({
   open,
   onOpenChange,
@@ -93,12 +108,15 @@ function UpdateEverythingDialogContent({
     ),
   );
   const running = stopped + continuing;
-  const threads = `${running} running ${running === 1 ? "thread" : "threads"}`;
+  const threads = runningThreadsLabel(running);
 
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>{summary}?</AlertDialogTitle>
+        <AlertDialogTitle>
+          {summary}
+          {QUESTION_MARK}
+        </AlertDialogTitle>
         <AlertDialogDescription className="whitespace-pre-line">
           {lines.join("\n")}
         </AlertDialogDescription>
@@ -113,7 +131,7 @@ function UpdateEverythingDialogContent({
         ) : null}
         {skipped.length > 0 ? (
           <p className="whitespace-pre-line pt-2 text-sm">
-            {skipped.map((machine) => `Skips ${machine.label}: ${machine.reason}`).join("\n")}
+            {skipped.map(skippedMachineLine).join("\n")}
           </p>
         ) : null}
       </AlertDialogHeader>

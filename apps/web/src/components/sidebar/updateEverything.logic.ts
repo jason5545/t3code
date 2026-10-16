@@ -8,6 +8,7 @@ import {
   supportsDesktopAppUpdate,
   supportsServerUpdateThreadContinuation,
 } from "~/versionSkew";
+import { useChinese } from "~/locale/autoTranslateRuntime";
 import type { ServerUpdateOutcome, ServerUpdateTarget } from "../ServerUpdateAction";
 
 export interface UpdateEverythingMachine {
@@ -98,25 +99,25 @@ export function collectServerUpdateTargets(
     const skip = (reason: string) =>
       skipped.push({ environmentId: machine.environmentId, label: machine.label, reason });
     if (config === null || !machine.connected) {
-      skip("not connected");
+      skip(useChinese ? "未連線" : "not connected");
       continue;
     }
     if (!machine.canMaintain) {
-      skip("no permission");
+      skip(useChinese ? "沒有權限" : "no permission");
       continue;
     }
     if (machine.updateState.status === "running") {
-      skip("already updating");
+      skip(useChinese ? "已在更新中" : "already updating");
       continue;
     }
     const selfUpdate = resolveServerSelfUpdateCapability(config);
     const desktopAppUpdate = supportsDesktopAppUpdate(config);
     if (selfUpdate === null) {
-      skip("needs a manual update");
+      skip(useChinese ? "需要手動更新" : "needs a manual update");
       continue;
     }
     if (selfUpdate === "desktop-managed" && !desktopAppUpdate) {
-      skip("needs a newer desktop app");
+      skip(useChinese ? "需要較新的桌面 App" : "needs a newer desktop app");
       continue;
     }
     const serverVersion = config.environment.serverVersion;
@@ -124,7 +125,8 @@ export function collectServerUpdateTargets(
       selfUpdate !== "desktop-managed" &&
       cliReleaseChannelOf(serverVersion) !== cliReleaseChannelOf(targetVersion)
     ) {
-      skip(`on the ${cliReleaseChannelOf(serverVersion)} channel`);
+      const channel = cliReleaseChannelOf(serverVersion);
+      skip(useChinese ? `位於 ${channel} 頻道` : `on the ${channel} channel`);
       continue;
     }
     targets.push({
@@ -376,9 +378,9 @@ export function collectUpdateEverythingResult(input: {
     updatedProviders: input.providers.filter((outcome) => outcome.status === "updated").length,
     restarting: [],
     failures: [
-      ...input.localFailures.map((failure) => `This app: ${failure}`),
+      ...input.localFailures.map((failure) => `${THIS_APP}${COLON}${failure}`),
       ...input.servers.flatMap(({ label, outcome }) =>
-        outcome.status === "failed" ? [`${label}: ${outcome.message}`] : [],
+        outcome.status === "failed" ? [`${label}${COLON}${outcome.message}`] : [],
       ),
       ...input.providers.flatMap((outcome) => (outcome.status === "failed" ? [outcome.line] : [])),
     ],
@@ -401,7 +403,7 @@ export function getUpdateEverythingToastView(
   readonly description?: string;
 } | null {
   const parts = [
-    result.localVersion !== null && result.localVersion === appVersion ? "this app" : null,
+    result.localVersion !== null && result.localVersion === appVersion ? THIS_APP_LOWER : null,
     countLabel(result.updatedServers, "server"),
     countLabel(result.updatedProviders, "provider"),
   ].filter((part) => part !== null);
@@ -409,19 +411,21 @@ export function getUpdateEverythingToastView(
     result.restarting.length === 0
       ? []
       : [
-          `${joinList(result.restarting)} ${result.restarting.length === 1 ? "is" : "are"} still restarting.`,
+          useChinese
+            ? `${joinList(result.restarting)} 仍在重新啟動。`
+            : `${joinList(result.restarting)} ${result.restarting.length === 1 ? "is" : "are"} still restarting.`,
         ];
   if (result.failures.length === 0) {
     if (parts.length === 0) return null;
     return {
       type: "success",
-      title: `Updated ${joinList(parts)}`,
+      title: updatedTitle(parts),
       ...(restarting.length === 0 ? {} : { description: restarting.join("\n") }),
     };
   }
   return {
     type: "error",
-    title: parts.length === 0 ? "Update failed" : `Updated ${joinList(parts)}`,
+    title: parts.length === 0 ? "Update failed" : updatedTitle(parts),
     description: [...result.failures, ...restarting].join("\n"),
   };
 }
@@ -440,13 +444,34 @@ export interface UpdateEverythingPlan {
   }>;
 }
 
-function countLabel(count: number, noun: string): string | null {
-  return count === 0 ? null : `${count} ${noun}${count === 1 ? "" : "s"}`;
+// These lines are assembled from counts and lists, outside the positions the
+// build-time translation pass rewrites, so they pick the language here.
+const THIS_APP = useChinese ? "此 App" : "This app";
+const THIS_APP_LOWER = useChinese ? "此 App" : "this app";
+const COLON = useChinese ? "：" : ": ";
+const CHINESE_NOUNS = { server: "台伺服器", provider: "個供應商" } as const;
+
+function countLabel(count: number, noun: "server" | "provider"): string | null {
+  if (count === 0) return null;
+  if (useChinese) return `${count} ${CHINESE_NOUNS[noun]}`;
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 function joinList(parts: ReadonlyArray<string>): string {
+  if (useChinese) return parts.join("、");
   if (parts.length <= 2) return parts.join(" and ");
   return `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)}`;
+}
+
+/** "Update …" or "Updated …" in Chinese, spaced before a leading count. */
+function verbList(chinese: string, english: string, parts: ReadonlyArray<string>): string {
+  const list = joinList(parts);
+  if (!useChinese) return `${english} ${list}`;
+  return /^\d/.test(list) ? `${chinese} ${list}` : `${chinese}${list}`;
+}
+
+function updatedTitle(parts: ReadonlyArray<string>): string {
+  return verbList("已更新", "Updated", parts);
 }
 
 /**
@@ -462,13 +487,15 @@ export function describeUpdateEverything(plan: UpdateEverythingPlan): {
     (count, machine) => count + machine.providers.length,
     0,
   );
-  const summary = `Update ${joinList(
+  const summary = verbList(
+    "更新",
+    "Update",
     [
-      plan.localVersion ? "this app" : null,
+      plan.localVersion ? THIS_APP_LOWER : null,
       countLabel(plan.servers.length, "server"),
       countLabel(providerCount, "provider"),
     ].filter((part) => part !== null),
-  )}`;
+  );
 
   const machines = new Map<EnvironmentId, { label: string; items: string[] }>();
   const itemsFor = (environmentId: EnvironmentId, label: string) => {
@@ -483,8 +510,12 @@ export function describeUpdateEverything(plan: UpdateEverythingPlan): {
     // offers, so it has no target version to show.
     itemsFor(server.environmentId, server.serverLabel).push(
       server.selfUpdate === "desktop-managed"
-        ? "desktop app update"
-        : `server to ${server.targetVersion}`,
+        ? useChinese
+          ? "桌面 App 更新"
+          : "desktop app update"
+        : useChinese
+          ? `伺服器更新至 ${server.targetVersion}`
+          : `server to ${server.targetVersion}`,
     );
   }
   for (const machine of plan.providerMachines) {
@@ -494,8 +525,17 @@ export function describeUpdateEverything(plan: UpdateEverythingPlan): {
   return {
     summary,
     lines: [
-      ...(plan.localVersion ? [`This app: ${plan.localVersion}, restarts last`] : []),
-      ...Array.from(machines.values(), ({ label, items }) => `${label}: ${items.join(", ")}`),
+      ...(plan.localVersion
+        ? [
+            useChinese
+              ? `此 App：${plan.localVersion}，最後重新啟動`
+              : `This app: ${plan.localVersion}, restarts last`,
+          ]
+        : []),
+      ...Array.from(
+        machines.values(),
+        ({ label, items }) => `${label}${COLON}${items.join(useChinese ? "、" : ", ")}`,
+      ),
     ],
   };
 }
