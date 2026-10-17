@@ -24,11 +24,8 @@ export const translationRoots = [
 ];
 
 const require = NodeModule.createRequire(import.meta.url);
-// @babel/core is a peer of the web build's Babel plugin; borrow that copy.
-const babelPluginDir = NodeFS.realpathSync(
-  NodePath.join(repoRoot, "apps/web/node_modules/@rolldown/plugin-babel"),
-);
-const babel = NodeModule.createRequire(NodePath.join(babelPluginDir, "package.json"))(
+// @babel/core is a dev dependency of the web build's translation plugin; borrow that copy.
+const babel = NodeModule.createRequire(NodePath.join(repoRoot, "apps/web/package.json"))(
   "@babel/core",
 ) as {
   transformSync(code: string, options: object): unknown;

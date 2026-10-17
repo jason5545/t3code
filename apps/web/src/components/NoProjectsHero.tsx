@@ -1,6 +1,5 @@
 import { useLocale } from "../locale/LocaleProvider";
 import { MessageSquareDashedIcon, PlusIcon } from "lucide-react";
-import { useCallback } from "react";
 
 import { openCommandPalette } from "../commandPaletteBus";
 import { isElectron } from "../env";
@@ -13,7 +12,6 @@ import { WorkspacePageHeader } from "./WorkspacePageHeader";
 
 export function NoProjectsHero() {
   const { t } = useLocale();
-  const openAddProject = useCallback(() => openCommandPalette({ open: "add-project" }), []);
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const { scratchEnvironmentId, startScratchThread } = useScratchProject();
   const scratchTargetEnvironmentId = scratchEnvironmentId(primaryEnvironmentId);
@@ -33,7 +31,7 @@ export function NoProjectsHero() {
                   : t("Add a project, or start without one.")}
               </EmptyDescription>
               <div className="mt-6 flex justify-center gap-2">
-                <Button size="sm" onClick={openAddProject}>
+                <Button size="sm" onClick={() => openCommandPalette({ open: "add-project" })}>
                   <PlusIcon className="size-4" />
                   {t("Add project")}
                 </Button>

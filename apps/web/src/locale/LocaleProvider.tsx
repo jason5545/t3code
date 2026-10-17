@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   isLocale,
   LOCALE_STORAGE_KEY,
@@ -45,14 +37,11 @@ export function LocaleProvider({
 }) {
   const [locale, updateLocale] = useState<Locale>(() => readLocalePreference());
   const [startupLocale] = useState(locale);
-  const setLocale = useCallback(
-    (next: Locale) => {
-      if (!isLocale(next)) return;
-      updateLocale(next);
-      if (persistLocalePreference(next) && next !== startupLocale) reload();
-    },
-    [reload, startupLocale],
-  );
+  const setLocale = (next: Locale) => {
+    if (!isLocale(next)) return;
+    updateLocale(next);
+    if (persistLocalePreference(next) && next !== startupLocale) reload();
+  };
 
   useEffect(() => {
     if (typeof document !== "undefined") document.documentElement.lang = locale;
@@ -69,14 +58,11 @@ export function LocaleProvider({
     return () => window.removeEventListener("storage", onStorage);
   }, [reload, startupLocale]);
 
-  const value = useMemo<LocaleContextValue>(
-    () => ({
-      locale,
-      setLocale,
-      t: (key, params) => translate(locale, key, params),
-    }),
-    [locale, setLocale],
-  );
+  const value: LocaleContextValue = {
+    locale,
+    setLocale,
+    t: (key, params) => translate(locale, key, params),
+  };
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

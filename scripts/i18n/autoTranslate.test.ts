@@ -9,12 +9,9 @@ import { catalogFile } from "./extract.ts";
 
 const require = NodeModule.createRequire(import.meta.url);
 const repoRoot = NodePath.resolve(import.meta.dirname, "../..");
-const babel = NodeModule.createRequire(
-  NodePath.join(
-    NodeFS.realpathSync(NodePath.join(repoRoot, "apps/web/node_modules/@rolldown/plugin-babel")),
-    "package.json",
-  ),
-)("@babel/core") as { transformSync(code: string, options: object): { code: string } };
+const babel = NodeModule.createRequire(NodePath.join(repoRoot, "apps/web/package.json"))(
+  "@babel/core",
+) as { transformSync(code: string, options: object): { code: string } };
 const autoTranslate = require("./autoTranslate.cjs");
 
 const tempDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-i18n-"));

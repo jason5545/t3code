@@ -16,20 +16,25 @@ const CHINESE_ACTIONS = {
   Discarded: "已捨棄",
 } as const;
 
+function undoNoticeText(notice: { action: keyof typeof CHINESE_ACTIONS; count: number }): string {
+  if (useChinese) {
+    const noun = notice.action === "Discarded" ? "份草稿" : "個對話";
+    return `${CHINESE_ACTIONS[notice.action]} ${notice.count} ${noun}，`;
+  }
+  const noun = `${notice.action === "Discarded" ? "draft" : "thread"}${notice.count === 1 ? "" : "s"}`;
+  return `${notice.action} ${notice.count} ${noun}, `;
+}
+
 export function SidebarThreadUndoNotice() {
   const notice = useThreadUndoNotice((state) => state.notice);
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
 
   if (!notice) return null;
   const shortcut = shortcutLabelForCommand(keybindings, "thread.undo");
-  const noun = `${notice.action === "Discarded" ? "draft" : "thread"}${notice.count === 1 ? "" : "s"}`;
-
   return (
     <Alert role="status" variant="sidebar">
       <AlertDescription>
-        {useChinese
-          ? `${CHINESE_ACTIONS[notice.action]} ${notice.count} ${notice.action === "Discarded" ? "份草稿" : "個對話"}，`
-          : `${notice.action} ${notice.count} ${noun}, `}
+        {undoNoticeText(notice)}
         <InlineButton onClick={undoLatestThreadAction}>
           {shortcut ? `${shortcut} to undo` : "Undo"}
         </InlineButton>

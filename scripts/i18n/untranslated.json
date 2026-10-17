@@ -240,6 +240,7 @@
     "apps/web/src/appearanceFonts.ts": ["SF Mono", "SF Pro"],
     "apps/web/src/branding.logic.ts": ["Nightly"],
     "apps/web/src/components/SidebarStageBackdrop.tsx": ["Dev", "Nightly"],
+    "apps/web/src/components/sidebar/UpdateEverythingDialog.tsx": ["{running} running {0}"],
     "apps/mobile/src/lib/mobileBranding.ts": ["Beta", "Dev", "Nightly"],
     "apps/mobile/src/lib/typography.ts": ["text-xs", "text-lg", "text-xl", "text-2xl"],
     "apps/mobile/src/lib/modelOptions.ts": ["Claude", "Codex", "Pi"],
