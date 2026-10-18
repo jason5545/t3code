@@ -99,6 +99,7 @@ export interface ThreadLaunchInput {
   readonly creationSource: OrchestrationV2CreationSource;
   /** Fork patch 11: thread management refuses it outside Scratch, OMP and a local model. */
   readonly ephemeral?: boolean;
+  readonly launchedByThreadId?: ThreadId;
 }
 
 type PreparationInput = Pick<
@@ -937,6 +938,9 @@ const make = Effect.gen(function* () {
                   ? {}
                   : { importedNativeThread: input.importedNativeThread }),
                 ...(input.ephemeral === true ? { ephemeral: true } : {}),
+                ...(input.launchedByThreadId === undefined
+                  ? {}
+                  : { launchedByThreadId: input.launchedByThreadId }),
                 createdBy: input.createdBy,
                 creationSource: input.creationSource,
               });
