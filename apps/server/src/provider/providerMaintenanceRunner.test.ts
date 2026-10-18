@@ -282,6 +282,45 @@ describe("providerMaintenanceRunner", () => {
     );
   });
 
+  it.effect("drops the instance's probe caches only after the updater succeeds", () => {
+    const refreshes: Array<boolean | undefined> = [];
+    const recordRefreshes = (registry: ProviderRegistry.ProviderRegistry["Service"]) => ({
+      ...registry,
+      refreshInstance: (
+        instanceId: ProviderInstanceId,
+        options?: { readonly invalidateCaches?: boolean },
+      ) => {
+        refreshes.push(options?.invalidateCaches);
+        return registry.refreshInstance(instanceId, options);
+      },
+    });
+    return Effect.gen(function* () {
+      const succeeded = yield* makeRegistry(baseNativeCliProvider);
+      yield* (yield* makeTestRunner(recordRefreshes(succeeded.registry))).updateProvider(
+        NATIVE_CLI_DRIVER,
+      );
+      assert.deepStrictEqual(refreshes, [true]);
+    }).pipe(
+      Effect.andThen(
+        Effect.gen(function* () {
+          refreshes.length = 0;
+          const failed = yield* makeRegistry(baseNativeCliProvider);
+          yield* (yield* makeTestRunner(recordRefreshes(failed.registry))).updateProvider(
+            NATIVE_CLI_DRIVER,
+          );
+          assert.deepStrictEqual(refreshes, []);
+        }).pipe(Effect.provide(layerMockSpawner(() => ({ stderr: "denied", code: 1 })))),
+      ),
+      Effect.provide(
+        Layer.mergeAll(
+          layerNonWindowsPlatform,
+          layerLatestVersionHttpClient("0.0.0"),
+          layerMockSpawner(() => ({ stdout: "updated" })),
+        ),
+      ),
+    );
+  });
+
   it.effect("reports unchanged when the updater exits 0 but the provider is gone", () => {
     return Effect.gen(function* () {
       const { registry, providersRef } = yield* makeRegistry(baseProvider);

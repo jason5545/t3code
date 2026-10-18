@@ -315,12 +315,15 @@ export const make = Effect.fn("ProviderMaintenanceRunner.make")(function* () {
         }
         return instanceIds;
       }),
+      // The executable just changed, so probes cached against the old one
+      // (an ACP agent's reported version and models) must not be reused.
       Effect.flatMap((instanceIds) =>
         instanceIds.length === 0
-          ? providerRegistry.refreshInstance(instanceId)
+          ? providerRegistry.refreshInstance(instanceId, { invalidateCaches: true })
           : Effect.forEach(
               instanceIds,
-              (instanceId) => providerRegistry.refreshInstance(instanceId),
+              (instanceId) =>
+                providerRegistry.refreshInstance(instanceId, { invalidateCaches: true }),
               {
                 concurrency: "unbounded",
                 discard: true,

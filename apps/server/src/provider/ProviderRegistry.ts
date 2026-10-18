@@ -58,9 +58,12 @@ export class ProviderRegistry extends Context.Service<
      * When the instance id is unknown the call resolves with the currently
      * cached list (no error) — matching the legacy `refresh` shim behaviour so
      * transport layers don't have to special-case unknowns.
+     * `invalidateCaches` first drops the instance's own probe caches, for
+     * when the executable behind it is known to have changed.
      */
     readonly refreshInstance: (
       instanceId: ProviderInstanceId,
+      options?: { readonly invalidateCaches?: boolean },
     ) => Effect.Effect<ReadonlyArray<ServerProvider>>;
 
     readonly refreshWorkspaceSnapshot: (input: {
@@ -667,7 +670,12 @@ export const layer = Layer.effect(
 
     const refreshInstance = Effect.fn("refreshInstance")(function* (
       instanceId: ProviderInstanceId,
+      options?: { readonly invalidateCaches?: boolean },
     ) {
+      if (options?.invalidateCaches) {
+        const instance = yield* instanceRegistry.getInstance(instanceId);
+        yield* instance?.invalidateCaches ?? Effect.void;
+      }
       const sources = yield* getLiveSources;
       const providerSource = sources.find((candidate) => candidate.instanceId === instanceId);
       if (!providerSource) {
@@ -942,8 +950,8 @@ export const layer = Layer.effect(
       getProviders: Ref.get(providersRef),
       refresh: (provider?: ProviderDriverKind) =>
         refresh(provider).pipe(Effect.catchCause(recoverRefreshFailure)),
-      refreshInstance: (instanceId: ProviderInstanceId) =>
-        refreshInstance(instanceId).pipe(Effect.catchCause(recoverRefreshFailure)),
+      refreshInstance: (instanceId: ProviderInstanceId, options?) =>
+        refreshInstance(instanceId, options).pipe(Effect.catchCause(recoverRefreshFailure)),
       refreshWorkspaceSnapshot: (input) =>
         refreshWorkspaceSnapshot(input).pipe(Effect.catchCause(recoverRefreshFailure)),
       getProviderMaintenanceCapabilitiesForInstance,

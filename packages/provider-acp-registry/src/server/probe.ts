@@ -261,6 +261,15 @@ export function acpRegistryProbeResult(
   });
 }
 
+function acpRegistryAgentVersion(started: AcpSessionRuntime.AcpSessionRuntimeStartResult): {
+  readonly agentVersion?: string;
+} {
+  const version = started.initializeResult.agentInfo?.version;
+  const agentVersion =
+    typeof version === "string" ? boundedOpaqueValue(version, MAX_ID_LENGTH) : undefined;
+  return agentVersion === undefined ? {} : { agentVersion };
+}
+
 export function acpRegistryProbeFailure(
   error: EffectAcpErrors.AcpError,
   authMethods: ReadonlyArray<AcpRegistryProbeAuthMethod> = [],
@@ -292,6 +301,8 @@ type AcpRegistryManagementInput = AcpRegistryConfigurationProbeInput;
 
 export interface AcpRegistryConfigurationProbeResult {
   readonly probe: AcpRegistryProbeResult;
+  /** `agentInfo.version` from ACP `initialize`, when the agent reports one. */
+  readonly agentVersion?: string;
   readonly slashCommands: ReadonlyArray<ServerProviderSlashCommand>;
   readonly skills: ReadonlyArray<ServerProviderSkill>;
 }
@@ -439,6 +450,7 @@ export const probeAcpRegistryConfiguration = Effect.fn("AcpRegistryProbe.probeCo
           args: result.resolved.spawn.args,
         },
       ),
+      ...acpRegistryAgentVersion(result.started),
       slashCommands: result.commands.slashCommands,
       skills: result.commands.skills,
     };
