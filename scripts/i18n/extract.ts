@@ -43,7 +43,9 @@ export function isInterfaceText(key: string): boolean {
   if (!/[A-Za-z]{2,}/.test(key) || /^(?:https?:\/\/|--)/.test(key)) return false;
   if (/^[a-z0-9]+(?:-[a-z0-9]+){2,}$/.test(key)) return false;
   const bare = key.replace(/\{[^}]+\}/g, "");
-  return /\s/.test(bare.trim()) || !/[/_.:@#=<>\\]|[a-z][A-Z]/.test(bare);
+  // Words joined to values, such as "{name} updated: {version}", are text too.
+  const joined = /[A-Za-z]{2,}/.test(bare) && /\s/.test(key.replace(/\{[^}]+\}/g, "x").trim());
+  return /\s/.test(bare.trim()) || joined || !/[/_.:@#=<>\\]|[a-z][A-Z]/.test(bare);
 }
 
 function sourceFiles(dir: string, out: string[] = []): string[] {

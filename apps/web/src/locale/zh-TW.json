@@ -6686,5 +6686,21 @@
   "Search environments": "搜尋環境",
   "Reclaim {gib} GiB on {target.label}": "在 {target.label} 上回收 {gib} GiB",
   "Old history is cleaned up automatically, but this database still holds the freed space. Run this command on {target.label} to return it to disk; it pauses and restarts the background service. Quit the desktop app first if it hosts this environment.": "舊的歷史記錄會自動清理，但這個資料庫仍占用釋出的空間。在 {target.label} 上執行這個指令即可把空間還給磁碟；執行時會暫停並重新啟動背景服務。如果這個環境由桌面版 App 主控，請先結束 App。",
-  "{providerName} updated: {0}": "{providerName} 已更新至 {0}"
+  "{providerName} updated: {0}": "{providerName} 已更新至 {0}",
+  "Language: {language}": "語言：{language}",
+  "Appearance: {0}": "外觀：{0}",
+  "Environment: {projectRenameTarget.environmentLabel}": "環境：{projectRenameTarget.environmentLabel}",
+  "Worktree: {displayPath}": "工作樹：{displayPath}",
+  "Host: {0}": "主機：{0}",
+  "{modelDescription} subagent: {announcement}": "{modelDescription} 子代理程式：{announcement}",
+  "Profile: {profileName}": "設定檔：{profileName}",
+  "Checks: {presentation.label}": "檢查：{presentation.label}",
+  "Checks: {checksSummary}": "檢查：{checksSummary}",
+  "Next: {nextTitle}": "下一步：{nextTitle}",
+  "Backup: {result.backupPath}": "備份：{result.backupPath}",
+  "Usage: {usageMetric.label}": "用量：{usageMetric.label}",
+  "Identity: {0}": "識別方式：{0}",
+  "Available. {item.installHint}": "可使用。{item.installHint}",
+  "Running: {0}": "執行中：{0}",
+  "Environment: {selectedEnvironmentLabel}": "環境：{selectedEnvironmentLabel}"
 }
