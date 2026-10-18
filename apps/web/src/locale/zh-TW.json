@@ -6685,5 +6685,6 @@
   "No matches found.": "找不到符合的項目。",
   "Search environments": "搜尋環境",
   "Reclaim {gib} GiB on {target.label}": "在 {target.label} 上回收 {gib} GiB",
-  "Old history is cleaned up automatically, but this database still holds the freed space. Run this command on {target.label} to return it to disk; it pauses and restarts the background service. Quit the desktop app first if it hosts this environment.": "舊的歷史記錄會自動清理，但這個資料庫仍占用釋出的空間。在 {target.label} 上執行這個指令即可把空間還給磁碟；執行時會暫停並重新啟動背景服務。如果這個環境由桌面版 App 主控，請先結束 App。"
+  "Old history is cleaned up automatically, but this database still holds the freed space. Run this command on {target.label} to return it to disk; it pauses and restarts the background service. Quit the desktop app first if it hosts this environment.": "舊的歷史記錄會自動清理，但這個資料庫仍占用釋出的空間。在 {target.label} 上執行這個指令即可把空間還給磁碟；執行時會暫停並重新啟動背景服務。如果這個環境由桌面版 App 主控，請先結束 App。",
+  "{providerName} updated: {0}": "{providerName} 已更新至 {0}"
 }
