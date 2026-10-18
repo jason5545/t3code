@@ -40,6 +40,10 @@ Upstream baseline: `16918b57d6` (merged 2026-10-18).
 - After a successful update the runner refreshes the instance with `invalidateCaches`, which drops the ACP probe cache (and Claude's capabilities cache), so the next probe reads the new version and models. The ACP readiness check repeats the last probed version so health refreshes neither blank it nor miss the probe cache.
 - Updates are still started by a person (toast, instance card, mobile); the server never runs them on its own. Web update prompts group by driver, so every local ACP instance is named "ACP Registry" there.
 
+## 4. Manual context compaction for ACP agents
+
+- The ACP Registry adapter exposes the existing compaction operation so the context meter can execute an agent's advertised `compact` command. The UI still offers the button only when the agent lists that command, and disables it during a running turn. This also applies to local commands such as `perch-acp`.
+
 ## Development-signed fork nightly
 
 - Local builds use an existing Apple Development identity in the owner's macOS keychain. No private key is exported, committed or uploaded to GitHub.
