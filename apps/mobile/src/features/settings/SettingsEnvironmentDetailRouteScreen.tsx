@@ -240,7 +240,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                       </Text>
                     ) : updateState.status === "failed" ? (
                       <Text selectable className="text-sm text-danger-foreground">
-                        {updateState.message}
+                        {localizeServerMessage(updateState.message)}
                       </Text>
                     ) : null}
                     {checkedRelease ? (
@@ -341,7 +341,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                                   : "text-sm text-foreground-muted"
                               }
                             >
-                              {provider.updateState.message ??
+                              {localizeServerMessage(provider.updateState.message) ??
                                 `Update ${provider.updateState.status}`}
                             </Text>
                           ) : null}
