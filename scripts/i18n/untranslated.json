@@ -1,5 +1,11 @@
 {
   "everywhere": [
+    "Bing",
+    "Brave Search",
+    "Ecosia",
+    "Google",
+    "Kagi",
+    "PDF",
     "--app-theme-placeholder",
     "--app-theme-secondary-label",
     "@min-[48rem]/providers:h-[min(44rem,calc(100dvh-11rem))] @min-[48rem]/providers:min-h-[32rem]",

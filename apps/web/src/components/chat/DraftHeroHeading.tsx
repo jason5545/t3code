@@ -6,7 +6,6 @@ interface DraftHeroHeadingProps {
   readonly isScratchDraft: boolean;
   readonly hasResolvedProject: boolean;
   readonly canChooseProject: boolean;
-  readonly projectDisplayName: string | null;
   readonly projectSelector: ReactNode;
 }
 
@@ -15,7 +14,6 @@ export function DraftHeroHeading({
   isScratchDraft,
   hasResolvedProject,
   canChooseProject,
-  projectDisplayName,
   projectSelector,
 }: DraftHeroHeadingProps) {
   const { t } = useLocale();
@@ -26,14 +24,11 @@ export function DraftHeroHeading({
       : canChooseProject
         ? "{project} to start"
         : "Add a project to start";
-  const headingLabel = t(key, { project: projectDisplayName ?? t("Choose a project") });
   // Split only the trusted translation template, never the user's project name.
   const [beforeProject, afterProject] = t(key).split("{project}");
   return (
-    <h1
-      aria-label={headingLabel}
-      className="w-full text-center font-normal text-2xl text-foreground tracking-tight sm:text-3xl"
-    >
+    // An explicit heading label hides the inline project picker in NVDA browse mode.
+    <h1 className="w-full text-center font-normal text-2xl text-foreground tracking-tight sm:text-3xl">
       {beforeProject}
       {afterProject === undefined ? null : (
         // The trailing text stays on the project name's line, like upstream's
