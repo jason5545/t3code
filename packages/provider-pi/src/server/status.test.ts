@@ -3,6 +3,7 @@ import { assert, describe, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Queue from "effect/Queue";
+import * as Schema from "effect/Schema";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as ChildProcess from "effect/process/ChildProcess";
@@ -11,6 +12,10 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 import { checkPiProviderStatus, MINIMUM_PI_VERSION } from "./status.ts";
 
 const encoder = new TextEncoder();
+const decodeRpcRequest = Schema.decodeSync(
+  Schema.fromJsonString(Schema.Struct({ id: Schema.String, type: Schema.String })),
+);
+const encodeJsonLine = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
 
 function processHandle(input: {
   readonly stdout?: string;
@@ -47,55 +52,52 @@ function piProbeSpawner(version: string, name = "pi") {
   });
 }
 
-/** Answers the discovery requests a status probe sends, with one available model. */
-function piRpcSpawner(version: string, name: string) {
-  return ChildProcessSpawner.make((command) => {
-    const args = ChildProcess.isStandardCommand(command) ? command.args : [];
-    if (args.includes("--version")) {
-      return Effect.succeed(processHandle({ stdout: `${name}${version}\n` }));
-    }
-    return Effect.gen(function* () {
-      const stdout = yield* Queue.unbounded<Uint8Array, Cause.Done>();
-      let buffer = "";
-      const data: Record<string, unknown> = {
-        get_state: { thinkingLevel: "medium" },
-        get_available_models: { models: [{ provider: "anthropic", id: "claude-opus" }] },
-        get_available_commands: { commands: [] },
-      };
-      const stdin = Sink.forEach((chunk: Uint8Array) =>
-        Effect.gen(function* () {
-          buffer += new TextDecoder().decode(chunk);
-          for (let newline = buffer.indexOf("\n"); newline !== -1; newline = buffer.indexOf("\n")) {
-            const request = JSON.parse(buffer.slice(0, newline)) as Record<string, unknown>;
-            buffer = buffer.slice(newline + 1);
-            const type = String(request["type"]);
-            const response = {
-              type: "response",
-              id: request["id"],
-              command: type,
-              success: true,
-              data: data[type] ?? {},
-            };
-            yield* Queue.offer(stdout, encoder.encode(`${JSON.stringify(response)}\n`));
-          }
-        }),
+const piDiscoverySpawner = (inventory: unknown, name = "pi") =>
+  Effect.gen(function* () {
+    const stdout = yield* Queue.unbounded<Uint8Array, Cause.Done>();
+    let stdinBuffer = "";
+    const stdin = Sink.forEach((chunk: Uint8Array) =>
+      Effect.gen(function* () {
+        stdinBuffer += new TextDecoder().decode(chunk);
+        while (true) {
+          const newline = stdinBuffer.indexOf("\n");
+          if (newline === -1) return;
+          const line = stdinBuffer.slice(0, newline);
+          stdinBuffer = stdinBuffer.slice(newline + 1);
+          if (line.length === 0) continue;
+          const request = decodeRpcRequest(line);
+          const data =
+            request.type === "get_available_models"
+              ? inventory
+              : request.type === "get_commands"
+                ? { commands: [] }
+                : {};
+          yield* Queue.offer(
+            stdout,
+            encoder.encode(
+              `${encodeJsonLine({ type: "response", id: request.id, command: request.type, success: true, data })}\n`,
+            ),
+          );
+        }
+      }),
+    );
+    return ChildProcessSpawner.make((command) => {
+      const args = ChildProcess.isStandardCommand(command) ? command.args : [];
+      return Effect.succeed(
+        args.includes("--version")
+          ? processHandle({
+              stdout: `${name}${name.endsWith("/") ? "" : " "}0.84.3\n`,
+            })
+          : ChildProcessSpawner.makeHandle({
+              ...processHandle({}),
+              exitCode: Effect.never,
+              isRunning: Effect.succeed(true),
+              stdin,
+              stdout: Stream.fromQueue(stdout),
+            }),
       );
-      return ChildProcessSpawner.makeHandle({
-        pid: ChildProcessSpawner.ProcessId(900_000_002),
-        exitCode: Effect.never,
-        isRunning: Effect.succeed(true),
-        kill: () => Effect.void,
-        unref: Effect.succeed(Effect.void),
-        stdin,
-        stdout: Stream.fromQueue(stdout),
-        stderr: Stream.empty,
-        all: Stream.empty,
-        getInputFd: () => Sink.drain,
-        getOutputFd: () => Stream.empty,
-      });
     });
   });
-}
 
 const settings = {
   enabled: true,
@@ -122,11 +124,12 @@ describe("PiProvider", () => {
 
   it.effect("labels an authenticated OMP as OMP rather than Pi", () =>
     Effect.gen(function* () {
+      const spawner = yield* piDiscoverySpawner(
+        { models: [{ provider: "anthropic", id: "claude-opus" }] },
+        "omp/",
+      );
       const snapshot = yield* checkPiProviderStatus({ ...settings, binaryPath: "omp" }).pipe(
-        Effect.provideService(
-          ChildProcessSpawner.ChildProcessSpawner,
-          piRpcSpawner("18.7.0", "omp/"),
-        ),
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
       );
       assert.equal(snapshot.auth.status, "authenticated");
       assert.equal(snapshot.auth.label, "OMP");
@@ -157,6 +160,61 @@ describe("PiProvider", () => {
         ["default"],
       );
       assert.include(snapshot.message ?? "", "could not refresh its models and commands");
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("reports only the models returned by successful Pi discovery", () =>
+    Effect.gen(function* () {
+      const spawner = yield* piDiscoverySpawner({
+        models: [{ provider: "anthropic", id: "claude-sonnet-4" }],
+      });
+      const snapshot = yield* checkPiProviderStatus(settings).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
+      assert.equal(snapshot.status, "ready");
+      assert.equal(snapshot.auth.status, "authenticated");
+      assert.deepEqual(
+        snapshot.models.map((model) => model.slug),
+        ["default", "anthropic/claude-sonnet-4"],
+      );
+      assert.equal(snapshot.models[1]?.subProvider, "anthropic");
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("reports a known unauthenticated inventory when Pi returns no usable models", () =>
+    Effect.gen(function* () {
+      const spawner = yield* piDiscoverySpawner({ models: [] });
+      const snapshot = yield* checkPiProviderStatus(settings).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
+      assert.equal(snapshot.status, "warning");
+      assert.equal(snapshot.auth.status, "unauthenticated");
+      assert.deepEqual(
+        snapshot.models.map((model) => model.slug),
+        ["default"],
+      );
+    }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect.each([
+    ["missing models", {}],
+    ["non-array models", { models: {} }],
+    ["missing model provider", { models: [{ id: "claude-sonnet-4" }] }],
+    ["missing model id", { models: [{ provider: "anthropic" }] }],
+    ["empty model provider", { models: [{ provider: "", id: "claude-sonnet-4" }] }],
+    ["empty model id", { models: [{ provider: "anthropic", id: "" }] }],
+    [
+      "mixed valid and invalid models",
+      { models: [{ provider: "anthropic", id: "claude-sonnet-4" }, { provider: "openrouter" }] },
+    ],
+  ] as const)("reports unknown authentication when Pi discovery returns %s", (_label, inventory) =>
+    Effect.gen(function* () {
+      const spawner = yield* piDiscoverySpawner(inventory);
+      const snapshot = yield* checkPiProviderStatus(settings).pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      );
+      assert.equal(snapshot.status, "ready");
+      assert.equal(snapshot.auth.status, "unknown");
     }).pipe(Effect.provide(NodeServices.layer)),
   );
 });

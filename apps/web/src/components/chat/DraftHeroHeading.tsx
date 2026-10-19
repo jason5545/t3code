@@ -36,10 +36,12 @@ export function DraftHeroHeading({
     >
       {beforeProject}
       {afterProject === undefined ? null : (
-        <>
+        // The trailing text stays on the project name's line, like upstream's
+        // non-breaking wrapper around the picker and its question mark.
+        <span className={hasResolvedProject ? "whitespace-nowrap" : undefined}>
           {projectSelector}
           {afterProject}
-        </>
+        </span>
       )}
     </h1>
   );

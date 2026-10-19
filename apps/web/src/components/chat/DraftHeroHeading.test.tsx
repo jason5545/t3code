@@ -29,14 +29,18 @@ describe("localized draft hero heading", () => {
   it("translates the Voco question and accessible sentence without replacing the picker", () => {
     const html = renderHeading("zh-TW");
     expect(html).toContain('aria-label="想在 Voco 做些什麼？"');
-    expect(html).toContain('想在 <button type="button">Voco</button> 做些什麼？');
+    expect(html).toContain(
+      '想在 <span class="whitespace-nowrap"><button type="button">Voco</button> 做些什麼？</span>',
+    );
     expect(html).not.toContain("What should we build");
     expect(translate("zh-TW", "or start without a project")).toBe("或直接開始，不選專案");
   });
   it("keeps the original English sentence and inline picker", () => {
     const html = renderHeading("en");
     expect(html).toContain('aria-label="What should we build in Voco?"');
-    expect(html).toContain('What should we build in <button type="button">Voco</button>?');
+    expect(html).toContain(
+      'What should we build in <span class="whitespace-nowrap"><button type="button">Voco</button>?</span>',
+    );
     expect(translate("en", "or start without a project")).toBe("or start without a project");
   });
   it("localizes the scratch-project heading", () => {
@@ -47,7 +51,7 @@ describe("localized draft hero heading", () => {
   it("localizes the project-selection state", () => {
     const html = renderHeading("zh-TW", { hasResolvedProject: false });
     expect(html).toContain('aria-label="選擇 Voco 開始"');
-    expect(html).toContain('選擇 <button type="button">Voco</button> 開始');
+    expect(html).toContain('選擇 <span><button type="button">Voco</button> 開始</span>');
   });
   it("localizes the no-project first-run state", () => {
     const html = renderHeading("zh-TW", { hasResolvedProject: false, canChooseProject: false });

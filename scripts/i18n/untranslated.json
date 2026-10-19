@@ -298,7 +298,9 @@
       "message",
       "code",
       "wrench",
-      "alert"
+      "alert",
+      "work-live",
+      "work-toggle"
     ],
     "apps/mobile/src/state/use-thread-outbox-drain.ts": [
       "failed",
