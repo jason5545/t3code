@@ -124,6 +124,7 @@ import * as ServerEnvironment from "./environment/ServerEnvironment.ts";
 import * as DirectEndpoints from "./environment/DirectEndpoints.ts";
 import * as RemoteOpenTargets from "./environment/RemoteOpenTargets.ts";
 import * as AuthHttp from "./auth/http.ts";
+import * as TailscalePairing from "./auth/TailscalePairing.ts";
 import * as ReplayMarkers from "./auth/replayMarkers.ts";
 import * as ServerSecretStore from "./auth/ServerSecretStore.ts";
 import * as WebhookRoute from "./scheduledTasks/webhookRoute.ts";
@@ -682,8 +683,12 @@ const layerCommandReadiness = HttpRouter.middleware(
 const layerMakeRoutes = Layer.mergeAll(
   Layer.mergeAll(
     HttpApiBuilder.layer(EnvironmentHttpApi).pipe(
-      Layer.provide(AuthHttp.layer),
-      Layer.provide(McpOAuthHttp.layer.pipe(Layer.provide(McpOAuth.layer))),
+      Layer.provide(AuthHttp.layer.pipe(Layer.provide(TailscalePairing.layer))),
+      Layer.provide(
+        McpOAuthHttp.layer.pipe(
+          Layer.provide(McpOAuth.layer.pipe(Layer.provide(TailscalePairing.layer))),
+        ),
+      ),
       Layer.provide(CloudHttp.layer),
       Layer.provide(OrchestrationHttp.layer),
       Layer.provide(PullRequestHttp.layer),

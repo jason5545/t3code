@@ -90,6 +90,26 @@ Any agent that supports remote MCP servers over HTTP with OAuth can connect. Giv
 it the MCP URL and choose OAuth, and the agent finds the sign-in settings itself.
 Agents without OAuth support cannot connect.
 
+## Bots on tagged tailnet machines
+
+An agent on a tagged machine in your tailnet, such as a bot server, can sign in
+without anyone approving it. Start the host with the tags to trust and the most
+each may do:
+
+```bash
+T3CODE_TAILSCALE_MCP_TAGS="tag:bot=auto-accept-edits" t3 serve --host <tailnet-ip>
+```
+
+List several as `tag:a=read-only,tag:b=full-access`. The levels are
+`read-only`, `approval-required`, `auto-accept-edits`, `auto` and `full-access`;
+a machine with several listed tags gets the lowest. Only a sign-in that returns
+to a `localhost` address is approved this way, so the agent can start it with
+`curl` or its own browser and nothing leaves that machine. Sign-ins that return
+to an https address, and machines with other tags, still use the approval page.
+
+Revoking such an agent sends its machine's next sign-in to the approval page
+until you run `t3 auth tailscale unblock` on the host.
+
 ## Remove an agent
 
 Approved agents appear under **Settings → Connections** like other clients.

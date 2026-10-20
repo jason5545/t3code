@@ -8,6 +8,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as SqlSchema from "effect/sql/SqlSchema";
 
 import * as AuthSessions from "../persistence/AuthSessions.ts";
+import { isMcpClientSubject } from "./mcpClientSubject.ts";
 
 /**
  * Fork patch 6: a device paired over the LAN or tailnet stays signed in while
@@ -21,8 +22,6 @@ export const RENEWED_SESSION_LIFETIME = Duration.days(30);
 // One write per session per day at most, and a connection made at least every
 // 29 days always finds its session alive.
 const RENEW_WITHIN_REMAINING = Duration.days(29);
-// MCP sign-ins last what the user chose with `t3 auth pairing create --session-ttl`.
-const MCP_CLIENT_SUBJECT = "mcp-client";
 
 const ExtendSessionExpiryInput = Schema.Struct({
   sessionId: AuthSessionId,
@@ -35,7 +34,8 @@ const remainingMillis = (session: AuthSessions.AuthSessionRecord, now: DateTime.
 
 export const isRenewable = (session: AuthSessions.AuthSessionRecord): boolean =>
   session.revokedAt === null &&
-  session.subject !== MCP_CLIENT_SUBJECT &&
+  // MCP sign-ins last what the user chose with `t3 auth pairing create --session-ttl`.
+  !isMcpClientSubject(session.subject) &&
   // T3 Connect re-mints its own short-lived access tokens.
   session.method !== "dpop-access-token" &&
   // A session issued shorter than the default keeps the lifetime it was given.

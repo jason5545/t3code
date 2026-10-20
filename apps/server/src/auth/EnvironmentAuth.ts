@@ -40,6 +40,7 @@ import * as ServerConfig from "../config.ts";
 import * as EnvironmentAuthPolicy from "./EnvironmentAuthPolicy.ts";
 import * as PairingGrantStore from "./PairingGrantStore.ts";
 import { decodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
+import { isMcpClientSubject, MCP_CLIENT_SUBJECT } from "./mcpClientSubject.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as SessionStore from "./SessionStore.ts";
 import { REUSABLE_DEV_SESSION_EXPIRES_AT, resolveReusableDevAuth } from "./ReusableDevAuth.ts";
@@ -75,7 +76,6 @@ export interface IssuedBearerSession {
  * the user approved; the HTTP API and WebSocket reject them so an agent token
  * cannot reach the full RPC surface around that cap.
  */
-const MCP_CLIENT_SUBJECT = "mcp-client";
 const MCP_CLIENT_SESSION_TTL = Duration.days(30);
 
 export const mcpClientScopes = (
@@ -559,6 +559,8 @@ export class EnvironmentAuth extends Context.Service<
       readonly access: AuthMcpClientAccess;
       readonly ttl?: Duration.Duration;
       readonly client: AuthClientMetadata;
+      /** Fork patch 7: an MCP subject naming the tailnet node it was approved for. */
+      readonly subject?: string;
     }) => Effect.Effect<
       { readonly token: string; readonly expiresAt: DateTime.DateTime },
       ServerAuthInternalError
@@ -619,7 +621,7 @@ export function toBootstrapExchangeError(
 }
 
 const rejectMcpClientAudience = <S extends { readonly subject: string }>(session: S) =>
-  session.subject === MCP_CLIENT_SUBJECT
+  isMcpClientSubject(session.subject)
     ? Effect.fail(
         new ServerAuthInvalidCredentialError({
           diagnostic: "MCP client sessions are only accepted by the MCP endpoint.",
@@ -1269,7 +1271,7 @@ export const make = Effect.gen(function* () {
     return sessions.verify(token).pipe(
       mapSessionVerificationErrors,
       Effect.flatMap((session) =>
-        session.subject === MCP_CLIENT_SUBJECT && session.method === "bearer-access-token"
+        isMcpClientSubject(session.subject) && session.method === "bearer-access-token"
           ? Effect.succeed({
               sessionId: session.sessionId,
               label: session.client.label ?? "MCP client",
@@ -1290,7 +1292,10 @@ export const make = Effect.gen(function* () {
   const issueMcpClientSession: EnvironmentAuth["Service"]["issueMcpClientSession"] = (input) =>
     sessions
       .issue({
-        subject: MCP_CLIENT_SUBJECT,
+        subject:
+          input.subject !== undefined && isMcpClientSubject(input.subject)
+            ? input.subject
+            : MCP_CLIENT_SUBJECT,
         method: "bearer-access-token",
         scopes: mcpClientScopes(input.access),
         ttl: input.ttl ?? MCP_CLIENT_SESSION_TTL,

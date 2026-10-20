@@ -4,6 +4,7 @@ import {
   EnvironmentAuthenticatedAuth,
   EnvironmentAuthenticatedPrincipal,
   EnvironmentHttpApi,
+  EnvironmentOperationForbiddenError,
   type AuthBrowserSessionRequest,
   type AuthBrowserSessionResult,
   type AuthCreatePairingCredentialInput,
@@ -35,6 +36,10 @@ interface EnvironmentHttpTestScenario {
   readonly pairingCredential?: (
     payload: AuthCreatePairingCredentialInput,
   ) => Effect.Effect<AuthPairingCredentialResult>;
+  readonly tailscalePairing?: () => Effect.Effect<
+    AuthPairingCredentialResult,
+    EnvironmentOperationForbiddenError
+  >;
 }
 
 export interface EnvironmentHttpTestCalls {
@@ -42,6 +47,7 @@ export interface EnvironmentHttpTestCalls {
   session: number;
   browserSession: Array<AuthBrowserSessionRequest>;
   pairingCredential: Array<AuthCreatePairingCredentialInput>;
+  tailscalePairing: number;
 }
 
 const unexpectedEndpoint = (endpoint: string) =>
@@ -66,6 +72,7 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
     session: 0,
     browserSession: [],
     pairingCredential: [],
+    tailscalePairing: 0,
   };
 
   const client = await Effect.runPromise(
@@ -100,6 +107,21 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
               }),
             )
             .handle("token", () => unexpectedEndpoint("auth.token"))
+            .handle(
+              "tailscalePairing",
+              Effect.fn("test.environment.auth.tailscalePairing")(function* () {
+                calls.tailscalePairing += 1;
+                // Like a server without Tailscale pairing turned on.
+                return yield* (
+                  scenario.tailscalePairing?.() ??
+                    new EnvironmentOperationForbiddenError({
+                      code: "operation_forbidden",
+                      reason: "tailscale_pairing_refused",
+                      traceId: "test-trace",
+                    })
+                );
+              }),
+            )
             .handle("webSocketTicket", () => unexpectedEndpoint("auth.webSocketTicket"))
             .handle(
               "pairingCredential",
@@ -115,7 +137,8 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
             .handle("revokePairingLink", () => unexpectedEndpoint("auth.revokePairingLink"))
             .handle("clients", () => unexpectedEndpoint("auth.clients"))
             .handle("revokeClient", () => unexpectedEndpoint("auth.revokeClient"))
-            .handle("revokeOtherClients", () => unexpectedEndpoint("auth.revokeOtherClients")),
+            .handle("revokeOtherClients", () => unexpectedEndpoint("auth.revokeOtherClients"))
+            .handle("tailnetServers", () => unexpectedEndpoint("auth.tailnetServers")),
         ),
       ]),
       Effect.provideService(EnvironmentAuthenticatedAuth, authenticatedAuth),

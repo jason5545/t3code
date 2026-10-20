@@ -155,6 +155,47 @@ tailscale serve --https=443 off
 If that port is already in use, choose another with
 `--tailscale-serve-port`. See `t3 pair --help` for other pairing options.
 
+### Pair over Tailscale without a code
+
+A command-line host on a tailnet can pair your own devices without a code. Turn
+it on when starting the server:
+
+```bash
+T3CODE_TAILSCALE_PAIRING=true t3 serve --host <tailnet-ip>
+```
+
+Then enter only the host's address in **Add environment** and leave the code
+empty, or open the address in a browser. A device pairs this way when Tailscale
+reports it as yours: untagged and signed in to the same Tailscale account as
+the host, which must itself belong to a person rather than a tag. It gets the
+access a default pairing code gives and is named after its Tailscale machine.
+Tagged machines, other people's devices and connections from outside the
+tailnet still need a code, as does the hosted web app.
+
+When a saved environment's sign-in has expired or is no longer valid, the app
+tries this before asking for a code. It also works through
+[Tailscale HTTPS](#tailscale-https). While it is on, do not put another reverse
+proxy on the host in front of the server: the server trusts the identity
+headers on connections from its own machine, which is how Tailscale Serve
+reaches it.
+
+The host also tells signed-in clients which of your other computers run T3
+Code, so **Add environment** lists them under **On your tailnet**. It looks at
+your online, untagged computers on port 3773 and at their Tailscale HTTPS name.
+A phone with no environment yet can look for itself: choose **Find servers with
+the Tailscale API** and enter an OAuth client created in the Tailscale admin
+console with the `devices:core:read` scope. The secret stays in the phone's
+keychain.
+
+Revoking a session in **Settings → Connections** also stops its device from
+pairing over Tailscale, including the other apps on that machine, until you
+lift the block on the host. A session that simply expires does not block it.
+
+```bash
+t3 auth tailscale blocked
+t3 auth tailscale unblock <device-name-or-node-id>
+```
+
 ### Hosted web app
 
 [app.t3.codes](https://app.t3.codes) needs an HTTPS endpoint. It connects directly

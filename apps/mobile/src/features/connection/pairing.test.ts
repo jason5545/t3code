@@ -20,6 +20,13 @@ describe("buildPairingUrl", () => {
     );
   });
 
+  it("builds a bare backend URL when the code is empty", () => {
+    expect(buildPairingUrl("100.95.60.35:3773", "")).toBe("http://100.95.60.35:3773/");
+    expect(buildPairingUrl("agent-hub.example.ts.net", " ")).toBe(
+      "https://agent-hub.example.ts.net/",
+    );
+  });
+
   it("preserves an explicit scheme for an IP address", () => {
     expect(buildPairingUrl("https://192.168.1.100:3773", "pairing-token")).toBe(
       "https://192.168.1.100:3773/#token=pairing-token",

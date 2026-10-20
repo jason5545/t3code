@@ -46,6 +46,7 @@ import {
 import {
   DpopFailureReason,
   AuthSessionId,
+  EnvironmentId,
   ThreadId,
   TrimmedNonEmptyString,
 } from "./baseSchemas.ts";
@@ -105,6 +106,8 @@ export type EnvironmentAuthInvalidReason = typeof EnvironmentAuthInvalidReason.T
 
 export const EnvironmentOperationForbiddenReason = Schema.Literals([
   "current_session_revoke_not_allowed",
+  // Fork patch 7: this connection cannot pair over Tailscale; pair with a code.
+  "tailscale_pairing_refused",
 ]);
 export type EnvironmentOperationForbiddenReason = typeof EnvironmentOperationForbiddenReason.Type;
 
@@ -436,6 +439,15 @@ export const AuthClientSessionRevokeResult = Schema.Struct({
 });
 export type AuthClientSessionRevokeResult = typeof AuthClientSessionRevokeResult.Type;
 
+/** Fork patch 7: another T3 Code server that an environment found on its tailnet. */
+export const TailnetServer = Schema.Struct({
+  environmentId: EnvironmentId,
+  label: Schema.String,
+  httpBaseUrl: Schema.String,
+  nodeName: Schema.String,
+});
+export type TailnetServer = typeof TailnetServer.Type;
+
 export const AuthOtherClientSessionsRevokeResult = Schema.Struct({
   revokedCount: Schema.Number,
 });
@@ -468,6 +480,13 @@ class EnvironmentAuthHttpApi extends HttpApiGroup.make("auth")
       payload: AuthTokenExchangeRequest,
       success: AuthAccessTokenResult,
       error: EnvironmentTokenExchangeErrors,
+    }),
+  )
+  .add(
+    // Fork patch 7: a pairing code issued to the requesting tailnet device.
+    HttpApiEndpoint.post("tailscalePairing", "/api/auth/tailscale-pairing", {
+      success: AuthPairingCredentialResult,
+      error: [EnvironmentOperationForbiddenError, EnvironmentInternalError],
     }),
   )
   .add(
@@ -519,6 +538,14 @@ class EnvironmentAuthHttpApi extends HttpApiGroup.make("auth")
     HttpApiEndpoint.post("revokeOtherClients", "/api/auth/clients/revoke-others", {
       headers: OptionalBearerHeaders,
       success: AuthOtherClientSessionsRevokeResult,
+      error: EnvironmentScopedOperationErrors,
+    }).middleware(EnvironmentAuthenticatedAuth),
+  )
+  .add(
+    // Fork patch 7: other T3 Code servers on this environment's tailnet.
+    HttpApiEndpoint.get("tailnetServers", "/api/tailnet/servers", {
+      headers: OptionalBearerHeaders,
+      success: Schema.Array(TailnetServer),
       error: EnvironmentScopedOperationErrors,
     }).middleware(EnvironmentAuthenticatedAuth),
   ) {}

@@ -6786,5 +6786,18 @@
   "Finish the sign-in": "完成登入",
   "Approved. The agent gets access once it receives this sign-in link, which works once and within a minute.": "已核准。代理程式收到這個登入連結後才會取得存取權，連結只能用一次，而且要在一分鐘內使用。",
   "If the agent runs on this computer, continue here. If it runs on another machine, copy the link and give it to the agent there.": "代理程式在這部電腦上，就直接繼續。在另一台機器上，就複製連結交給那邊的代理程式。",
-  "Continue on this computer": "在這部電腦繼續"
+  "Continue on this computer": "在這部電腦繼續",
+  "If the backend allows Tailscale pairing, leave the code empty.": "後端允許 Tailscale 配對時，配對碼可以留空。",
+  "On your tailnet": "你的 tailnet 上",
+  "Tailscale OAuth client ID": "Tailscale OAuth 用戶端 ID",
+  "Create an OAuth client with the devices:core:read scope in the Tailscale admin console.": "在 Tailscale 管理主控台建立具有 devices:core:read 範圍的 OAuth 用戶端。",
+  "Tailscale OAuth client secret": "Tailscale OAuth 用戶端密鑰",
+  "Could not use the Tailscale API": "無法使用 Tailscale API",
+  "Check the OAuth client ID and secret, and that the client has the devices:core:read scope.": "請確認 OAuth 用戶端 ID 和密鑰，以及這個用戶端具有 devices:core:read 範圍。",
+  "Stop using the Tailscale API?": "要停止使用 Tailscale API 嗎？",
+  "This phone forgets the OAuth client. Servers you added stay.": "這支手機會忘記這個 OAuth 用戶端，已新增的伺服器會保留。",
+  "Tailscale API is on": "Tailscale API 已開啟",
+  "Find servers with the Tailscale API": "用 Tailscale API 尋找伺服器",
+  "Tap to remove its OAuth client from this phone.": "點一下即可從這支手機移除 OAuth 用戶端。",
+  "For a phone with no environment to ask yet.": "適用於還沒有環境可以詢問的手機。"
 }

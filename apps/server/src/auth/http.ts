@@ -2,6 +2,7 @@ import {
   authScopeRequiredResponse,
   AuthAccessReadScope,
   AuthAccessWriteScope,
+  AuthOrchestrationReadScope,
   AuthStandardClientScopes,
   AuthGrantScope,
   EnvironmentAuthInvalidError,
@@ -10,6 +11,7 @@ import {
   EnvironmentInternalError,
   type EnvironmentInternalErrorReason,
   EnvironmentOperationForbiddenError,
+  type EnvironmentOperationForbiddenReason,
   EnvironmentRequestInvalidError,
   type EnvironmentRequestInvalidReason,
   EnvironmentResourceNotFoundError,
@@ -40,6 +42,7 @@ import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as SessionStore from "./SessionStore.ts";
+import * as TailscalePairing from "./TailscalePairing.ts";
 import { traceAuthenticatedRelayRequest, traceRelayRequest } from "../cloud/traceRelayRequest.ts";
 import { deriveAuthClientMetadata } from "./utils.ts";
 import { verifyRequestDpopProof } from "./dpop.ts";
@@ -139,7 +142,7 @@ export function failEnvironmentScopeRequired(requiredScope: AuthEnvironmentScope
   );
 }
 
-function failEnvironmentOperationForbidden(reason: "current_session_revoke_not_allowed") {
+function failEnvironmentOperationForbidden(reason: EnvironmentOperationForbiddenReason) {
   return currentEnvironmentTraceId.pipe(
     Effect.flatMap((traceId) =>
       Effect.fail(
@@ -292,6 +295,8 @@ export const layer = HttpApiBuilder.group(
   Effect.fnUntraced(function* (handlers) {
     const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
     const sessions = yield* SessionStore.SessionStore;
+    // Fork patch 7: optional so routes built without it (tests) refuse instead of requiring it.
+    const tailscalePairing = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
 
     return handlers
       .handle(
@@ -440,6 +445,33 @@ export const layer = HttpApiBuilder.group(
         ),
       )
       .handle(
+        "tailscalePairing",
+        Effect.fn("environment.auth.tailscalePairing")(
+          function* (args) {
+            yield* annotateEnvironmentRequest(args.endpoint.name);
+            const request = yield* HttpServerRequest.HttpServerRequest;
+            yield* appendCredentialResponseHeaders;
+            return yield* Option.match(tailscalePairing, {
+              onNone: () =>
+                Effect.fail(
+                  new TailscalePairing.TailscalePairingRefusedError({ reason: "disabled" }),
+                ),
+              onSome: (service) =>
+                service.issueCredential(TailscalePairing.pairingRequestOf(request)),
+            });
+          },
+          Effect.catchTags({
+            TailscalePairingRefusedError: () =>
+              failEnvironmentOperationForbidden("tailscale_pairing_refused"),
+            TailscalePairingStoreError: (error) =>
+              failEnvironmentInternal("pairing_credential_issuance_failed", error),
+          }),
+          Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
+            failEnvironmentInternal("pairing_credential_issuance_failed", error),
+          ),
+        ),
+      )
+      .handle(
         "webSocketTicket",
         Effect.fn("environment.auth.webSocketTicket")(
           function* (args) {
@@ -539,6 +571,17 @@ export const layer = HttpApiBuilder.group(
             failEnvironmentInternal("client_session_revoke_failed", error),
           ),
         ),
+      )
+      .handle(
+        "tailnetServers",
+        Effect.fn("environment.auth.tailnetServers")(function* (args) {
+          yield* annotateEnvironmentRequest(args.endpoint.name);
+          yield* requireEnvironmentScope(AuthOrchestrationReadScope);
+          return yield* Option.match(tailscalePairing, {
+            onNone: () => Effect.succeed([]),
+            onSome: (service) => service.discoverServers(),
+          });
+        }),
       )
       .handle(
         "revokeOtherClients",

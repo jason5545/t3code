@@ -243,3 +243,31 @@ export const resolveRemotePairingTarget = (input: {
     wsBaseUrl: toWsBaseUrl(normalizedHost),
   };
 };
+
+const isPairingTokenMissing = Schema.is(RemotePairingTokenMissingError);
+const isPairingCodeMissing = Schema.is(RemotePairingCodeMissingError);
+
+/**
+ * Fork patch 7: the backend a pairing input names when it carries no code or
+ * token, so a client can ask that backend to pair it over Tailscale. Null when
+ * the input has a credential or does not name a valid backend.
+ */
+export const resolveCodelessPairingEndpoint = (input: {
+  readonly pairingUrl?: string;
+  readonly host?: string;
+  readonly pairingCode?: string;
+}): { readonly httpBaseUrl: string; readonly wsBaseUrl: string } | null => {
+  try {
+    resolveRemotePairingTarget(input);
+    return null;
+  } catch (error) {
+    const backend = isPairingTokenMissing(error)
+      ? new URL(input.pairingUrl?.trim() ?? "")
+      : isPairingCodeMissing(error)
+        ? normalizeRemoteBaseUrl(input.host ?? "", "direct-host")
+        : null;
+    return backend === null
+      ? null
+      : { httpBaseUrl: toHttpBaseUrl(backend), wsBaseUrl: toWsBaseUrl(backend) };
+  }
+};

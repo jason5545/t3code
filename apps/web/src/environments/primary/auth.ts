@@ -309,6 +309,24 @@ function isTransientBootstrapError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
+/**
+ * Fork patch 7: a browser on the owner's tailnet signs in without a code when
+ * the server offers Tailscale pairing. Any refusal or failure leaves the
+ * pairing screen as it was.
+ */
+async function pairOverTailscale(): Promise<boolean> {
+  try {
+    const issued = await runPrimaryHttp(
+      PrimaryEnvironmentHttpClient.pipe(Effect.flatMap((client) => client.auth.tailscalePairing())),
+    );
+    await exchangeBootstrapCredential(issued.credential);
+    await waitForAuthenticatedSessionAfterBootstrap();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function bootstrapServerAuth(urlCredential: string | null): Promise<ServerAuthGateState> {
   const currentSession = await fetchSessionState();
   if (currentSession.authenticated && !urlCredential) {
@@ -317,6 +335,11 @@ async function bootstrapServerAuth(urlCredential: string | null): Promise<Server
 
   const bootstrapCredential = urlCredential ?? getDesktopBootstrapCredential();
   if (!bootstrapCredential) {
+    // Loopback servers skip it, so local browsers make no extra request;
+    // browsers reaching one through Tailscale Serve still pair with a code.
+    if (currentSession.auth.policy === "remote-reachable" && (await pairOverTailscale())) {
+      return { status: "authenticated" };
+    }
     return {
       status: "requires-auth",
       auth: currentSession.auth,

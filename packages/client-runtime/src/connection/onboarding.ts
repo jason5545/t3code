@@ -1,14 +1,16 @@
 import type { DesktopSshEnvironmentTarget, EnvironmentId } from "@t3tools/contracts";
-import { resolveRemotePairingTarget } from "@t3tools/shared/remote";
+import { resolveCodelessPairingEndpoint, resolveRemotePairingTarget } from "@t3tools/shared/remote";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import * as HttpClient from "effect/http/HttpClient";
 
 import { bootstrapRemoteBearerSession } from "../authorization/remote.ts";
+import { pairRemoteBearerOverTailscale } from "../authorization/tailscalePairing.ts";
 import { deriveWsBaseUrl, normalizeHttpBaseUrl } from "../environment/endpoint.ts";
 import { fetchRemoteEnvironmentDescriptor } from "../environment/descriptor.ts";
 import * as ClientCapabilities from "../platform/capabilities.ts";
@@ -101,7 +103,11 @@ function differentMachineError(label: string) {
 export const preparePairingRegistration = Effect.fn(
   "clientRuntime.connection.onboarding.preparePairingRegistration",
 )(function* (input: PairingConnectionInput) {
-  const target = yield* resolvePairingTarget(input);
+  const resolved = yield* resolvePairingTarget(input).pipe(Effect.result);
+  // Fork patch 7: an address without a code asks that backend to pair over Tailscale.
+  const target = Result.isSuccess(resolved)
+    ? resolved.success
+    : (resolveCodelessPairingEndpoint(input) ?? (yield* resolved.failure));
   const presentation = yield* ClientCapabilities.ClientPresentation;
   const descriptor = yield* fetchRemoteEnvironmentDescriptor({
     httpBaseUrl: target.httpBaseUrl,
@@ -118,11 +124,16 @@ export const preparePairingRegistration = Effect.fn(
   if (compatibilityError !== null && compatibilityError.serverUpdateRequired !== true) {
     return yield* compatibilityError;
   }
-  const access = yield* bootstrapRemoteBearerSession({
-    httpBaseUrl: target.httpBaseUrl,
-    credential: target.credential,
-    clientMetadata: presentation.metadata,
-  }).pipe(Effect.mapError(mapRemoteEnvironmentError));
+  const access = Result.isSuccess(resolved)
+    ? yield* bootstrapRemoteBearerSession({
+        httpBaseUrl: target.httpBaseUrl,
+        credential: resolved.success.credential,
+        clientMetadata: presentation.metadata,
+      }).pipe(Effect.mapError(mapRemoteEnvironmentError))
+    : yield* pairRemoteBearerOverTailscale({
+        httpBaseUrl: target.httpBaseUrl,
+        clientMetadata: presentation.metadata,
+      }).pipe(Effect.mapError(() => resolved.failure));
   const connectionId = bearerConnectionId(descriptor.environmentId, target.httpBaseUrl);
 
   return new BearerConnectionRegistration({

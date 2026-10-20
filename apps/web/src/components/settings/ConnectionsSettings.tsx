@@ -186,6 +186,7 @@ import {
 import { APP_VERSION } from "~/branding";
 import { requestConfirmDialog } from "~/confirmDialog";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { TailnetServerSuggestions } from "./TailnetServerSuggestions";
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import {
   environmentUpdateStatesAtom,
@@ -367,7 +368,7 @@ function parsePairingUrlFields(
 
 function parseRemotePairingFields(input: { readonly host: string; readonly pairingCode: string }): {
   readonly host: string;
-  readonly pairingCode: string;
+  readonly pairingCode?: string;
 } {
   const parsedPairingUrl = parsePairingUrlFields(input.host);
   if (parsedPairingUrl) return parsedPairingUrl;
@@ -377,10 +378,8 @@ function parseRemotePairingFields(input: { readonly host: string; readonly pairi
   if (!host) {
     throw new Error("Enter a backend host.");
   }
-  if (!pairingCode) {
-    throw new Error("Enter a pairing code.");
-  }
-  return { host, pairingCode };
+  // Fork patch 7: without a code the backend is asked to pair over Tailscale.
+  return pairingCode ? { host, pairingCode } : { host };
 }
 
 function formatDesktopSshConnectionError(error: unknown): string {
@@ -2492,8 +2491,9 @@ export function ConnectionsSettings() {
     setIsAddingSavedBackend(false);
   };
 
-  const handleAddSavedBackend = async () => {
-    if (savedBackendMode === "ssh") {
+  // Fork patch 7: a server found on the tailnet is added by address alone.
+  const handleAddSavedBackend = async (discovered?: { readonly httpBaseUrl: string }) => {
+    if (savedBackendMode === "ssh" && discovered === undefined) {
       let target: DesktopSshEnvironmentTarget;
       try {
         target = parseManualDesktopSshTarget({
@@ -2514,10 +2514,11 @@ export function ConnectionsSettings() {
     setSavedBackendError(null);
     let remotePairingInput: ReturnType<typeof parseRemotePairingFields>;
     try {
-      remotePairingInput = parseRemotePairingFields({
-        host: savedBackendHost,
-        pairingCode: savedBackendPairingCode,
-      });
+      remotePairingInput = parseRemotePairingFields(
+        discovered === undefined
+          ? { host: savedBackendHost, pairingCode: savedBackendPairingCode }
+          : { host: discovered.httpBaseUrl, pairingCode: "" },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to add backend.";
       setSavedBackendError(message);
@@ -2801,6 +2802,9 @@ export function ConnectionsSettings() {
         <span className="mt-1 block text-2xs text-muted-foreground">
           Paste a full pairing URL here to fill both fields automatically.
         </span>
+        <span className="mt-1 block text-2xs text-muted-foreground">
+          If the backend allows Tailscale pairing, leave the code empty.
+        </span>
       </div>
     </div>
   );
@@ -2853,6 +2857,12 @@ export function ConnectionsSettings() {
           </Button>
         </div>
       ) : null}
+      {routeTarget ? null : (
+        <TailnetServerSuggestions
+          disabled={isAddingSavedBackend}
+          onAdd={(httpBaseUrl) => void handleAddSavedBackend({ httpBaseUrl })}
+        />
+      )}
       {renderRemoteFields()}
       {savedBackendError ? <p className="text-xs text-destructive">{savedBackendError}</p> : null}
       <Button

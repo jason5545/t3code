@@ -31,14 +31,14 @@ export function buildPairingUrl(host: string, code: string): string {
   const h = host.trim();
   const c = code.trim();
   if (!h) return "";
-  if (!c) return h;
 
   try {
     const url = new URL(h.includes("://") ? h : `${isIpLiteral(h) ? "http" : "https"}://${h}`);
-    url.hash = new URLSearchParams([["token", c]]).toString();
+    // Fork patch 7: an address alone asks the backend to pair over Tailscale.
+    if (c) url.hash = new URLSearchParams([["token", c]]).toString();
     return url.toString();
   } catch {
-    return `${h}#token=${c}`;
+    return c ? `${h}#token=${c}` : h;
   }
 }
 

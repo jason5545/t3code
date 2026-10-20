@@ -12,6 +12,7 @@ import * as HttpClient from "effect/http/HttpClient";
 
 import { appendClientConnectionParams } from "../authorization/remote.ts";
 import * as RemoteEnvironmentAuthorization from "../authorization/service.ts";
+import { pairRemoteBearerOverTailscale } from "../authorization/tailscalePairing.ts";
 import * as ClientCapabilities from "../platform/capabilities.ts";
 import {
   BearerConnectionCredential,
@@ -39,6 +40,9 @@ import type {
   SshConnectionTarget,
 } from "./model.ts";
 import { ConnectionBlockedError, type ConnectionAttemptError } from "./model.ts";
+
+const isAuthenticationBlock = (error: ConnectionAttemptError) =>
+  error._tag === "ConnectionBlockedError" && error.reason === "authentication";
 import * as ConnectionProfileStore from "./profileStore.ts";
 import {
   appendOrchestrationProtocol,
@@ -120,6 +124,8 @@ const makePrimaryBroker = Effect.fn("clientRuntime.connection.broker.makePrimary
 const makeBearerBroker = Effect.fn("clientRuntime.connection.broker.makeBearer")(function* () {
   const credentials = yield* ConnectionCredentialStore.ConnectionCredentialStore;
   const remote = yield* RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization;
+  const presentation = yield* ClientCapabilities.ClientPresentation;
+  const httpClient = yield* HttpClient.HttpClient;
 
   return Effect.fn("clientRuntime.connection.broker.bearer")(function* (
     entry: ConnectionCatalogEntry & { readonly target: BearerConnectionTarget },
@@ -147,24 +153,40 @@ const makeBearerBroker = Effect.fn("clientRuntime.connection.broker.makeBearer")
       });
       return { ...authorized, target } satisfies PreparedConnection;
     }
-    const credential = yield* credentials.get(credentialConnectionId(target.connectionId)).pipe(
-      Effect.flatMap(
-        Option.match({
-          onNone: () => Effect.fail(credentialMissingError(target.connectionId)),
-          onSome: Effect.succeed,
-        }),
+    const credentialId = credentialConnectionId(target.connectionId);
+    const authorize = (bearerToken: string) =>
+      remote.authorizeBearer({
+        expectedEnvironmentId: target.environmentId,
+        httpBaseUrl: profile.httpBaseUrl,
+        wsBaseUrl: profile.wsBaseUrl,
+        bearerToken,
+        connectionMethod: "direct",
+      });
+    // Fork patch 7: a missing or rejected credential first tries pairing over
+    // Tailscale, and the original failure stands when the host refuses.
+    const pairAgain = (failure: ConnectionAttemptError) =>
+      pairRemoteBearerOverTailscale({
+        httpBaseUrl: profile.httpBaseUrl,
+        clientMetadata: presentation.metadata,
+      }).pipe(
+        Effect.provideService(HttpClient.HttpClient, httpClient),
+        Effect.tap((access) =>
+          credentials.put(
+            credentialId,
+            new BearerConnectionCredential({ token: access.access_token }),
+          ),
+        ),
+        Effect.mapError(() => failure),
+        Effect.flatMap((access) => authorize(access.access_token)),
+      );
+    const authorized = yield* credentials.get(credentialId).pipe(
+      Effect.flatMap((credential) =>
+        Option.isSome(credential) && isBearerCredential(credential.value)
+          ? authorize(credential.value.token)
+          : Effect.fail(credentialMissingError(target.connectionId)),
       ),
+      Effect.catchIf(isAuthenticationBlock, pairAgain),
     );
-    if (!isBearerCredential(credential)) {
-      return yield* credentialMissingError(target.connectionId);
-    }
-    const authorized = yield* remote.authorizeBearer({
-      expectedEnvironmentId: target.environmentId,
-      httpBaseUrl: profile.httpBaseUrl,
-      wsBaseUrl: profile.wsBaseUrl,
-      bearerToken: credential.token,
-      connectionMethod: "direct",
-    });
     return {
       environmentId: authorized.environmentId,
       label: authorized.label,

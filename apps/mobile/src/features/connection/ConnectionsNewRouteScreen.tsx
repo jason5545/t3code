@@ -31,6 +31,7 @@ import {
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { hasCloudPublicConfig } from "../cloud/publicConfig";
 import { CloudEnvironmentRows } from "./CloudEnvironmentRows";
+import { TailnetServerSection } from "./TailnetServerSection";
 import { splitEnvironmentSections } from "./environmentSections";
 
 type ConnectionsNewRouteParams = {
@@ -262,7 +263,19 @@ export function ConnectionsNewRouteScreen({
               {pairingConnectionError ??
                 "For machines on your local network or tailnet. The machine keeps its own provider credentials."}
             </Text>
+            {pairingConnectionError ? null : (
+              <Text className="px-4 text-sm leading-normal text-foreground-muted">
+                If the backend allows Tailscale pairing, leave the code empty.
+              </Text>
+            )}
           </View>
+
+          {params.routeFor === undefined ? (
+            <TailnetServerSection
+              disabled={isSubmitting}
+              onConnect={(httpBaseUrl) => void connectAndClose(buildPairingUrl(httpBaseUrl, ""))}
+            />
+          ) : null}
 
           {hasCloudPublicConfig() ? <T3ConnectSection /> : null}
         </View>

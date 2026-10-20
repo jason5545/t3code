@@ -5,6 +5,7 @@ import {
   EnvironmentHttpApi,
 } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";
 import * as HttpEffect from "effect/http/HttpEffect";
@@ -90,7 +91,11 @@ export const layer = HttpApiBuilder.group(
             .pipe(Effect.result);
           const headers = { "cache-control": "no-store", "referrer-policy": "no-referrer" };
           if (Result.isSuccess(authorization)) {
-            return HttpServerResponse.redirect(`${APPROVAL_PAGE_PATH}${url.search}`, { headers });
+            const approved = yield* oauth.approveOverTailscale(request, authorization.success);
+            return HttpServerResponse.redirect(
+              Option.getOrElse(approved, () => `${APPROVAL_PAGE_PATH}${url.search}`),
+              { headers },
+            );
           }
           const error = authorization.failure;
           return error._tag === "McpOAuthPageError"

@@ -58,6 +58,7 @@ function layerPairingHttp(
     readonly protocolVersion?: number;
     readonly selfUpdate?: boolean;
     readonly grantScopes?: ReadonlyArray<AuthEnvironmentScope>;
+    readonly tailscalePairing?: "issue" | "refuse";
   },
 ) {
   const grantScopes = options?.grantScopes ?? AuthStandardClientScopes;
@@ -87,6 +88,27 @@ function layerPairingHttp(
             ...(options?.selfUpdate === true ? { serverSelfUpdate: "boot-service" } : {}),
           },
         }),
+      );
+    }
+
+    if (url.endsWith("/api/auth/tailscale-pairing") && options?.tailscalePairing !== undefined) {
+      return Promise.resolve(
+        options.tailscalePairing === "issue"
+          ? Response.json({
+              id: "tailscale-link",
+              credential: "tailscale-code",
+              label: "macbook-pro",
+              expiresAt: "2026-10-20T10:00:00.000Z",
+            })
+          : Response.json(
+              {
+                _tag: "EnvironmentOperationForbiddenError",
+                code: "operation_forbidden",
+                reason: "tailscale_pairing_refused",
+                traceId: "trace-tailscale-test",
+              },
+              { status: 403 },
+            ),
       );
     }
 
@@ -224,6 +246,56 @@ const registerSwitchedOffEnvironment = Effect.gen(function* () {
 });
 
 describe("connection onboarding", () => {
+  it.effect("pairs an address without a code over Tailscale", () =>
+    Effect.gen(function* () {
+      const calls: Array<{ readonly url: string; readonly init: RequestInit }> = [];
+      const layer = Layer.mergeAll(
+        layerClientPresentation,
+        layerPairingHttp(calls, { tailscalePairing: "issue" }),
+      );
+      const registration = yield* preparePairingRegistration({ host: "remote.example.test" }).pipe(
+        Effect.provide(layer),
+      );
+      expect(registration.credential).toEqual(
+        new BearerConnectionCredential({ token: "bearer-token" }),
+      );
+      expect(calls.map((call) => call.url)).toEqual([
+        "https://remote.example.test/.well-known/t3/environment",
+        "https://remote.example.test/api/auth/tailscale-pairing",
+        "https://remote.example.test/oauth/token",
+      ]);
+      const tokenRequest = calls.at(-1);
+      const tokenBody =
+        tokenRequest?.init.body instanceof Uint8Array
+          ? new TextDecoder().decode(tokenRequest.init.body)
+          : String(tokenRequest?.init.body);
+      expect(new URLSearchParams(tokenBody).get("subject_token")).toBe("tailscale-code");
+
+      // A pairing link without its token is the same address-only request.
+      const fromLink = yield* preparePairingRegistration({
+        pairingUrl: "http://100.95.60.35:3773/",
+      }).pipe(Effect.provide(layer));
+      expect(fromLink.profile.httpBaseUrl).toBe("http://100.95.60.35:3773/");
+    }),
+  );
+
+  it.effect("asks for a code when the host will not pair over Tailscale", () =>
+    Effect.gen(function* () {
+      const layer = Layer.mergeAll(
+        layerClientPresentation,
+        layerPairingHttp([], { tailscalePairing: "refuse" }),
+      );
+      const error = yield* Effect.flip(
+        preparePairingRegistration({ host: "remote.example.test" }).pipe(Effect.provide(layer)),
+      );
+      expect(error).toMatchObject({
+        _tag: "ConnectionBlockedError",
+        reason: "configuration",
+        detail: "Enter a pairing code.",
+      });
+    }),
+  );
+
   it.effect("prepares a persisted bearer registration from pairing details", () =>
     Effect.gen(function* () {
       const calls: Array<{ readonly url: string; readonly init: RequestInit }> = [];
