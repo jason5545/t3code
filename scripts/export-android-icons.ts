@@ -3,8 +3,8 @@
 // Icon Composer exports already contain a rounded-square silhouette, and Android masks
 // the central 72dp of a 108dp adaptive canvas, so exporting them as a foreground produces
 // a double-framed icon with the letters cropped by the mask. Instead, each variant gets a
-// full-bleed background layer (the artwork behind the wordmark) and a shared transparent
-// foreground that keeps the wordmark inside the safe zone.
+// full-bleed background layer (the artwork behind the wordmark) and a transparent
+// foreground of its own wordmark, kept inside the safe zone.
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -90,13 +90,15 @@ const readLayerSource = Effect.fn("androidIcons.readLayerSource")(function* (
 
 const renderForeground = Effect.fn("androidIcons.renderForeground")(function* (
   repositoryRoot: string,
+  variant: IconVariant,
   size: number,
 ) {
-  const text = yield* readLayerSource(repositoryRoot, "prod", "text.svg");
-  const paths = text.match(/<path[^>]*\/>/g) ?? [];
+  // Keep the whole layer: a wordmark may be drawn with circles and grouped opacity, not just paths.
+  const text = yield* readLayerSource(repositoryRoot, variant, "text.svg");
+  const layer = text.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
   return yield* rasterize(
-    "foreground",
-    canvasSvg(size, `<g transform="${wordmarkTransform(size)}">${paths.join("")}</g>`),
+    `${variant}-foreground`,
+    canvasSvg(size, `<g transform="${wordmarkTransform(size)}">${layer}</g>`),
     size,
   );
 });
@@ -185,7 +187,7 @@ const renderSplashIcon = Effect.fn("androidIcons.renderSplashIcon")(function* (
   variant: IconVariant,
 ) {
   const background = yield* renderBackground(repositoryRoot, variant, SPLASH_CANVAS);
-  const foreground = yield* renderForeground(repositoryRoot, SPLASH_CANVAS);
+  const foreground = yield* renderForeground(repositoryRoot, variant, SPLASH_CANVAS);
   return yield* composite(`${variant}-splash`, background, [{ input: foreground }]);
 });
 
@@ -194,7 +196,18 @@ const exportAndroidIcons = Effect.gen(function* () {
   const path = yield* Path.Path;
   const repositoryRoot = path.resolve(import.meta.dirname, "..");
   const outputs = [
-    ["android-icon-foreground.png", yield* renderForeground(repositoryRoot, ADAPTIVE_CANVAS)],
+    [
+      "android-icon-foreground.png",
+      yield* renderForeground(repositoryRoot, "prod", ADAPTIVE_CANVAS),
+    ],
+    [
+      "android-icon-foreground-dev.png",
+      yield* renderForeground(repositoryRoot, "dev", ADAPTIVE_CANVAS),
+    ],
+    [
+      "android-icon-foreground-nightly.png",
+      yield* renderForeground(repositoryRoot, "nightly", ADAPTIVE_CANVAS),
+    ],
     [
       "android-icon-background-dev.png",
       yield* renderDevelopmentBackground(repositoryRoot, ADAPTIVE_CANVAS),
