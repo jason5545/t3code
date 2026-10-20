@@ -25,6 +25,7 @@ import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as AuthSessions from "../persistence/AuthSessions.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
+import * as SessionRenewal from "./sessionRenewal.ts";
 import {
   REUSABLE_DEV_SESSION_EXPIRES_AT,
   REUSABLE_DEV_SESSION_PREFIX,
@@ -410,6 +411,10 @@ export class SessionStore extends Context.Service<
       sessionId: AuthSessionId,
     ) => Effect.Effect<number, SessionCredentialInternalError>;
     readonly markConnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
+    /** Fork patch 6: the session's expiry after renewing it when due; none once it is unusable. */
+    readonly renewIfDue: (
+      sessionId: AuthSessionId,
+    ) => Effect.Effect<Option.Option<DateTime.Utc>, never>;
     readonly markDisconnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
     readonly recordClientConnection: (
       sessionId: AuthSessionId,
@@ -488,6 +493,7 @@ export const make = Effect.gen(function* () {
   const serverEnvironment = yield* ServerEnvironment.ServerEnvironmentIdentity;
   const secretStore = yield* ServerSecretStore.ServerSecretStore;
   const authSessions = yield* AuthSessions.AuthSessionRepository;
+  const renewal = yield* SessionRenewal.make;
   const signingSecret = yield* secretStore.getOrCreateRandom(SIGNING_SECRET_NAME, 32);
   const connectedSessionsRef = yield* Ref.make(new Map<AuthSessionId, number>());
   const changesPubSub = yield* PubSub.unbounded<SessionCredentialChange>();
@@ -567,6 +573,17 @@ export const make = Effect.gen(function* () {
       );
     });
 
+  const renewIfDue: SessionStore["Service"]["renewIfDue"] = (sessionId) =>
+    renewal.renewIfDue(sessionId).pipe(
+      Effect.catchCause((cause) =>
+        Effect.logWarning("Failed to renew session.").pipe(
+          Effect.annotateLogs({ sessionId, cause }),
+          Effect.as(Option.none()),
+        ),
+      ),
+      Effect.withSpan("SessionStore.renewIfDue"),
+    );
+
   const markConnected: SessionStore["Service"]["markConnected"] = (sessionId) =>
     Ref.modify(connectedSessionsRef, (current) => {
       const next = new Map(current);
@@ -583,6 +600,7 @@ export const make = Effect.gen(function* () {
                   lastConnectedAt,
                 }),
               ),
+              Effect.andThen(renewIfDue(sessionId)),
             )
           : Effect.void,
       ),
@@ -815,13 +833,6 @@ export const make = Effect.gen(function* () {
           expirationClaim: claims.exp,
         });
       }
-      if (claims.exp <= observedAt.epochMilliseconds) {
-        return yield* new SessionTokenExpiredError({
-          sessionId: claims.sid,
-          expiresAt: expiresAt.value,
-          observedAt,
-        });
-      }
 
       const row = yield* authSessions
         .getById({ sessionId: claims.sid })
@@ -832,6 +843,15 @@ export const make = Effect.gen(function* () {
         );
       if (Option.isNone(row)) {
         return yield* new UnknownSessionTokenError({ sessionId: claims.sid });
+      }
+      // Fork patch 6: the stored expiry, which connections renew, outranks the
+      // token's `exp`. Until a session is renewed the two are equal.
+      if (row.value.expiresAt.epochMilliseconds <= observedAt.epochMilliseconds) {
+        return yield* new SessionTokenExpiredError({
+          sessionId: claims.sid,
+          expiresAt: row.value.expiresAt,
+          observedAt,
+        });
       }
       if (row.value.revokedAt !== null) {
         return yield* new SessionTokenRevokedError({
@@ -845,7 +865,7 @@ export const make = Effect.gen(function* () {
         token,
         method: claims.method,
         client: toClientMetadata(row.value.client),
-        expiresAt: expiresAt.value,
+        expiresAt: row.value.expiresAt,
         subject: claims.sub,
         scopes: claims.scopes,
         ...(claims.jkt ? { proofKeyThumbprint: claims.jkt } : {}),
@@ -1065,7 +1085,20 @@ export const make = Effect.gen(function* () {
             ),
             Stream.runHead,
           ),
-          Effect.sleep(Duration.millis(remaining)),
+          // Fork patch 6: replaces sleeping out the deadline read at connect time.
+          renewal.awaitExpiry(
+            row.value,
+            loadActiveSession(sessionId).pipe(
+              Effect.flatMap((session) =>
+                Option.isSome(session) ? emitUpsert(session.value) : Effect.void,
+              ),
+              Effect.catchCause((cause) =>
+                Effect.logError("Failed to publish renewed-session auth update.").pipe(
+                  Effect.annotateLogs({ sessionId, cause }),
+                ),
+              ),
+            ),
+          ),
         );
       }),
     );
@@ -1086,6 +1119,7 @@ export const make = Effect.gen(function* () {
     revoke,
     revokeAllExcept,
     markConnected,
+    renewIfDue,
     markDisconnected,
     recordClientConnection,
   });

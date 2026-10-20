@@ -62,6 +62,14 @@ created in Settings can only be copied from the client that created them while
 its Connections page stays open. If you leave or reload that page, create
 another link to share.
 
+A paired device stays signed in while it keeps connecting. Connecting, or
+keeping a connection open, renews its sign-in for 30 days at most once a day, so
+a device that connects at least once every 29 days never has to pair again.
+Sessions issued with a shorter `--ttl` and
+[outside agent](./outside-agents.md) sign-ins keep the lifetime they were given.
+Revoking a device's session in **Settings → Connections** still ends its access
+at once.
+
 ### Reach one machine several ways
 
 A machine can have more than one route: LAN, Tailscale, another VPN, a public

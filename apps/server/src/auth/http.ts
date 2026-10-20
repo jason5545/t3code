@@ -18,12 +18,18 @@ import {
   EnvironmentAuthenticatedAuth,
   EnvironmentAuthenticatedPrincipal,
 } from "@t3tools/contracts";
-import type { AuthEnvironmentScope, DpopFailureReason } from "@t3tools/contracts";
+import type {
+  AuthEnvironmentScope,
+  AuthSessionId,
+  DpopFailureReason,
+  ServerAuthSessionMethod,
+} from "@t3tools/contracts";
 import { parseOAuthScope } from "@t3tools/shared/oauthScope";
 import { causeErrorTag } from "@t3tools/shared/observability";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { identity } from "effect/Function";
 import * as Layer from "effect/Layer";
@@ -213,6 +219,29 @@ const appendSessionCookie = (cookieName: string, token: string, expiresAt: DateT
       ),
     ),
   );
+
+/**
+ * Fork patch 6: a browser drops its cookie at the deadline the cookie was set
+ * with, whatever the server renews. Renewing here, just before the socket
+ * opens, lets the same response carry the new deadline.
+ */
+const renewBrowserSessionCookie = (
+  sessions: SessionStore.SessionStore["Service"],
+  session: { readonly sessionId: AuthSessionId; readonly method: ServerAuthSessionMethod },
+) =>
+  Effect.gen(function* () {
+    if (session.method !== "browser-session-cookie") return;
+    const credential = EnvironmentAuth.selectRequestCredential(
+      yield* HttpServerRequest.HttpServerRequest,
+      sessions.cookieName,
+      sessions.legacyCookieName,
+    );
+    if (credential?.source !== "cookie") return;
+    const expiresAt = yield* sessions.renewIfDue(session.sessionId);
+    if (Option.isSome(expiresAt)) {
+      yield* appendSessionCookie(sessions.cookieName, credential.token, expiresAt.value);
+    }
+  });
 
 export const requireEnvironmentScope = Effect.fn("environment.auth.requireScope")(function* (
   scope: AuthEnvironmentScope,
@@ -417,6 +446,7 @@ export const layer = HttpApiBuilder.group(
             yield* annotateEnvironmentRequest(args.endpoint.name);
             const session = yield* EnvironmentAuthenticatedPrincipal;
             yield* appendCredentialResponseHeaders;
+            yield* renewBrowserSessionCookie(sessions, session);
             return yield* serverAuth.issueWebSocketTicket(session);
           },
           Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>

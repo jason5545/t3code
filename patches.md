@@ -51,6 +51,15 @@ Upstream baseline: `ff9f41b65f` (merged 2026-10-20).
 - The `/connect-agent` page no longer redirects straight to a loopback callback after approval. It shows **Continue on this computer** and **Copy link**, because an agent such as mcp-remote on the Grok Bot's machine listens on its own `localhost`, which the approving browser cannot reach. Denials and https callbacks still redirect immediately.
 - Covered by `apps/server/src/auth/McpOAuth.test.ts` ("an MCP approval code sets the sign-in lifetime, may be reused, and never pairs a client").
 
+## 6. Device sign-ins renew while devices connect
+
+- Upstream fixes direct-paired sessions (bearer tokens and browser cookies) at 30 days; only T3 Connect renews, by minting new DPoP tokens through the cloud, which this fork cannot use. The fork renews the stored session instead: when a session connects with 29 days or less left, `expires_at` moves to now + 30 days (`apps/server/src/auth/sessionRenewal.ts`). It renews in `markConnected` (alongside `lastConnectedAt`), in the WebSocket ticket handler for browser cookies, and in `awaitInvalidation`, which wakes an open connection when its session falls due instead of sleeping until the deadline read at connect time.
+- `SessionStore.verify` checks the stored `expires_at` instead of the token's `exp` claim, and returns it. Renewing the row alone would not help: a bearer token is rejected at its claim before it can get a WebSocket ticket. The claim is still decoded and validated, and it equals the stored expiry until a session is first renewed, so unrenewed sessions behave as upstream.
+- Browsers drop a cookie at the `Expires` it was set with, so the ticket handler (`auth/http.ts`) renews first and then re-sets the `t3_session_*` cookie with the stored expiry.
+- Never renewed: revoked or expired sessions (the SQL update repeats both guards, so a revocation that races a renewal still wins), `mcp-client` sessions (their lifetime comes from `--session-ttl`, patch 5), DPoP sessions, and sessions issued shorter than 30 days.
+- No migration; only the existing `expires_at` column changes. The upstream code touched is the expiry check in `verify`, one line in `markConnected`, the sleep in `awaitInvalidation`, the `renewIfDue` service method and one line in the ticket handler. Sessions issued before this patch renew on their next connection.
+- Covered by `apps/server/src/auth/sessionRenewal.test.ts`.
+
 ## Development-signed fork nightly
 
 - Local builds use an existing Apple Development identity in the owner's macOS keychain. No private key is exported, committed or uploaded to GitHub.
