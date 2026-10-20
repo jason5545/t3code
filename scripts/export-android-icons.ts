@@ -21,6 +21,12 @@ const ADAPTIVE_CANVAS = 432;
 const SPLASH_CANVAS = 1152;
 const TEXT = { x: 15.53, y: 37, width: 94.5, height: 57 };
 const WORDMARK_FRACTION = 0.48;
+// The themed-icon mark and the notification icon frame the wordmark larger than the launcher
+// foreground; these match production's hand-made android-icon-mark.png and
+// android-notification-icon.png, which dev and nightly replace with their own wordmark.
+const MONOCHROME_WORDMARK_FRACTION = 0.645;
+const NOTIFICATION_CANVAS = 96;
+const NOTIFICATION_WORDMARK_FRACTION = 0.66;
 const COMPOSER_CANVAS_PT = 1024;
 const SVG_DENSITY = 300;
 const OUTPUT_DIRECTORY = "apps/mobile/assets";
@@ -31,8 +37,8 @@ export class AndroidIconRenderError extends Schema.TaggedError<AndroidIconRender
   { layer: Schema.String, cause: Schema.Defect() },
 ) {}
 
-const wordmarkTransform = (size: number) => {
-  const scale = (size * WORDMARK_FRACTION) / TEXT.width;
+const wordmarkTransform = (size: number, fraction = WORDMARK_FRACTION) => {
+  const scale = (size * fraction) / TEXT.width;
   const tx = (size - TEXT.width * scale) / 2 - TEXT.x * scale;
   const ty = (size - TEXT.height * scale) / 2 - TEXT.y * scale;
   return `translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${scale.toFixed(4)})`;
@@ -92,13 +98,14 @@ const renderForeground = Effect.fn("androidIcons.renderForeground")(function* (
   repositoryRoot: string,
   variant: IconVariant,
   size: number,
+  fraction = WORDMARK_FRACTION,
 ) {
   // Keep the whole layer: a wordmark may be drawn with circles and grouped opacity, not just paths.
   const text = yield* readLayerSource(repositoryRoot, variant, "text.svg");
   const layer = text.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
   return yield* rasterize(
-    `${variant}-foreground`,
-    canvasSvg(size, `<g transform="${wordmarkTransform(size)}">${layer}</g>`),
+    `${variant}-wordmark`,
+    canvasSvg(size, `<g transform="${wordmarkTransform(size, fraction)}">${layer}</g>`),
     size,
   );
 });
@@ -207,6 +214,37 @@ const exportAndroidIcons = Effect.gen(function* () {
     [
       "android-icon-foreground-nightly.png",
       yield* renderForeground(repositoryRoot, "nightly", ADAPTIVE_CANVAS),
+    ],
+    [
+      "android-icon-mark-dev.png",
+      yield* renderForeground(repositoryRoot, "dev", ADAPTIVE_CANVAS, MONOCHROME_WORDMARK_FRACTION),
+    ],
+    [
+      "android-icon-mark-nightly.png",
+      yield* renderForeground(
+        repositoryRoot,
+        "nightly",
+        ADAPTIVE_CANVAS,
+        MONOCHROME_WORDMARK_FRACTION,
+      ),
+    ],
+    [
+      "android-notification-icon-dev.png",
+      yield* renderForeground(
+        repositoryRoot,
+        "dev",
+        NOTIFICATION_CANVAS,
+        NOTIFICATION_WORDMARK_FRACTION,
+      ),
+    ],
+    [
+      "android-notification-icon-nightly.png",
+      yield* renderForeground(
+        repositoryRoot,
+        "nightly",
+        NOTIFICATION_CANVAS,
+        NOTIFICATION_WORDMARK_FRACTION,
+      ),
     ],
     [
       "android-icon-background-dev.png",

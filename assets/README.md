@@ -64,4 +64,4 @@ is instead rendered from the same Icon Composer SVG sources by `vp run icons:exp
   the splash mask reproduces the launcher icon's framing.
 
 Rerun the export after changing a layer SVG. `android-icon-mark.png` remains a flat silhouette for
-Android's monochrome themed icon.
+Android's monochrome themed icon; dev and nightly use the rendered `android-icon-mark-{dev,nightly}.png`.

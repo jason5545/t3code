@@ -37,8 +37,8 @@ const DEVELOPMENT_ASSETS = {
   androidAdaptiveBackgroundColor: "#347FF8",
   androidAdaptiveBackgroundImage: "./assets/android-icon-background-dev.png",
   androidSplashIcon: "./assets/android-splash-icon-dev.png",
-  androidMonochromeIcon: "./assets/android-icon-mark.png",
-  androidNotificationIcon: "./assets/android-notification-icon.png",
+  androidMonochromeIcon: "./assets/android-icon-mark-dev.png",
+  androidNotificationIcon: "./assets/android-notification-icon-dev.png",
   androidNotificationColor: "#00639B",
 } as const;
 
@@ -50,8 +50,8 @@ const PREVIEW_ASSETS = {
   androidAdaptiveBackgroundColor: "#111533",
   androidAdaptiveBackgroundImage: "./assets/android-icon-background-nightly.png",
   androidSplashIcon: "./assets/android-splash-icon-nightly.png",
-  androidMonochromeIcon: "./assets/android-icon-mark.png",
-  androidNotificationIcon: "./assets/android-notification-icon.png",
+  androidMonochromeIcon: "./assets/android-icon-mark-nightly.png",
+  androidNotificationIcon: "./assets/android-notification-icon-nightly.png",
   androidNotificationColor: "#7565C7",
 } as const;
 
