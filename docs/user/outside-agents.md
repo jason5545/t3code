@@ -31,8 +31,10 @@ same device can reach it.
 The first time an agent connects, it opens a sign-in page on the environment.
 The page names the agent and where its access goes:
 
-- For an agent on your computer, approval returns to a `localhost` address on
-  the computer that opened the page.
+- For an agent that signs in through a `localhost` address, the page offers
+  **Continue on this computer** after approval. If the agent runs on another
+  machine, choose **Copy link** and give the link to the agent there. The link
+  works once, within a minute.
 - For a hosted agent, approval goes to that service, such as `chatgpt.com`.
   Anyone who runs that service gets the access.
 
@@ -93,3 +95,10 @@ Agents without OAuth support cannot connect.
 Approved agents appear under **Settings → Connections** like other clients.
 Revoke one there to cut off its access immediately. A sign-in lasts 30 days;
 after that the agent asks you to approve it again.
+
+To make sign-ins last longer, or to approve several with one code, create the
+code on the host with `t3 auth pairing create --session-ttl 180d`, add
+`--reusable`, or both. A reusable code approves sign-ins until its own `--ttl`
+runs out, so give it one, such as `--ttl 7d`. Either option makes a code that
+only approves agent sign-ins and cannot pair a device. `t3 auth pairing revoke`
+cancels it early.

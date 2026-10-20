@@ -18,6 +18,7 @@ import { encodeOAuthScope } from "@t3tools/shared/oauthScope";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
+import type * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -183,6 +184,7 @@ interface PendingCode {
   readonly codeChallenge: string;
   readonly resource: string;
   readonly access: AuthMcpClientAccess;
+  readonly sessionTtl?: Duration.Duration;
   readonly expiresAtMs: number;
 }
 
@@ -383,7 +385,11 @@ const make = Effect.gen(function* () {
       Effect.orElseSucceed(() => undefined),
     );
 
-  const mintCode = (authorization: AuthorizationRequest, access: AuthMcpClientAccess) =>
+  const mintCode = (
+    authorization: AuthorizationRequest,
+    access: AuthMcpClientAccess,
+    sessionTtl: Duration.Duration | undefined,
+  ) =>
     Effect.gen(function* () {
       const now = yield* Clock.currentTimeMillis;
       const code = Buffer.from(yield* crypto.randomBytes(32).pipe(Effect.orDie)).toString(
@@ -400,6 +406,7 @@ const make = Effect.gen(function* () {
           codeChallenge: authorization.codeChallenge,
           resource: authorization.resource,
           access,
+          ...(sessionTtl === undefined ? {} : { sessionTtl }),
           expiresAtMs: now + AUTHORIZATION_CODE_TTL_MS,
         });
         return next;
@@ -410,8 +417,14 @@ const make = Effect.gen(function* () {
   const approve: McpOAuth["Service"]["approve"] = (input) =>
     Effect.gen(function* () {
       const { decision } = input;
+      let sessionTtl: Duration.Duration | undefined;
       if (decision._tag === "pairing-code") {
         yield* environmentAuth.consumeMcpApprovalCode(decision.code, decision.access).pipe(
+          Effect.tap((approval) =>
+            Effect.sync(() => {
+              sessionTtl = approval.sessionTtl;
+            }),
+          ),
           Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (cause) =>
             Effect.logError("MCP approval code check failed.", { cause }).pipe(
               Effect.andThen(
@@ -438,7 +451,7 @@ const make = Effect.gen(function* () {
           });
         }
       }
-      const code = yield* mintCode(input.authorization, decision.access);
+      const code = yield* mintCode(input.authorization, decision.access, sessionTtl);
       yield* Effect.logInfo("Approved an MCP client sign-in.", {
         client: input.authorization.client.name,
         access: decision.access,
@@ -500,6 +513,7 @@ const make = Effect.gen(function* () {
         .issueMcpClientSession({
           label: pending.clientName,
           access: pending.access,
+          ...(pending.sessionTtl === undefined ? {} : { ttl: pending.sessionTtl }),
           client: deriveAuthClientMetadata({ request }),
         })
         .pipe(

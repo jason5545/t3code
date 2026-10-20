@@ -7,6 +7,7 @@ import {
 import { expect, it } from "@effect/vitest";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Etag from "effect/http/Etag";
@@ -22,6 +23,7 @@ import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as Sqlite from "../persistence/Sqlite.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as McpOAuth from "./McpOAuth.ts";
+import { encodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
 import * as McpOAuthHttp from "./mcpOAuthHttp.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as AuthHttp from "./http.ts";
@@ -305,6 +307,65 @@ it.live("signs in with a pairing code and issues a token only /mcp accepts", () 
       expect(ticket.status).toBe(401);
     }),
   ),
+);
+
+it.live(
+  "an MCP approval code sets the sign-in lifetime, may be reused, and never pairs a client",
+  () =>
+    withRoutes((handler, auth) =>
+      Effect.gen(function* () {
+        const clientId = yield* registeredClientId(handler);
+        const approve = (code: string) =>
+          decide(handler, authorizeParams(clientId), {
+            _tag: "pairing-code",
+            access: "auto-accept-edits",
+            code,
+          });
+        const signInDays = (code: string) =>
+          Effect.gen(function* () {
+            const approved = yield* approve(code);
+            expect(approved.status).toBe(200);
+            const token = yield* handler(
+              at(
+                "/oauth/mcp/token",
+                form({
+                  grant_type: "authorization_code",
+                  code: new URL(approved.redirectTo!).searchParams.get("code")!,
+                  redirect_uri: authorizeParams(clientId).redirect_uri,
+                  client_id: clientId,
+                  code_verifier: verifier,
+                  resource: `${ORIGIN}/mcp`,
+                }),
+              ),
+            ).pipe(Effect.flatMap(json<{ expires_in: number }>));
+            return Math.round(token.expires_in / 86_400);
+          });
+        const pairsClient = (code: string) =>
+          auth
+            .exchangeBootstrapCredentialForAccessToken(code, undefined, { deviceType: "desktop" })
+            .pipe(Effect.match({ onFailure: () => false, onSuccess: () => true }));
+
+        const reusable = yield* auth.createPairingLink({
+          ttl: Duration.days(7),
+          subject: encodeMcpApprovalSubject({ sessionTtl: Duration.days(180), reusable: true }),
+        });
+        expect(yield* pairsClient(reusable.credential)).toBe(false);
+        expect(yield* signInDays(reusable.credential)).toBe(180);
+        expect(yield* signInDays(reusable.credential)).toBe(180);
+        expect(yield* auth.revokePairingLink(reusable.id)).toBe(true);
+        expect((yield* approve(reusable.credential)).status).toBe(400);
+
+        const once = yield* auth.createPairingLink({
+          subject: encodeMcpApprovalSubject({ sessionTtl: Duration.days(90), reusable: false }),
+        });
+        expect(yield* pairsClient(once.credential)).toBe(false);
+        expect(yield* signInDays(once.credential)).toBe(90);
+        expect((yield* approve(once.credential)).status).toBe(400);
+
+        const plain = yield* auth.issuePairingCredential();
+        expect(yield* signInDays(plain.credential)).toBe(30);
+      }),
+    ),
 );
 
 it.live("signs in a hosted agent with an https callback that asked for a client secret", () =>

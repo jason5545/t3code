@@ -44,6 +44,13 @@ Upstream baseline: `ff9f41b65f` (merged 2026-10-20).
 
 - The ACP Registry adapter exposes the existing compaction operation so the context meter can execute an agent's advertised `compact` command. The UI still offers the button only when the agent lists that command, and disables it during a running turn. This also applies to local commands such as `perch-acp`.
 
+## 5. MCP approval codes and remote agent sign-in
+
+- `t3 auth pairing create` takes `--session-ttl <duration>` (how long MCP sign-ins approved with the code last; upstream fixes 30 days and issues no refresh tokens) and `--reusable` (approvals do not spend the code until its own `--ttl` ends or it is revoked). Either flag makes an MCP-only code: `PairingGrantStore.consume` refuses it for device pairing, so a reusable code can never pair unlimited clients. Plain codes and Settings → Connections codes are unchanged.
+- The options live in the pairing link's `subject` (`mcp-approval;ttl=<ms>;reusable`, `apps/server/src/auth/mcpApprovalCode.ts`) rather than new columns, because a fork migration would collide with upstream's numbered migrations. MCP approval reads the code through `PairingGrantStore.useMcpApprovalCode`; the session TTL travels in McpOAuth's pending authorization code to `issueMcpClientSession`. Upstream's `consume` body is untouched; the service's `consume` is a wrapper that adds the MCP-only refusal.
+- The `/connect-agent` page no longer redirects straight to a loopback callback after approval. It shows **Continue on this computer** and **Copy link**, because an agent such as mcp-remote on the Grok Bot's machine listens on its own `localhost`, which the approving browser cannot reach. Denials and https callbacks still redirect immediately.
+- Covered by `apps/server/src/auth/McpOAuth.test.ts` ("an MCP approval code sets the sign-in lifetime, may be reused, and never pairs a client").
+
 ## Development-signed fork nightly
 
 - Local builds use an existing Apple Development identity in the owner's macOS keychain. No private key is exported, committed or uploaded to GitHub.

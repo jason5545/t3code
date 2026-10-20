@@ -4064,7 +4064,7 @@
   "The managed tunnel was removed. Agent activity publishing stays on.": "受管理的通道已移除。代理程式活動仍會繼續發布。",
   "The media action failed.": "媒體動作失敗。",
   "The model chooses a prefix that describes the work, such as feat/add-search, fix/login-timeout, or refactor/auth.": "模型會選擇描述工作內容的前綴，例如 feat/add-search、fix/login-timeout 或 refactor/auth。",
-  "The name is chosen by the agent. Approval returns to {details.redirectHost} on the computer that opened this page. Only approve a sign-in you just started.": "名稱由代理程式選擇。核准後會回到開啟此頁面那部電腦上的 {details.redirectHost}。請只核准你剛剛發起的登入。",
+  "The name is chosen by the agent. After approval, finish the sign-in on this computer or give the link to the machine where the agent runs. Only approve a sign-in you just started.": "名稱由代理程式決定。核准後，在這部電腦上完成登入，或把連結交給執行代理程式的機器。請只核准你剛剛發起的登入。",
   "The page asks for {0}.": "頁面要求{0}。",
   "The page copied text": "頁面已複製文字",
   "The pending task could not be removed.": "無法移除這項待送出的工作。",
@@ -6782,5 +6782,9 @@
   "Segment {0}, {1}, {2}% left{3}": "區段 {0}，{1}，剩餘 {2}%{3}",
   "Even pace: {evenPace}% left by now": "平均進度：此時應剩餘 {evenPace}%",
   "Context compaction failed": "內容壓縮失敗",
-  "Context compaction stopped": "內容壓縮已停止"
+  "Context compaction stopped": "內容壓縮已停止",
+  "Finish the sign-in": "完成登入",
+  "Approved. The agent gets access once it receives this sign-in link, which works once and within a minute.": "已核准。代理程式收到這個登入連結後才會取得存取權，連結只能用一次，而且要在一分鐘內使用。",
+  "If the agent runs on this computer, continue here. If it runs on another machine, copy the link and give it to the agent there.": "代理程式在這部電腦上，就直接繼續。在另一台機器上，就複製連結交給那邊的代理程式。",
+  "Continue on this computer": "在這部電腦繼續"
 }

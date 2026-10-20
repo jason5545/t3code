@@ -39,6 +39,7 @@ import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as ServerConfig from "../config.ts";
 import * as EnvironmentAuthPolicy from "./EnvironmentAuthPolicy.ts";
 import * as PairingGrantStore from "./PairingGrantStore.ts";
+import { decodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as SessionStore from "./SessionStore.ts";
 import { REUSABLE_DEV_SESSION_EXPIRES_AT, resolveReusableDevAuth } from "./ReusableDevAuth.ts";
@@ -556,6 +557,7 @@ export class EnvironmentAuth extends Context.Service<
     readonly issueMcpClientSession: (input: {
       readonly label: string;
       readonly access: AuthMcpClientAccess;
+      readonly ttl?: Duration.Duration;
       readonly client: AuthClientMetadata;
     }) => Effect.Effect<
       { readonly token: string; readonly expiresAt: DateTime.DateTime },
@@ -565,12 +567,16 @@ export class EnvironmentAuth extends Context.Service<
      * Spends a one-time pairing code as approval for an MCP client with the
      * given access; the code must hold every scope that access grants.
      * Proof-bound codes (T3 Connect) are refused without being spent, and
-     * desktop bootstrap grants never qualify.
+     * desktop bootstrap grants never qualify. A reusable MCP approval code is
+     * checked without being spent, and its session TTL is returned.
      */
     readonly consumeMcpApprovalCode: (
       code: string,
       access: AuthMcpClientAccess,
-    ) => Effect.Effect<void, ServerAuthMcpApprovalCodeError | ServerAuthInternalError>;
+    ) => Effect.Effect<
+      { readonly sessionTtl?: Duration.Duration },
+      ServerAuthMcpApprovalCodeError | ServerAuthInternalError
+    >;
     readonly authenticateBrowserSession: (
       request: HttpServerRequest.HttpServerRequest,
     ) => Effect.Effect<AuthenticatedSession, ServerAuthCredentialError | ServerAuthInternalError>;
@@ -1287,7 +1293,7 @@ export const make = Effect.gen(function* () {
         subject: MCP_CLIENT_SUBJECT,
         method: "bearer-access-token",
         scopes: mcpClientScopes(input.access),
-        ttl: MCP_CLIENT_SESSION_TTL,
+        ttl: input.ttl ?? MCP_CLIENT_SESSION_TTL,
         ...(input.access === "read-only" ? {} : { runtimeModeCeiling: input.access }),
         client: { ...input.client, label: input.label, deviceType: "bot" },
       })
@@ -1313,11 +1319,36 @@ export const make = Effect.gen(function* () {
     );
   };
 
+  // Fork: MCP approval goes through `useMcpApprovalCode`, which leaves a
+  // reusable MCP approval code unspent.
+  const resolveMcpApprovalGrant = (
+    credential: string,
+  ): Effect.Effect<
+    ResolvedBootstrapGrant,
+    ServerAuthInvalidCredentialError | ServerAuthInternalError | ServerAuthScopeNotGrantedError
+  > =>
+    devAuth?.matches(credential)
+      ? resolveBootstrapGrant(credential)
+      : bootstrapCredentials
+          .useMcpApprovalCode(credential)
+          .pipe(
+            Effect.mapError((cause) =>
+              cause._tag === "BootstrapCredentialScopeNotGrantedError"
+                ? new ServerAuthScopeNotGrantedError({})
+                : toBootstrapExchangeError(cause),
+            ),
+          );
+
+  const mcpApprovalSessionTtl = (subject: string) => {
+    const sessionTtl = decodeMcpApprovalSubject(subject)?.sessionTtl;
+    return sessionTtl === undefined ? {} : { sessionTtl };
+  };
+
   const consumeMcpApprovalCode: EnvironmentAuth["Service"]["consumeMcpApprovalCode"] = (
     code,
     access,
   ) =>
-    resolveBootstrapGrant(code.trim()).pipe(
+    resolveMcpApprovalGrant(code.trim()).pipe(
       Effect.catchTags({
         ServerAuthInvalidCredentialError: () =>
           Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "unknown_or_used" })),
@@ -1328,7 +1359,7 @@ export const make = Effect.gen(function* () {
         grant.method !== "one-time-token" && grant.method !== "reusable-dev-token"
           ? Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "not_a_pairing_code" }))
           : mcpClientScopes(access).every((scope) => grant.scopes.includes(scope))
-            ? Effect.void
+            ? Effect.succeed(mcpApprovalSessionTtl(grant.subject))
             : Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "insufficient_scope" })),
       ),
       Effect.withSpan("EnvironmentAuth.consumeMcpApprovalCode"),

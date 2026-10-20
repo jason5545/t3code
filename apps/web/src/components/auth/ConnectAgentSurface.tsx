@@ -14,6 +14,7 @@ import * as Schema from "effect/Schema";
 import { type ReactNode, useEffect, useState } from "react";
 
 import { PrimaryEnvironmentHttpClient } from "~/environments/primary/httpClient";
+import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { runPrimaryHttp } from "~/lib/runtime";
 import { cn } from "~/lib/utils";
 import { runtimeModeConfig } from "../chat/runtimeModeConfig";
@@ -94,6 +95,8 @@ export function ConnectAgentSurface() {
   const [pairingCode, setPairingCode] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [pending, setPending] = useState<"approve" | "deny" | null>(null);
+  const [handoffUrl, setHandoffUrl] = useState<string | null>(null);
+  const { copyToClipboard, isCopied } = useCopyToClipboard({ target: "sign-in link" });
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +134,12 @@ export function ConnectAgentSurface() {
       client.mcpOAuth.decision({ payload: { authorization, decision } }),
     );
     if (answer.kind === "redirect") {
+      // Fork: a loopback callback only reaches an agent on this computer, and
+      // the agent may run elsewhere, so let the user pick before leaving.
+      if (choice === "approve" && redirectsToThisComputer(loaded.details.redirectHost)) {
+        setHandoffUrl(answer.url);
+        return;
+      }
       window.location.replace(answer.url);
       return;
     }
@@ -161,6 +170,33 @@ export function ConnectAgentSurface() {
     );
   }
 
+  if (handoffUrl !== null) {
+    return (
+      <AuthSurfaceShell>
+        <ConnectAgentHeading
+          title="Finish the sign-in"
+          description="Approved. The agent gets access once it receives this sign-in link, which works once and within a minute."
+        />
+        <p className="mt-4 text-sm text-muted-foreground">
+          If the agent runs on this computer, continue here. If it runs on another machine, copy the
+          link and give it to the agent there.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button onClick={() => window.location.replace(handoffUrl)} type="button">
+            Continue on this computer
+          </Button>
+          <Button
+            onClick={() => copyToClipboard(handoffUrl, undefined)}
+            type="button"
+            variant="outline"
+          >
+            {isCopied ? "Copied" : "Copy link"}
+          </Button>
+        </div>
+      </AuthSurfaceShell>
+    );
+  }
+
   const { details } = loaded;
   const oneClick = oneClickApproves(details, access);
   const canApprove = pending === null && (oneClick || pairingCode.trim().length > 0);
@@ -179,8 +215,9 @@ export function ConnectAgentSurface() {
       <p className="mt-2 text-xs text-muted-foreground">
         {redirectsToThisComputer(details.redirectHost) ? (
           <>
-            The name is chosen by the agent. Approval returns to {details.redirectHost} on the
-            computer that opened this page. Only approve a sign-in you just started.
+            The name is chosen by the agent. After approval, finish the sign-in on this computer or
+            give the link to the machine where the agent runs. Only approve a sign-in you just
+            started.
           </>
         ) : (
           <>

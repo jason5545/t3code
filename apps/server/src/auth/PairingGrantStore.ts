@@ -22,6 +22,7 @@ import * as Stream from "effect/Stream";
 
 import * as ServerConfig from "../config.ts";
 import * as AuthPairingLinks from "../persistence/AuthPairingLinks.ts";
+import { decodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
 
 export interface BootstrapGrant {
   readonly method: ServerAuthBootstrapMethod;
@@ -227,6 +228,13 @@ export class PairingGrantStore extends Context.Service<
         readonly proofKeyThumbprint?: string;
         readonly requestedScopes?: ReadonlyArray<AuthEnvironmentScope>;
       },
+    ) => Effect.Effect<BootstrapGrant, BootstrapCredentialError>;
+    /**
+     * Like `consume` for an MCP approval, except a reusable MCP approval code
+     * is only checked, not spent.
+     */
+    readonly useMcpApprovalCode: (
+      credential: string,
     ) => Effect.Effect<BootstrapGrant, BootstrapCredentialError>;
   }
 >()("t3/auth/PairingGrantStore") {}
@@ -604,6 +612,47 @@ export const make = Effect.gen(function* () {
     },
   );
 
+  const storedLink = (credential: string) =>
+    pairingLinks.getByCredential({ credential }).pipe(
+      Effect.map(Option.getOrUndefined),
+      Effect.mapError((cause) => new BootstrapCredentialLookupError({ cause })),
+    );
+
+  // Fork: an MCP approval code may be reusable, so it never pairs a client.
+  const consumeForPairing: PairingGrantStore["Service"]["consume"] = (credential, input) =>
+    storedLink(credential).pipe(
+      Effect.flatMap((link) =>
+        link !== undefined && decodeMcpApprovalSubject(link.subject) !== undefined
+          ? Effect.fail(new UnknownBootstrapCredentialError({}))
+          : consume(credential, input),
+      ),
+    );
+
+  const useMcpApprovalCode: PairingGrantStore["Service"]["useMcpApprovalCode"] = Effect.fn(
+    "PairingGrantStore.useMcpApprovalCode",
+  )(function* (credential) {
+    const link = yield* storedLink(credential);
+    if (link === undefined || decodeMcpApprovalSubject(link.subject)?.reusable !== true) {
+      return yield* consume(credential);
+    }
+    const now = yield* DateTime.now;
+    if (link.revokedAt !== null) return yield* new UnavailableBootstrapCredentialError({});
+    if (link.consumedAt !== null) return yield* new UnknownBootstrapCredentialError({});
+    if (DateTime.isGreaterThanOrEqualTo(now, link.expiresAt)) {
+      return yield* new ExpiredBootstrapCredentialError({});
+    }
+    if (link.proofKeyThumbprint !== null) {
+      return yield* new BootstrapCredentialProofKeyMismatchError({});
+    }
+    return {
+      method: link.method,
+      scopes: link.scopes,
+      subject: link.subject,
+      ...(link.label ? { label: link.label } : {}),
+      expiresAt: link.expiresAt,
+    } satisfies BootstrapGrant;
+  });
+
   return PairingGrantStore.of({
     issueOneTimeToken,
     listActive,
@@ -611,7 +660,8 @@ export const make = Effect.gen(function* () {
       return Stream.fromPubSub(changesPubSub);
     },
     revoke,
-    consume,
+    consume: consumeForPairing,
+    useMcpApprovalCode,
   });
 });
 
