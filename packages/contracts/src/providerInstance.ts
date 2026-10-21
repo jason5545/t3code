@@ -83,16 +83,6 @@ export type ProviderInstanceMutation = typeof ProviderInstanceMutation.Type;
 export const ProviderInstanceConfigMap = Schema.Record(ProviderInstanceId, ProviderInstanceConfig);
 export type ProviderInstanceConfigMap = typeof ProviderInstanceConfigMap.Type;
 
-/** Built-in instances that share a driver but have independent CLI configuration. */
-export const DEFAULT_PROVIDER_INSTANCES: ProviderInstanceConfigMap = {
-  [ProviderInstanceId.make("omp")]: {
-    driver: ProviderDriverKind.make("pi"),
-    displayName: "OMP",
-    enabled: true,
-    config: { binaryPath: "omp", launchArgs: "", customModels: [] },
-  },
-};
-
 /**
  * The legacy single-instance-per-driver world used the driver kind itself as
  * the instance id; preserving that mapping keeps existing persisted threads,

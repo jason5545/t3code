@@ -3,11 +3,10 @@ import { type CSSProperties, memo } from "react";
 import {
   normalizeProviderAccentColor,
   providerAccentForegroundColor,
-  providerIconKind,
   providerInstanceInitials,
 } from "@t3tools/client-runtime/state/provider-instance-display";
 
-import { ProviderDriverKind } from "@t3tools/contracts";
+import { ProviderDriverKind, providerIconKind } from "@t3tools/contracts";
 import { AntigravityIcon, ClaudeAI, Icon, OpenAI } from "../Icons";
 import { OmpIcon } from "../OmpIcon";
 

@@ -8,9 +8,9 @@ import {
   canOneClickUpdateProviderCandidate,
   collectProviderUpdateCandidates,
   getProviderUpdateRunToastView,
-  providerUpdateName,
   type ProviderUpdateRun,
 } from "./ProviderUpdateLaunchNotification.logic";
+import { providerUpdateName } from "./providerUpdateName";
 import { Button } from "./ui/button";
 import { stackedThreadToast, toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";

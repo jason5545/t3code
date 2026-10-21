@@ -1,13 +1,11 @@
 import {
   defaultInstanceIdForDriver,
-  PROVIDER_DISPLAY_NAMES,
   type EnvironmentId,
   type ExecutionEnvironmentPlatformOs,
   type ProviderDriverKind,
   type ProviderInstanceId,
   type ServerProvider,
 } from "@t3tools/contracts";
-import { providerIconKind } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -15,6 +13,7 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 
 import { localizeServerMessage } from "../locale/serverMessages";
+import { providerUpdateKind, providerUpdateName } from "./providerUpdateName";
 
 export type ProviderUpdateCandidate = ServerProvider & {
   readonly versionAdvisory: NonNullable<ServerProvider["versionAdvisory"]> & {
@@ -71,23 +70,6 @@ const PROVIDER_UPDATE_SUCCESS_VISIBLE_MS = 3_000;
 
 function formatVersion(value: string): string {
   return value.startsWith("v") ? value : `v${value}`;
-}
-
-/**
- * OMP runs on the Pi driver but is its own CLI and package, so update prompts
- * group and name it apart from Pi instead of by driver alone.
- */
-function providerUpdateKind(provider: Pick<ServerProvider, "driver" | "displayName">): string {
-  return providerIconKind(provider.driver, provider.displayName) ?? provider.driver;
-}
-
-export function providerUpdateName(
-  provider: Pick<ServerProvider, "driver" | "displayName">,
-): string {
-  if (providerUpdateKind(provider) === "omp") {
-    return provider.displayName?.trim() || "OMP";
-  }
-  return PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
 }
 
 function chooseRepresentativeProvider(

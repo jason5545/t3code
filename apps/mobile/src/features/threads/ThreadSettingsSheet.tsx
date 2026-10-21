@@ -144,12 +144,7 @@ function ProviderHeader(props: {
 }) {
   const content = (
     <>
-      <ProviderIcon
-        displayName={props.label}
-        iconUrl={props.iconUrl}
-        provider={props.driver}
-        size={15}
-      />
+      <ProviderIcon iconUrl={props.iconUrl} provider={props.driver} size={15} />
       <Text className="text-sm font-t3-medium text-foreground-muted">{props.label}</Text>
       {props.collapsible ? (
         <>

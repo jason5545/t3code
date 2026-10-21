@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import * as Schema from "effect/Schema";
 
-import { DEFAULT_PROVIDER_INSTANCES } from "./providerInstance.ts";
+import { DEFAULT_PROVIDER_INSTANCES } from "./ompProvider.ts";
 import { DEFAULT_SERVER_SETTINGS, ServerSettings, ServerSettingsPatch } from "./settings.ts";
 
 const decodeServerSettings = Schema.decodeUnknownSync(ServerSettings);

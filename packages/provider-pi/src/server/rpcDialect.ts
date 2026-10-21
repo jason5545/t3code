@@ -3,9 +3,16 @@
  * Verified against omp/18.7.0's embedded docs/rpc.md and RPC implementation.
  * Remain on protocol v1 (no rpc_chunk negotiation); Pi is a strict passthrough.
  */
+import { OMP_ICON_URL, providerIconKind } from "@t3tools/contracts";
+
 import type { PiRpcRecord } from "./rpc.ts";
 export function isOmpBinary(command: string): boolean {
   return /(?:^|[/\\])omp(?:\.(?:exe|cmd|bat))?$/i.test(command.trim());
+}
+
+/** An OMP instance's snapshot carries OMP's mark, for clients handed only a driver and icon. */
+export function ompInstanceIcon(displayName: string | undefined): { readonly iconUrl?: string } {
+  return providerIconKind("pi", displayName) === "omp" ? { iconUrl: OMP_ICON_URL } : {};
 }
 
 export interface OmpTodoStep {

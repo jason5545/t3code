@@ -115,7 +115,6 @@ function SubagentMetadata(props: {
   return (
     <View className="min-w-0 flex-row items-center gap-1.5">
       <ProviderIcon
-        displayName={provider?.displayName}
         provider={provider?.driver ?? subagent.driver}
         iconUrl={provider?.iconUrl}
         size={12}

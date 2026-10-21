@@ -1,5 +1,6 @@
+import { OMP_ICON_URL } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
-import { isOmpBinary, makePiRpcDialect } from "./rpcDialect.ts";
+import { isOmpBinary, makePiRpcDialect, ompInstanceIcon } from "./rpcDialect.ts";
 describe("Pi RPC dialect", () => {
   it.each(["omp", "/opt/homebrew/bin/omp", "C:\\bin\\omp.cmd", "OMP.exe"])(
     "detects %s",
@@ -13,6 +14,12 @@ describe("Pi RPC dialect", () => {
       expect(isOmpBinary(command)).toBe(false);
     },
   );
+  it("gives an instance named OMP the OMP icon and Pi none", () => {
+    expect(ompInstanceIcon("OMP")).toEqual({ iconUrl: OMP_ICON_URL });
+    expect(ompInstanceIcon("omp work")).toEqual({ iconUrl: OMP_ICON_URL });
+    expect(ompInstanceIcon("Pi")).toEqual({});
+    expect(ompInstanceIcon(undefined)).toEqual({});
+  });
   it("leaves Pi args, requests and events untouched", () => {
     const pi = makePiRpcDialect("pi");
     const args = ["--mode", "rpc", "--fork", "/source.jsonl"];

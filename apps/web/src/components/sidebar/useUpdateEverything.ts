@@ -8,10 +8,8 @@ import { useNpmReleasePublished } from "~/state/npmRelease";
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import { environmentUpdateStatesAtom } from "~/state/server";
 import { environmentSessionStatesAtom } from "~/state/session";
-import {
-  getProviderUpdateRunOutcome,
-  providerUpdateName,
-} from "../ProviderUpdateLaunchNotification.logic";
+import { getProviderUpdateRunOutcome } from "../ProviderUpdateLaunchNotification.logic";
+import { providerUpdateName } from "../providerUpdateName";
 import { useProviderUpdates } from "../ProviderUpdatesAction";
 import { canUpdateServer, type ServerUpdateOutcome, useServerUpdate } from "../ServerUpdateAction";
 import {

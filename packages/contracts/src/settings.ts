@@ -39,8 +39,8 @@ import {
   PreviewViewportSetting,
   PreviewZoomFactor,
 } from "./preview.ts";
+import { DEFAULT_PROVIDER_INSTANCES } from "./ompProvider.ts";
 import {
-  DEFAULT_PROVIDER_INSTANCES,
   ProviderInstanceConfig,
   ProviderInstanceId,
   ProviderDriverKind,

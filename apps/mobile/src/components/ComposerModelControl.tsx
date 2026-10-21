@@ -63,7 +63,6 @@ export function ComposerModelControl(props: {
           />
         ) : (
           <ProviderIcon
-            displayName={props.modelOption?.providerLabel}
             iconUrl={props.modelOption?.providerIconUrl}
             provider={props.modelOption?.providerDriver}
             size={size}

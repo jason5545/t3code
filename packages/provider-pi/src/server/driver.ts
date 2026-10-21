@@ -17,7 +17,7 @@ import { piUsageReader } from "./usage.ts";
 import { makePiTextGeneration } from "./textGeneration.ts";
 import { PiAdapterV2Driver, type PiAdapterV2DriverEnv } from "./adapter.ts";
 import { ProviderDriverError } from "@t3tools/provider-core/server/errors";
-import { isOmpBinary } from "./rpcDialect.ts";
+import { isOmpBinary, ompInstanceIcon } from "./rpcDialect.ts";
 import {
   buildInitialPiProviderSnapshot,
   checkPiProviderStatus,
@@ -79,6 +79,7 @@ const withInstanceIdentity =
     instanceId: input.instanceId,
     driver: DRIVER_KIND,
     ...(input.displayName ? { displayName: input.displayName } : {}),
+    ...ompInstanceIcon(input.displayName),
     ...(input.accentColor ? { accentColor: input.accentColor } : {}),
     continuation: { groupKey: input.continuationGroupKey },
   });

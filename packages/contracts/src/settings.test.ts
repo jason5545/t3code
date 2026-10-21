@@ -2,11 +2,8 @@ import { describe, expect, it } from "vite-plus/test";
 import * as Schema from "effect/Schema";
 
 import { type CommandId, ProjectId } from "./baseSchemas.ts";
-import {
-  DEFAULT_PROVIDER_INSTANCES,
-  ProviderDriverKind,
-  ProviderInstanceId,
-} from "./providerInstance.ts";
+import { DEFAULT_PROVIDER_INSTANCES } from "./ompProvider.ts";
+import { ProviderDriverKind, ProviderInstanceId } from "./providerInstance.ts";
 import {
   ClientSettingsSchema,
   ClientSettingsPatch,
