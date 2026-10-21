@@ -257,8 +257,7 @@ export function DraftHeroHeadline({
             <ComboboxTrigger
               render={<InlineButton tone="picker" />}
               data-draft-project-trigger=""
-              // Leaves room for the trailing "?" so a truncated name keeps it on its line.
-              className="pointer-events-auto max-w-[calc(100%-1em)] align-baseline"
+              className="pointer-events-auto min-w-0 max-w-full align-baseline"
             />
           }
         >
@@ -266,6 +265,7 @@ export function DraftHeroHeadline({
             value={
               isScratchDraft ? t("No project") : (activeProjectDisplayName ?? t("Choose a project"))
             }
+            singleLine
           />
         </TooltipTrigger>
         {activeProjectDisplayName && !isScratchDraft ? (
@@ -313,9 +313,9 @@ export function DraftHeroHeadline({
     <button
       type="button"
       onClick={openAddProject}
-      className="pointer-events-auto inline cursor-pointer border-muted-foreground/35 border-b border-dotted text-muted-foreground/60 transition-colors hover:border-muted-foreground/60 hover:text-muted-foreground/80 focus-visible:rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      className="pointer-events-auto inline min-w-0 max-w-full cursor-pointer border-muted-foreground/35 border-b border-dotted text-muted-foreground/60 transition-colors hover:border-muted-foreground/60 hover:text-muted-foreground/80 focus-visible:rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
-      {activeProjectTitle ?? t("Add a project")}
+      <DraftProjectName value={activeProjectTitle ?? t("Add a project")} singleLine />
     </button>
   );
 
@@ -350,6 +350,7 @@ export function DraftHeroHeadline({
         isScratchDraft={isScratchDraft}
         hasResolvedProject={hasResolvedProject}
         canChooseProject={canChooseProject}
+        projectName={activeProjectDisplayName ?? t("Choose a project")}
         projectSelector={projectSelector}
       />
       {scratchWorkspaceRoot === null ? null : (

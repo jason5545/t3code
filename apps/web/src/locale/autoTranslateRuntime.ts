@@ -1,3 +1,4 @@
+import { setChineseProviderOptionLabels } from "@t3tools/client-runtime/providerStatusMessages";
 import { setChineseDurations } from "@t3tools/shared/durationFormat";
 import { createElement, Fragment, type ReactNode } from "react";
 
@@ -8,8 +9,9 @@ import { readLocalePreference } from "./locale";
  * The locale is read once at startup; changing it reloads the page.
  */
 export const useChinese = readLocalePreference() === "zh-TW";
-// Durations from @t3tools/shared follow the same choice.
+// Durations from @t3tools/shared and option labels built in client-runtime follow the same choice.
 setChineseDurations(useChinese);
+setChineseProviderOptionLabels(useChinese);
 
 /** Template parts: literal text, or an index into the values array. */
 type Parts = ReadonlyArray<string | number>;

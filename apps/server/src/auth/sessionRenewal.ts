@@ -115,38 +115,41 @@ export const make = Effect.gen(function* () {
    * renewable session is renewed once it falls due, and a deadline moved by
    * another connection is honoured instead of closing this one early.
    */
-  const awaitExpiry = (initial: AuthSessions.AuthSessionRecord, onRenewed: Effect.Effect<void>) =>
-    Effect.gen(function* () {
-      let session = initial;
-      for (;;) {
-        yield* Effect.sleep(nextCheckIn(session, yield* DateTime.now));
-        const latest = yield* authSessions
-          .getById({ sessionId: session.sessionId })
-          .pipe(
-            Effect.catchCause((cause) =>
-              Effect.logWarning("Failed to re-read a connected session.").pipe(
-                Effect.annotateLogs({ sessionId: session.sessionId, cause }),
-                Effect.as(Option.some(session)),
-              ),
-            ),
-          );
-        if (Option.isNone(latest)) return;
-        const expiresAt = yield* renewSession(latest.value).pipe(
+  // Untraced: it waits for as long as the connection stays open, so a span would stay open for days.
+  const awaitExpiry = Effect.fnUntraced(function* (
+    initial: AuthSessions.AuthSessionRecord,
+    onRenewed: Effect.Effect<void>,
+  ) {
+    let session = initial;
+    for (;;) {
+      yield* Effect.sleep(nextCheckIn(session, yield* DateTime.now));
+      const latest = yield* authSessions
+        .getById({ sessionId: session.sessionId })
+        .pipe(
           Effect.catchCause((cause) =>
-            Effect.logWarning("Failed to renew a connected session.").pipe(
+            Effect.logWarning("Failed to re-read a connected session.").pipe(
               Effect.annotateLogs({ sessionId: session.sessionId, cause }),
-              // Only the write can fail, and only for a usable session.
-              Effect.as(Option.some(latest.value.expiresAt)),
+              Effect.as(Option.some(session)),
             ),
           ),
         );
-        if (Option.isNone(expiresAt)) return;
-        if (expiresAt.value.epochMilliseconds !== latest.value.expiresAt.epochMilliseconds) {
-          yield* onRenewed;
-        }
-        session = { ...latest.value, expiresAt: expiresAt.value };
+      if (Option.isNone(latest)) return;
+      const expiresAt = yield* renewSession(latest.value).pipe(
+        Effect.catchCause((cause) =>
+          Effect.logWarning("Failed to renew a connected session.").pipe(
+            Effect.annotateLogs({ sessionId: session.sessionId, cause }),
+            // Only the write can fail, and only for a usable session.
+            Effect.as(Option.some(latest.value.expiresAt)),
+          ),
+        ),
+      );
+      if (Option.isNone(expiresAt)) return;
+      if (expiresAt.value.epochMilliseconds !== latest.value.expiresAt.epochMilliseconds) {
+        yield* onRenewed;
       }
-    });
+      session = { ...latest.value, expiresAt: expiresAt.value };
+    }
+  });
 
   return { renewIfDue, awaitExpiry };
 });

@@ -10,21 +10,20 @@ import * as TailscalePairing from "../auth/TailscalePairing.ts";
 import * as ServerConfig from "../config.ts";
 import { authLocationFlags, type CliAuthLocationFlags, resolveCliAuthConfig } from "./config.ts";
 
-const runWithBlockStore = <A, E>(
+const runWithBlockStore = Effect.fn("cli.authTailscale.runWithBlockStore")(function* <A, E>(
   flags: CliAuthLocationFlags,
   run: (store: Effect.Success<typeof TailscalePairing.makeBlockStore>) => Effect.Effect<A, E>,
-) =>
-  Effect.gen(function* () {
-    const config = yield* resolveCliAuthConfig(flags, yield* GlobalFlag.LogLevel);
-    return yield* Effect.flatMap(TailscalePairing.makeBlockStore, run).pipe(
-      Effect.provide(
-        EnvironmentAuth.layerRuntime.pipe(
-          Layer.provide(ServerConfig.layer(config)),
-          Layer.provide(Layer.succeed(References.MinimumLogLevel, "Error")),
-        ),
+) {
+  const config = yield* resolveCliAuthConfig(flags, yield* GlobalFlag.LogLevel);
+  return yield* Effect.flatMap(TailscalePairing.makeBlockStore, run).pipe(
+    Effect.provide(
+      EnvironmentAuth.layerRuntime.pipe(
+        Layer.provide(ServerConfig.layer(config)),
+        Layer.provide(Layer.succeed(References.MinimumLogLevel, "Error")),
       ),
-    );
-  });
+    ),
+  );
+});
 
 const describeNode = (node: TailscalePairing.BlockedTailscaleNode) =>
   `${node.kind === "mcp" ? "MCP agent" : "device"}  ${node.label ?? "(unnamed)"}  ${node.stableNodeId}  revoked ${DateTime.formatIso(node.revokedAt)}`;

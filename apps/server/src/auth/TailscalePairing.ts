@@ -404,8 +404,8 @@ export const makeBlockStore = Effect.gen(function* () {
    * Records an already-expired session for the node. It is newer than every
    * revocation, so the node pairs again, and it can never authenticate.
    */
-  const unblock = (node: BlockedTailscaleNode) =>
-    Effect.gen(function* () {
+  const unblock = Effect.fn("TailscalePairing.unblock")(
+    function* (node: BlockedTailscaleNode) {
       const now = yield* DateTime.now;
       yield* authSessions.create({
         sessionId: AuthSessionId.make(yield* crypto.randomUUIDv4()),
@@ -423,7 +423,9 @@ export const makeBlockStore = Effect.gen(function* () {
         issuedAt: now,
         expiresAt: now,
       });
-    }).pipe(Effect.mapError((cause) => new TailscalePairingStoreError({ cause })));
+    },
+    Effect.mapError((cause) => new TailscalePairingStoreError({ cause })),
+  );
 
   return { isNodeBlocked, listBlocked, unblock };
 });

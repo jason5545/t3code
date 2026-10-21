@@ -17,6 +17,7 @@ function renderHeading(
         isScratchDraft={false}
         hasResolvedProject
         canChooseProject
+        projectName="Voco"
         projectSelector={<button type="button">Voco</button>}
         {...overrides}
       />
@@ -34,11 +35,11 @@ describe("localized draft hero heading", () => {
     expect(html).not.toContain("What should we build");
     expect(translate("zh-TW", "or start without a project")).toBe("或直接開始，不選專案");
   });
-  it("keeps the original English sentence and inline picker", () => {
+  it("keeps upstream's English heading and its picker", () => {
     const html = renderHeading("en");
-    expect(html).toContain(
-      'What should we build in <span class="whitespace-nowrap"><button type="button">Voco</button>?</span>',
-    );
+    expect(html).toContain("What should we build");
+    expect(html).toContain('<button type="button">Voco</button>');
+    expect(html).not.toContain("想在");
     expect(translate("en", "or start without a project")).toBe("or start without a project");
   });
   it("localizes the scratch-project heading", () => {

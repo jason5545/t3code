@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { useLocale } from "~/locale/LocaleProvider";
 import type { TranslationKey } from "~/locale/messages";
+import { DraftHeroProjectHeading } from "./DraftHeroProjectHeading";
 
 interface DraftHeroHeadingProps {
   readonly isScratchDraft: boolean;
   readonly hasResolvedProject: boolean;
   readonly canChooseProject: boolean;
+  readonly projectName: string;
   readonly projectSelector: ReactNode;
 }
 
@@ -14,9 +16,17 @@ export function DraftHeroHeading({
   isScratchDraft,
   hasResolvedProject,
   canChooseProject,
+  projectName,
   projectSelector,
 }: DraftHeroHeadingProps) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  // English keeps upstream's heading, which moves a long project name onto its own line;
+  // its fixed English word order cannot carry a translated sentence.
+  if (locale === "en" && hasResolvedProject && !isScratchDraft) {
+    return (
+      <DraftHeroProjectHeading projectName={projectName}>{projectSelector}</DraftHeroProjectHeading>
+    );
+  }
   const key: TranslationKey = isScratchDraft
     ? "What should we work on?"
     : hasResolvedProject

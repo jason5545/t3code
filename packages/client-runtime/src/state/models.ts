@@ -1,3 +1,4 @@
+import { formatDurationUnits } from "@t3tools/shared/durationFormat";
 import { backgroundWorkHoldsCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import { threadPullRequestsOf } from "@t3tools/shared/threadPullRequests";
 import type {
@@ -103,6 +104,7 @@ export interface EnvironmentThreadShell {
   readonly activeProviderThreadId: OrchestrationV2ThreadShell["activeProviderThreadId"];
   readonly latestRun: ThreadRunSummary | null;
   readonly runtime: ThreadRuntimeSummary | null;
+  readonly blockedOnThreadWait?: boolean;
   readonly latestUserMessageAt: string | null;
   readonly latestUserAuthoredMessageAt?: string | null;
   readonly hasPendingApprovals: boolean;
@@ -248,6 +250,7 @@ export function presentThreadShell(
     activeProviderThreadId: thread.activeProviderThreadId,
     latestRun,
     runtime,
+    blockedOnThreadWait: thread.blockedOnThreadWait ?? false,
     latestUserMessageAt: nullableIso(thread.latestUserMessageAt),
     ...(thread.latestUserAuthoredMessageAt === undefined
       ? {}
@@ -330,4 +333,12 @@ export function resolveThreadWorkingStartedAt(input: {
     return valid(run.startedAt) ?? valid(run.requestedAt);
   }
   return null;
+}
+
+export function formatWorkingDurationLabel(elapsedMs: number): string {
+  const seconds = Number.isFinite(elapsedMs) ? Math.max(0, Math.floor(elapsedMs / 1000)) : 0;
+  if (seconds < 60) return formatDurationUnits([seconds, "s"]);
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return formatDurationUnits([minutes, "m"]);
+  return formatDurationUnits([Math.floor(minutes / 60), "h"], [minutes % 60, "m"]);
 }

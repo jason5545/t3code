@@ -191,7 +191,12 @@
     "{submitModifierLabel} Enter",
     "△ 2 warnings",
     "✓ 85 passed",
-    "✗ 0 failed"
+    "✗ 0 failed",
+    "git clone",
+    "EAS Simulator",
+    "opened, reopened",
+    "opened",
+    "{0} GiB"
   ],
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
@@ -492,6 +497,13 @@
       "Source control action '{0}' ended without a terminal result.",
       "Invalid source control action target key ({0} characters)."
     ],
-    "apps/web/src/components/promptLinks/HostedPromptLinkLanding.tsx": ["Model {0}"]
+    "apps/web/src/components/promptLinks/HostedPromptLinkLanding.tsx": ["Model {0}"],
+    "apps/web/src/components/chat/DraftHeroProjectHeading.tsx": [
+      "What should we build in",
+      "What should we build{0}{1}"
+    ],
+    "apps/web/src/components/pullRequest/PullRequestSummaryTab.tsx": ["is", "s are"],
+    "apps/web/src/components/settings/providerStatus.ts": ["neutral"],
+    "apps/mobile/src/features/home/ThreadUndoNotice.tsx": ["{notice.action} thread"]
   }
 }

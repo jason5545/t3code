@@ -7,6 +7,7 @@ import { createBuildConfig, DESKTOP_ELECTRON_LANGUAGES } from "./build-desktop-a
 
 it.layer(NodeServices.layer)("build-desktop-artifact (fork)", (it) => {
   it("keeps the Traditional Chinese Electron resources on every platform", () => {
+    assert.deepStrictEqual(DESKTOP_ELECTRON_LANGUAGES, ["en-US", "zh-TW", "zh_TW"]);
     // Verify both actual file basenames against electron-builder's literal
     // matching rule. Hyphens alone incorrectly delete macOS's zh_TW.lproj.
     for (const locale of ["en", "en-US", "zh-TW", "zh_TW"]) {

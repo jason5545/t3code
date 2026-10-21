@@ -124,6 +124,7 @@ const RULES: ReadonlyArray<Rule> = [
   rule(`Update command exited with code (-?\\d+)\\.`, (m) => `更新指令以代碼 ${m[1]} 結束。`),
   rule(`Update command failed\\.`, () => "更新指令失敗。"),
   rule(`Update command failed to run\\.`, () => "無法執行更新指令。"),
+  rule(`Provider refresh failed after update\\.`, () => "更新後重新整理供應商失敗。"),
   rule(`Failed to run update command (.+?): (.+)`, (m) => `無法執行更新指令 ${m[1]}：${m[2]}`),
   rule(`An update is already running for this provider\\.`, () => "這個供應商已有更新正在進行。"),
   rule(`This provider does not support one-click updates\\.`, () => "這個供應商不支援一鍵更新。"),
@@ -203,4 +204,16 @@ const PROVIDER_OPTION_LABELS: Readonly<Record<string, string>> = {
 /** The zh-TW text for a known server model option label, or null. */
 export function translateProviderOptionLabel(label: string): string | null {
   return PROVIDER_OPTION_LABELS[label] ?? null;
+}
+
+let chineseProviderOptionLabels = false;
+
+/** Each app's translation runtime calls this once at startup, like `setChineseDurations`. */
+export function setChineseProviderOptionLabels(enabled: boolean): void {
+  chineseProviderOptionLabels = enabled;
+}
+
+/** For shared client code that builds option labels and cannot reach an app's locale. */
+export function localizeProviderOptionLabelForStartup(label: string): string {
+  return chineseProviderOptionLabels ? (translateProviderOptionLabel(label) ?? label) : label;
 }

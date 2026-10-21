@@ -1,6 +1,8 @@
 import { type CSSProperties, memo } from "react";
 
 import {
+  normalizeProviderAccentColor,
+  providerAccentForegroundColor,
   providerIconKind,
   providerInstanceInitials,
 } from "@t3tools/client-runtime/state/provider-instance-display";
@@ -76,8 +78,12 @@ export const ProviderInstanceIcon = memo(function ProviderInstanceIcon(props: {
   const Icon = isOmp ? OmpIcon : (PROVIDER_ICON_BY_PROVIDER[props.driverKind] ?? null);
   const packageIcon = isOmp ? undefined : providerClients.get(props.driverKind)?.icon;
   const indicatorBackground = props.indicatorBackground ?? "var(--card)";
-  const accentStyle = props.accentColor
-    ? ({ "--provider-accent": props.accentColor } as CSSProperties)
+  const accentColor = normalizeProviderAccentColor(props.accentColor);
+  const accentStyle = accentColor
+    ? ({
+        "--provider-accent": accentColor,
+        "--provider-accent-foreground": providerAccentForegroundColor(accentColor),
+      } as CSSProperties)
     : undefined;
   const badgeContent = props.badgeContent ?? "initials";
   const iconClassName = cn(props.size === "compact" && "size-3.5", props.iconClassName);
@@ -95,7 +101,7 @@ export const ProviderInstanceIcon = memo(function ProviderInstanceIcon(props: {
         props.className,
       )}
       style={accentStyle}
-      data-provider-accent-color={props.accentColor}
+      data-provider-accent-color={accentColor}
     >
       {isAcpRegistry ? (
         <AcpRegistryAgentIcon
@@ -130,8 +136,8 @@ export const ProviderInstanceIcon = memo(function ProviderInstanceIcon(props: {
         <span
           className={cn(
             "pointer-events-none absolute right-0 bottom-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border px-0.5 text-4xs font-semibold leading-none shadow-sm",
-            props.accentColor
-              ? "bg-(--provider-accent) text-white"
+            accentColor
+              ? "bg-(--provider-accent) text-(--provider-accent-foreground)"
               : "bg-card text-muted-foreground",
             props.size === "compact" &&
               "right-[-0.1875rem] bottom-[-0.1875rem] h-3 min-w-3 px-0.5 text-5xs",

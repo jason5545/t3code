@@ -1,3 +1,8 @@
+import {
+  getPromptControlledTraits,
+  getTraitSelectChange,
+} from "@t3tools/client-runtime/model-traits";
+import { SheetHeader } from "../../components/ui/SheetHeader";
 import { Toolbar } from "../../components/ui/Toolbar";
 import * as Dialog from "../../components/ui/Dialog";
 import { createV5StackNavigator as createNativeStackNavigator } from "../../native/createV5StackNavigator";
@@ -46,7 +51,6 @@ import { AppText as Text } from "../../components/ui/AppText";
 import { localizeProviderOptionLabel } from "../../locale/serverMessages";
 import { AndroidScreenHeader } from "../../components/ui/AndroidScreenHeader";
 import { AndroidAnchoredMenu } from "../../components/ui/AndroidAnchoredMenu";
-import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/IconButton";
 import { ProviderIcon } from "../../components/ProviderIcon";
 import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
@@ -253,6 +257,8 @@ type ThreadSettingsSessionProps = {
   readonly lockedProviderInstanceId?: ProviderInstanceId;
   readonly providerGroups: ReadonlyArray<ProviderGroup>;
   readonly selectedModel: ModelSelection | null;
+  readonly prompt: string;
+  readonly onPromptChange: (prompt: string) => void;
   readonly reportedModelSelection?: ModelSelection | null;
   readonly onSelectModel: (option: ModelOption) => void;
   readonly restoreSelection?: (selection: ModelSelection) => ModelSelection;
@@ -317,6 +323,7 @@ type ThreadSettingsSessionValue = {
   readonly runtimeModeChoices: ReturnType<typeof runtimeModeChoicesForSupportedModes>;
   readonly onUpdateRuntimeMode: (mode: RuntimeMode) => void;
   readonly displayedDescriptors: ReadonlyArray<ProviderOptionDescriptor>;
+  readonly promptTraits: ReturnType<typeof getPromptControlledTraits>;
   readonly displayedModelSelection: ModelSelection | null;
   readonly reportedModelSelection: ModelSelection | null;
   readonly providerExpansionOverrides: ReadonlySet<string>;
@@ -497,6 +504,8 @@ function ThreadSettingsSessionProvider(
     () => new Set(),
   );
   const [pendingModel, setPendingModel] = useState<ModelOption | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const displayedPrompt = pendingModel ? (pendingPrompt ?? props.prompt) : props.prompt;
 
   const isApplied = (option: ModelOption) =>
     option.selection.instanceId === props.selectedModel?.instanceId &&
@@ -512,6 +521,7 @@ function ThreadSettingsSessionProvider(
         })
       : []
     : props.optionDescriptors;
+  const promptTraits = getPromptControlledTraits(displayedDescriptors, displayedPrompt);
   const displayedModel =
     pendingModel ??
     props.providerGroups.flatMap((group) => group.models).find((option) => isApplied(option)) ??
@@ -538,12 +548,39 @@ function ThreadSettingsSessionProvider(
       }
       void Haptics.selectionAsync();
       props.onSelectModel(pendingModel);
+      if (pendingPrompt !== null && pendingPrompt !== props.prompt) {
+        props.onPromptChange(pendingPrompt);
+      }
     }
     return true;
   };
 
   const applyOptionChange = (id: string, value: string | boolean) => {
-    const next = applyProviderOptionSelection(displayedDescriptors, { id, value });
+    const descriptor = displayedDescriptors.find((entry) => entry.id === id);
+    const change =
+      descriptor?.type === "select" && typeof value === "string"
+        ? getTraitSelectChange(
+            { ...promptTraits, descriptors: displayedDescriptors },
+            descriptor,
+            displayedPrompt,
+            value,
+          )
+        : null;
+    if (descriptor?.type === "select") {
+      if (!change) return;
+      if (change.prompt !== displayedPrompt) {
+        if (pendingModel) {
+          setPendingPrompt(change.prompt);
+        } else {
+          props.onPromptChange(change.prompt);
+        }
+      }
+      if (!("modelOptions" in change)) return;
+    }
+    const next =
+      change && "modelOptions" in change
+        ? (change.modelOptions ?? [])
+        : applyProviderOptionSelection(displayedDescriptors, { id, value });
     if (!next) {
       return;
     }
@@ -570,6 +607,9 @@ function ThreadSettingsSessionProvider(
 
   const pressModel = (option: ModelOption) => {
     void Haptics.selectionAsync();
+    if (isApplied(option) || option.key !== pendingModel?.key) {
+      setPendingPrompt(null);
+    }
     setPendingModel((current) =>
       pendingModelAfterPress({
         current,
@@ -592,6 +632,7 @@ function ThreadSettingsSessionProvider(
     runtimeModeChoices,
     onUpdateRuntimeMode: props.onUpdateRuntimeMode,
     displayedDescriptors,
+    promptTraits,
     displayedModelSelection: pendingModel?.selection ?? props.selectedModel,
     reportedModelSelection: pendingModel ? null : (props.reportedModelSelection ?? null),
     favoriteKeys,
@@ -839,13 +880,16 @@ function ThreadSettingsOptionsItem(props: {
                 <DisclosureRow
                   label={localizeProviderOptionLabel(descriptor.label)}
                   value={
-                    localizeProviderOptionLabel(
-                      getProviderOptionCurrentLabel(
-                        descriptor,
-                        session.displayedModelSelection,
-                        session.reportedModelSelection,
-                      ),
-                    ) ?? undefined
+                    session.promptTraits.ultrathinkPromptControlled &&
+                    descriptor.id === session.promptTraits.primarySelectDescriptor?.id
+                      ? "Ultrathink"
+                      : (localizeProviderOptionLabel(
+                          getProviderOptionCurrentLabel(
+                            descriptor,
+                            session.displayedModelSelection,
+                            session.reportedModelSelection,
+                          ),
+                        ) ?? undefined)
                   }
                   onPress={() => props.onOpenSubmenu({ kind: "descriptor", id: descriptor.id })}
                 />
@@ -1086,16 +1130,29 @@ function ThreadSettingsChoiceContent(props: {
             rows: selectableChoices(activeDescriptor).map((choice) => ({
               id: choice.id,
               label: localizeProviderOptionLabel(choice.label),
-              description: undefined,
+              description: choice.description,
               selected:
                 choice.id ===
-                getProviderOptionCurrentValue(
-                  activeDescriptor,
-                  session.displayedModelSelection,
-                  session.reportedModelSelection,
-                ),
+                (session.promptTraits.ultrathinkPromptControlled &&
+                activeDescriptor.id === session.promptTraits.primarySelectDescriptor?.id
+                  ? "ultrathink"
+                  : getProviderOptionCurrentValue(
+                      activeDescriptor,
+                      session.displayedModelSelection,
+                      session.reportedModelSelection,
+                    )),
               onPress: () => {
                 void Haptics.selectionAsync();
+                if (
+                  session.promptTraits.ultrathinkInBodyText &&
+                  activeDescriptor.id === session.promptTraits.primarySelectDescriptor?.id
+                ) {
+                  Dialog.alert(
+                    "Reasoning controlled by prompt",
+                    'Your prompt contains "ultrathink" in the text. Remove it to change this option.',
+                  );
+                  return;
+                }
                 session.applyOptionChange(activeDescriptor.id, choice.id);
                 props.onSelected();
               },
@@ -1167,7 +1224,6 @@ function ThreadSettingsModelsScreen() {
   const presentation = useThreadSettingsPickerPresentation();
   const navigation = useNavigation<NativeStackNavigationProp<ThreadSettingsPickerStackParams>>();
   const usesNativeMailSearchToolbar = useNativeMailSearchToolbar();
-  const theme = useUniwindTheme();
   const hasCustomCatalogFilter = session.providerFilter !== null || session.showLegacy;
   const commitAndClose = useEffectEvent(() => {
     if (!session.commitPendingModel()) return;
@@ -1211,7 +1267,7 @@ function ThreadSettingsModelsScreen() {
   return (
     <>
       {Platform.OS === "android" ? (
-        <AndroidScreenHeader
+        <SheetHeader
           trailing={
             <View className="flex-row items-center">
               <AndroidAnchoredMenu
@@ -1254,14 +1310,11 @@ function ThreadSettingsModelsScreen() {
                   />
                 )}
               </AndroidAnchoredMenu>
-              {session.pendingModel ? (
-                <Button label="Save" tone="text" onPress={commitAndClose} />
-              ) : null}
             </View>
           }
-          onBack={presentation.onClose}
+          onCancel={presentation.onClose}
           title="Thread settings"
-          hideBottomBorder
+          confirm={session.pendingModel ? { label: "Save", onPress: commitAndClose } : undefined}
         />
       ) : null}
       <NativeStackScreenOptions
@@ -1315,22 +1368,17 @@ function ThreadSettingsModelsScreen() {
           }}
         />
       </ScreenContent>
-      <Toolbar placement="left">
-        <Toolbar.Button
+      {Platform.OS === "ios" ? (
+        <SheetHeader
+          title="Thread settings"
+          onCancel={presentation.onClose}
           accessibilityLabel="Cancel thread settings"
-          icon="xmark"
-          onPress={presentation.onClose}
+          confirm={{
+            label: session.pendingModel ? "Save thread settings" : "Done",
+            onPress: commitAndClose,
+          }}
         />
-      </Toolbar>
-      <Toolbar placement="right">
-        <Toolbar.Button
-          accessibilityLabel={session.pendingModel ? "Save thread settings" : "Done"}
-          icon="checkmark"
-          variant="prominent"
-          tintColor={theme["--color-prominent-action"]}
-          onPress={commitAndClose}
-        />
-      </Toolbar>
+      ) : null}
       {Platform.OS === "ios" && !usesNativeMailSearchToolbar ? (
         <Toolbar placement="bottom">
           <Toolbar.Menu
@@ -1503,6 +1551,8 @@ export function NewTaskThreadSettingsRouteScreen() {
       {...(flow.selectedModel ? { providerInstanceId: flow.selectedModel.instanceId } : {})}
       providerGroups={flow.providerGroups}
       selectedModel={flow.selectedModel}
+      prompt={flow.prompt}
+      onPromptChange={flow.setPrompt}
       onSelectModel={(option) => flow.setSelectedModelKey(option.key, option.selection.options)}
       restoreSelection={withRememberedModelOptions}
       optionDescriptors={optionDescriptors}
