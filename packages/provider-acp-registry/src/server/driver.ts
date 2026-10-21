@@ -19,11 +19,11 @@ import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
-import * as HttpClient from "effect/http/HttpClient";
+import type * as HttpClient from "effect/http/HttpClient";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
-import * as ProviderLatestVersions from "@t3tools/provider-core/server/ProviderLatestVersions";
+import type * as ProviderLatestVersions from "@t3tools/provider-core/server/ProviderLatestVersions";
 import { AcpRegistryAdapterV2Driver, type AcpRegistryAdapterV2DriverEnv } from "./adapter.ts";
 import type { ProviderTextGeneration } from "@t3tools/provider-core/server/textGeneration";
 import { ProviderDriverError } from "@t3tools/provider-core/server/errors";
@@ -35,12 +35,7 @@ import {
   type ProviderInstance,
 } from "@t3tools/provider-core/server/driver";
 import { providerModelsFromSettings } from "@t3tools/provider-core/server/snapshotProbe";
-import {
-  enrichProviderSnapshotWithVersionAdvisory,
-  makeManualOnlyProviderMaintenanceCapabilities,
-  makeProviderMaintenanceCapabilities,
-  type ProviderMaintenanceCapabilities,
-} from "@t3tools/provider-core/server/maintenanceResolver";
+import { makeManualOnlyProviderMaintenanceCapabilities } from "@t3tools/provider-core/server/maintenanceResolver";
 import {
   haveProviderSnapshotSettingsChanged,
   makeProviderSnapshotSettingsSource,
@@ -63,6 +58,7 @@ import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
 import * as AcpRegistryRuntimeCoordinator from "./AcpRegistryRuntimeCoordinator.ts";
 import * as AcpRegistryAuth from "./auth.ts";
 import * as AcpRegistryAuthenticationState from "./authenticationState.ts";
+import * as LocalCommandUpdates from "./localCommandUpdates.ts";
 
 const DRIVER_KIND = ProviderDriverKind.make("acpRegistry");
 const decodeSettings = Schema.decodeSync(AcpRegistrySettings);
@@ -76,31 +72,6 @@ const MAINTENANCE = makeManualOnlyProviderMaintenanceCapabilities({
   provider: DRIVER_KIND,
   packageName: null,
 });
-
-/**
- * Registry agents carry their version in the registry and have no installer
- * of their own here, so only a local command can declare where its latest
- * version is published and how it updates itself.
- */
-export function acpRegistryMaintenanceCapabilities(input: {
-  readonly instanceId: ProviderInstance["instanceId"];
-  readonly settings: AcpRegistrySettings;
-  readonly environment?: NodeJS.ProcessEnv;
-}): ProviderMaintenanceCapabilities | null {
-  if (input.settings.source !== "local") return null;
-  const packageName = input.settings.npmPackageName || null;
-  const [updateExecutable, ...updateArgs] = input.settings.updateCommand;
-  const executable = updateExecutable?.trim() || null;
-  if (packageName === null && executable === null) return null;
-  return makeProviderMaintenanceCapabilities({
-    provider: DRIVER_KIND,
-    packageName,
-    updateExecutable: executable,
-    updateArgs,
-    updateLockKey: executable === null ? null : `local:${input.instanceId}`,
-    ...(input.environment ? { env: input.environment } : {}),
-  });
-}
 
 const makeUnsupportedTextGeneration = (): ProviderTextGeneration => {
   const unsupported = (operation: string) =>
@@ -367,12 +338,7 @@ export function buildCheckedAcpRegistrySnapshot(
       ? { documentationUrl: input.inspection.documentationUrl }
       : {}),
     installed: readiness.installed,
-    // A local command has no registry entry, so the version it reports in
-    // ACP `initialize` is the only one there is.
-    version:
-      input.settings.source === "local" && input.probe?.agentVersion
-        ? input.probe.agentVersion
-        : readiness.version,
+    version: LocalCommandUpdates.localCommandVersion(input) ?? readiness.version,
     // A failed discovery probe on a ready installation is a warning, not an
     // outage: the agent binary is present and a real turn may still work
     // (for example after the user completes authentication).
@@ -530,8 +496,6 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
     const hostEnvironment = yield* HostProcess.Environment;
     const host = yield* ProviderHost.ProviderHost;
-    const httpClient = yield* HttpClient.HttpClient;
-    const latestVersions = yield* ProviderLatestVersions.ProviderLatestVersions;
     const continuationIdentity = defaultProviderContinuationIdentity({
       driverKind: DRIVER_KIND,
       instanceId,
@@ -547,10 +511,13 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
       environment,
       hostEnvironment,
     );
-    const maintenance = acpRegistryMaintenanceCapabilities({
+    const localUpdates = yield* LocalCommandUpdates.make({
       instanceId,
       settings: effectiveConfig,
       environment: processEnvironment,
+      probedProvider: Effect.suspend(() => Ref.get(enrichmentCache)).pipe(
+        Effect.map(({ entry }) => entry?.provider),
+      ),
     });
     const orchestrationAdapter = yield* AcpRegistryAdapterV2Driver.create({
       instanceId,
@@ -616,27 +583,9 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
             }),
           );
     });
-    const enrichmentCache = yield* Ref.make<{
-      readonly generation: number;
-      readonly entry: {
-        readonly provider: ServerProvider;
-        readonly expiresAt: number;
-      } | null;
-    }>({ generation: 0, entry: null });
-    // A local command's version comes only from the background probe. The
-    // readiness check repeats the probed one so a health refresh neither
-    // blanks it nor misses the probe cache; invalidation clears both.
-    const withProbedLocalVersion = (provider: ServerProvider) =>
-      effectiveConfig.source !== "local" || !provider.installed || provider.version !== null
-        ? Effect.succeed(provider)
-        : Ref.get(enrichmentCache).pipe(
-            Effect.map(({ entry }) =>
-              entry?.provider.version ? { ...provider, version: entry.provider.version } : provider,
-            ),
-          );
     const checkProvider = checkAcpRegistryProviderReadiness(readinessInput).pipe(
       Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog),
-      Effect.flatMap(withProbedLocalVersion),
+      Effect.flatMap(localUpdates.withProbedVersion),
       Effect.flatMap(withLiveRuntimeState),
     );
     const enrichProvider = checkAcpRegistryProviderStatus(
@@ -650,6 +599,13 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
       Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
       Effect.provideService(Crypto.Crypto, crypto),
     );
+    const enrichmentCache = yield* Ref.make<{
+      readonly generation: number;
+      readonly entry: {
+        readonly provider: ServerProvider;
+        readonly expiresAt: number;
+      } | null;
+    }>({ generation: 0, entry: null });
     const liveSnapshotSemaphore = yield* Semaphore.make(1);
     const invalidateEnrichmentCache = Ref.update(enrichmentCache, (current) => ({
       generation: current.generation + 1,
@@ -691,7 +647,7 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
     const snapshot = yield* makeManagedServerProvider<
       ProviderSnapshotSettings<AcpRegistrySettings>
     >({
-      resolveMaintenance: () => Effect.succeed(maintenance ?? MAINTENANCE),
+      resolveMaintenance: () => Effect.succeed(localUpdates.maintenance ?? MAINTENANCE),
       getSettings: snapshotSettings.getSettings,
       streamSettings: snapshotSettings.streamSettings,
       haveSettingsChanged: haveProviderSnapshotSettingsChanged,
@@ -699,18 +655,6 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
       checkProvider,
       enrichSnapshot: ({ settings, snapshot, getSnapshot, publishSnapshot }) => {
         if (!snapshot.installed) return Effect.void;
-        const withVersionAdvisory = (provider: ServerProvider) =>
-          maintenance === null
-            ? Effect.succeed(provider)
-            : enrichProviderSnapshotWithVersionAdvisory(provider, maintenance, {
-                enableProviderUpdateChecks: settings.enableProviderUpdateChecks,
-              }).pipe(
-                Effect.provideService(HttpClient.HttpClient, httpClient),
-                Effect.provideService(
-                  ProviderLatestVersions.ProviderLatestVersions,
-                  latestVersions,
-                ),
-              );
         const publishEnrichment = (
           Option.isSome(runtimeCoordinator)
             ? runtimeCoordinator.value.runBackgroundProbe(
@@ -721,22 +665,17 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
               )
             : enrichProviderCached(snapshot).pipe(Effect.map(Option.some))
         ).pipe(
+          Effect.flatMap(localUpdates.adviseProbe(settings.enableProviderUpdateChecks)),
           Effect.flatMap(
             Option.match({
               onNone: () => Effect.void,
               onSome: ({ provider, generation }) =>
-                // The npm lookup stays outside the permit so it never holds
-                // up live command and configuration updates.
-                withVersionAdvisory(provider).pipe(
-                  Effect.flatMap((advised) =>
-                    liveSnapshotSemaphore.withPermit(
-                      Ref.get(enrichmentCache).pipe(
-                        Effect.flatMap((current) =>
-                          current.generation === generation
-                            ? withLiveRuntimeState(advised).pipe(Effect.flatMap(publishSnapshot))
-                            : Effect.void,
-                        ),
-                      ),
+                liveSnapshotSemaphore.withPermit(
+                  Ref.get(enrichmentCache).pipe(
+                    Effect.flatMap((current) =>
+                      current.generation === generation
+                        ? withLiveRuntimeState(provider).pipe(Effect.flatMap(publishSnapshot))
+                        : Effect.void,
                     ),
                   ),
                 ),

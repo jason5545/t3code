@@ -6,14 +6,14 @@ import * as Stream from "effect/Stream";
 import { ChildProcessSpawner } from "effect/process";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 
+import { TailscaleCommandExitError } from "./tailscale.ts";
 import {
   isTailscaleAddress,
   parseTailscaleHostIdentity,
   parseTailscalePeers,
   parseTailscaleWhois,
   readTailscaleWhois,
-  TailscaleCommandExitError,
-} from "./tailscale.ts";
+} from "./tailnetIdentity.ts";
 
 const encoder = new TextEncoder();
 

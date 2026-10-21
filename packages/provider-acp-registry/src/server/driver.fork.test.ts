@@ -3,7 +3,8 @@ import { AcpRegistrySettings } from "../settings.ts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Schema from "effect/Schema";
 
-import { acpRegistryMaintenanceCapabilities, buildCheckedAcpRegistrySnapshot } from "./driver.ts";
+import { buildCheckedAcpRegistrySnapshot } from "./driver.ts";
+import { acpRegistryMaintenanceCapabilities } from "./localCommandUpdates.ts";
 
 const decodeSettings = Schema.decodeSync(AcpRegistrySettings);
 const identity = {

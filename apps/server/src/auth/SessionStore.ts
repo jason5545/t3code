@@ -574,17 +574,6 @@ export const make = Effect.gen(function* () {
     );
   });
 
-  const renewIfDue: SessionStore["Service"]["renewIfDue"] = (sessionId) =>
-    renewal.renewIfDue(sessionId).pipe(
-      Effect.catchCause((cause) =>
-        Effect.logWarning("Failed to renew session.").pipe(
-          Effect.annotateLogs({ sessionId, cause }),
-          Effect.as(Option.none()),
-        ),
-      ),
-      Effect.withSpan("SessionStore.renewIfDue"),
-    );
-
   const markConnected: SessionStore["Service"]["markConnected"] = (sessionId) =>
     Ref.modify(connectedSessionsRef, (current) => {
       const next = new Map(current);
@@ -601,7 +590,7 @@ export const make = Effect.gen(function* () {
                   lastConnectedAt,
                 }),
               ),
-              Effect.andThen(renewIfDue(sessionId)),
+              Effect.andThen(renewal.renewIfDue(sessionId)),
             )
           : Effect.void,
       ),
@@ -1120,7 +1109,7 @@ export const make = Effect.gen(function* () {
     revoke,
     revokeAllExcept,
     markConnected,
-    renewIfDue,
+    renewIfDue: renewal.renewIfDue,
     markDisconnected,
     recordClientConnection,
   });

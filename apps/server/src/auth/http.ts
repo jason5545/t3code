@@ -2,7 +2,6 @@ import {
   authScopeRequiredResponse,
   AuthAccessReadScope,
   AuthAccessWriteScope,
-  AuthOrchestrationReadScope,
   AuthStandardClientScopes,
   AuthGrantScope,
   EnvironmentAuthInvalidError,
@@ -11,7 +10,6 @@ import {
   EnvironmentInternalError,
   type EnvironmentInternalErrorReason,
   EnvironmentOperationForbiddenError,
-  type EnvironmentOperationForbiddenReason,
   EnvironmentRequestInvalidError,
   type EnvironmentRequestInvalidReason,
   EnvironmentResourceNotFoundError,
@@ -20,18 +18,12 @@ import {
   EnvironmentAuthenticatedAuth,
   EnvironmentAuthenticatedPrincipal,
 } from "@t3tools/contracts";
-import type {
-  AuthEnvironmentScope,
-  AuthSessionId,
-  DpopFailureReason,
-  ServerAuthSessionMethod,
-} from "@t3tools/contracts";
+import type { AuthEnvironmentScope, DpopFailureReason } from "@t3tools/contracts";
 import { parseOAuthScope } from "@t3tools/shared/oauthScope";
 import { causeErrorTag } from "@t3tools/shared/observability";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { identity } from "effect/Function";
 import * as Layer from "effect/Layer";
@@ -40,9 +32,9 @@ import * as HttpEffect from "effect/http/HttpEffect";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 
+import * as AuthHttpFork from "./authHttpFork.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as SessionStore from "./SessionStore.ts";
-import * as TailscalePairing from "./TailscalePairing.ts";
 import { traceAuthenticatedRelayRequest, traceRelayRequest } from "../cloud/traceRelayRequest.ts";
 import { deriveAuthClientMetadata } from "./utils.ts";
 import { verifyRequestDpopProof } from "./dpop.ts";
@@ -143,7 +135,7 @@ export function failEnvironmentScopeRequired(requiredScope: AuthEnvironmentScope
   );
 }
 
-function failEnvironmentOperationForbidden(reason: EnvironmentOperationForbiddenReason) {
+function failEnvironmentOperationForbidden(reason: "current_session_revoke_not_allowed") {
   return currentEnvironmentTraceId.pipe(
     Effect.flatMap((traceId) =>
       Effect.fail(
@@ -225,30 +217,6 @@ const appendSessionCookie = (cookieName: string, token: string, expiresAt: DateT
     ),
   );
 
-/**
- * Fork patch 6: a browser drops its cookie at the deadline the cookie was set
- * with, whatever the server renews. Renewing here, just before the socket
- * opens, lets the same response carry the new deadline.
- */
-const renewBrowserSessionCookie = Effect.fn("environment.auth.renewBrowserSessionCookie")(
-  function* (
-    sessions: SessionStore.SessionStore["Service"],
-    session: { readonly sessionId: AuthSessionId; readonly method: ServerAuthSessionMethod },
-  ) {
-    if (session.method !== "browser-session-cookie") return;
-    const credential = EnvironmentAuth.selectRequestCredential(
-      yield* HttpServerRequest.HttpServerRequest,
-      sessions.cookieName,
-      sessions.legacyCookieName,
-    );
-    if (credential?.source !== "cookie") return;
-    const expiresAt = yield* sessions.renewIfDue(session.sessionId);
-    if (Option.isSome(expiresAt)) {
-      yield* appendSessionCookie(sessions.cookieName, credential.token, expiresAt.value);
-    }
-  },
-);
-
 export const requireEnvironmentScope = Effect.fn("environment.auth.requireScope")(function* (
   scope: AuthEnvironmentScope,
 ) {
@@ -298,10 +266,18 @@ export const layer = HttpApiBuilder.group(
   Effect.fnUntraced(function* (handlers) {
     const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
     const sessions = yield* SessionStore.SessionStore;
-    // Fork patch 7: optional so routes built without it (tests) refuse instead of requiring it.
-    const tailscalePairing = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
+    const fork = yield* AuthHttpFork.make({
+      sessions,
+      annotateEnvironmentRequest,
+      requireEnvironmentScope,
+      failEnvironmentInternal,
+      appendCredentialResponseHeaders,
+      appendSessionCookie,
+    });
 
     return handlers
+      .handle("tailscalePairing", fork.tailscalePairing)
+      .handle("tailnetServers", fork.tailnetServers)
       .handle(
         "session",
         Effect.fn("environment.auth.session")(
@@ -448,40 +424,13 @@ export const layer = HttpApiBuilder.group(
         ),
       )
       .handle(
-        "tailscalePairing",
-        Effect.fn("environment.auth.tailscalePairing")(
-          function* (args) {
-            yield* annotateEnvironmentRequest(args.endpoint.name);
-            const request = yield* HttpServerRequest.HttpServerRequest;
-            yield* appendCredentialResponseHeaders;
-            return yield* Option.match(tailscalePairing, {
-              onNone: () =>
-                Effect.fail(
-                  new TailscalePairing.TailscalePairingRefusedError({ reason: "disabled" }),
-                ),
-              onSome: (service) =>
-                service.issueCredential(TailscalePairing.pairingRequestOf(request)),
-            });
-          },
-          Effect.catchTags({
-            TailscalePairingRefusedError: () =>
-              failEnvironmentOperationForbidden("tailscale_pairing_refused"),
-            TailscalePairingStoreError: (error) =>
-              failEnvironmentInternal("pairing_credential_issuance_failed", error),
-          }),
-          Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
-            failEnvironmentInternal("pairing_credential_issuance_failed", error),
-          ),
-        ),
-      )
-      .handle(
         "webSocketTicket",
         Effect.fn("environment.auth.webSocketTicket")(
           function* (args) {
             yield* annotateEnvironmentRequest(args.endpoint.name);
             const session = yield* EnvironmentAuthenticatedPrincipal;
             yield* appendCredentialResponseHeaders;
-            yield* renewBrowserSessionCookie(sessions, session);
+            yield* fork.renewBrowserSessionCookie(session);
             return yield* serverAuth.issueWebSocketTicket(session);
           },
           Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
@@ -574,17 +523,6 @@ export const layer = HttpApiBuilder.group(
             failEnvironmentInternal("client_session_revoke_failed", error),
           ),
         ),
-      )
-      .handle(
-        "tailnetServers",
-        Effect.fn("environment.auth.tailnetServers")(function* (args) {
-          yield* annotateEnvironmentRequest(args.endpoint.name);
-          yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          return yield* Option.match(tailscalePairing, {
-            onNone: () => Effect.succeed([]),
-            onSome: (service) => service.discoverServers(),
-          });
-        }),
       )
       .handle(
         "revokeOtherClients",

@@ -39,8 +39,9 @@ import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as ServerConfig from "../config.ts";
 import * as EnvironmentAuthPolicy from "./EnvironmentAuthPolicy.ts";
 import * as PairingGrantStore from "./PairingGrantStore.ts";
-import { decodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
-import { isMcpClientSubject, MCP_CLIENT_SUBJECT } from "./mcpClientSubject.ts";
+import * as McpApprovalCodes from "./McpApprovalCodes.ts";
+import { mcpApprovalSessionTtl } from "./mcpApprovalCode.ts";
+import { isMcpClientSubject, mcpClientSessionSubject } from "./mcpClientSubject.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as SessionStore from "./SessionStore.ts";
 import { REUSABLE_DEV_SESSION_EXPIRES_AT, resolveReusableDevAuth } from "./ReusableDevAuth.ts";
@@ -576,7 +577,7 @@ export class EnvironmentAuth extends Context.Service<
       code: string,
       access: AuthMcpClientAccess,
     ) => Effect.Effect<
-      { readonly sessionTtl?: Duration.Duration },
+      { readonly ttl?: Duration.Duration },
       ServerAuthMcpApprovalCodeError | ServerAuthInternalError
     >;
     readonly authenticateBrowserSession: (
@@ -729,6 +730,7 @@ function isBrowserOriginAllowed(
 export const make = Effect.gen(function* () {
   const policy = yield* EnvironmentAuthPolicy.EnvironmentAuthPolicy;
   const bootstrapCredentials = yield* PairingGrantStore.PairingGrantStore;
+  const mcpApprovalCodes = yield* McpApprovalCodes.McpApprovalCodes;
   const sessions = yield* SessionStore.SessionStore;
   const secretStore = yield* ServerSecretStore.ServerSecretStore;
   const crypto = yield* Crypto.Crypto;
@@ -1292,10 +1294,7 @@ export const make = Effect.gen(function* () {
   const issueMcpClientSession: EnvironmentAuth["Service"]["issueMcpClientSession"] = (input) =>
     sessions
       .issue({
-        subject:
-          input.subject !== undefined && isMcpClientSubject(input.subject)
-            ? input.subject
-            : MCP_CLIENT_SUBJECT,
+        subject: mcpClientSessionSubject(input.subject),
         method: "bearer-access-token",
         scopes: mcpClientScopes(input.access),
         ttl: input.ttl ?? MCP_CLIENT_SESSION_TTL,
@@ -1324,30 +1323,11 @@ export const make = Effect.gen(function* () {
     );
   };
 
-  // Fork: MCP approval goes through `useMcpApprovalCode`, which leaves a
-  // reusable MCP approval code unspent.
-  const resolveMcpApprovalGrant = (
-    credential: string,
-  ): Effect.Effect<
-    ResolvedBootstrapGrant,
-    ServerAuthInvalidCredentialError | ServerAuthInternalError | ServerAuthScopeNotGrantedError
-  > =>
+  // Fork patch 5: MCP approval reads a reusable approval code without spending it.
+  const resolveMcpApprovalGrant = (credential: string) =>
     devAuth?.matches(credential)
       ? resolveBootstrapGrant(credential)
-      : bootstrapCredentials
-          .useMcpApprovalCode(credential)
-          .pipe(
-            Effect.mapError((cause) =>
-              cause._tag === "BootstrapCredentialScopeNotGrantedError"
-                ? new ServerAuthScopeNotGrantedError({})
-                : toBootstrapExchangeError(cause),
-            ),
-          );
-
-  const mcpApprovalSessionTtl = (subject: string) => {
-    const sessionTtl = decodeMcpApprovalSubject(subject)?.sessionTtl;
-    return sessionTtl === undefined ? {} : { sessionTtl };
-  };
+      : mcpApprovalCodes.use(credential).pipe(Effect.mapError(toBootstrapExchangeError));
 
   const consumeMcpApprovalCode: EnvironmentAuth["Service"]["consumeMcpApprovalCode"] = (
     code,
@@ -1400,7 +1380,7 @@ export const make = Effect.gen(function* () {
 });
 
 export const layer = Layer.effect(EnvironmentAuth, make).pipe(
-  Layer.provideMerge(PairingGrantStore.layer),
+  Layer.provideMerge(McpApprovalCodes.layer),
   Layer.provideMerge(SessionStore.layer),
   Layer.provideMerge(EnvironmentAuthPolicy.layer),
 );

@@ -692,12 +692,10 @@ const layerCommandReadiness = HttpRouter.middleware(
 const layerMakeRoutes = Layer.mergeAll(
   Layer.mergeAll(
     HttpApiBuilder.layer(EnvironmentHttpApi).pipe(
-      Layer.provide(AuthHttp.layer.pipe(Layer.provide(TailscalePairing.layer))),
-      Layer.provide(
-        McpOAuthHttp.layer.pipe(
-          Layer.provide(McpOAuth.layer.pipe(Layer.provide(TailscalePairing.layer))),
-        ),
-      ),
+      Layer.provide(AuthHttp.layer),
+      Layer.provide(McpOAuthHttp.layer.pipe(Layer.provide(McpOAuth.layer))),
+      // Fork patch 7: both layers above read it as optional.
+      Layer.provide(TailscalePairing.layer),
       Layer.provide(CloudHttp.layer),
       Layer.provide(OrchestrationHttp.layer),
       Layer.provide(PullRequestHttp.layer),

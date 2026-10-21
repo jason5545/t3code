@@ -99,7 +99,8 @@ export const make = Effect.gen(function* () {
     return extended.length > 0 ? Option.some(expiresAt) : Option.none<DateTime.Utc>();
   });
 
-  const renewIfDue = (sessionId: AuthSessionId) =>
+  /** The session's expiry after renewing it when due; none once it is unusable or renewal failed. */
+  const renewIfDue = (sessionId: AuthSessionId): Effect.Effect<Option.Option<DateTime.Utc>> =>
     authSessions.getById({ sessionId }).pipe(
       Effect.flatMap(
         Option.match({
@@ -107,6 +108,13 @@ export const make = Effect.gen(function* () {
           onSome: renewSession,
         }),
       ),
+      Effect.catchCause((cause) =>
+        Effect.logWarning("Failed to renew session.").pipe(
+          Effect.annotateLogs({ sessionId, cause }),
+          Effect.as(Option.none()),
+        ),
+      ),
+      Effect.withSpan("SessionStore.renewIfDue"),
     );
 
   /**

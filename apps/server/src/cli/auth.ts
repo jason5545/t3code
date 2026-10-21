@@ -7,7 +7,6 @@ import * as References from "effect/References";
 import { Argument, Command, Flag, GlobalFlag } from "effect/cli";
 
 import * as EnvironmentAuth from "../auth/EnvironmentAuth.ts";
-import { encodeMcpApprovalSubject } from "../auth/mcpApprovalCode.ts";
 
 import {
   formatIssuedPairingCredential,
@@ -16,6 +15,7 @@ import {
   formatSessionList,
 } from "../cliAuthFormat.ts";
 import * as ServerConfig from "../config.ts";
+import { mcpApprovalCodeFlags, pairingLinkSubject } from "./authMcpApproval.ts";
 import { authScopesFlag } from "./authScopes.ts";
 import { tailscaleCommand } from "./authTailscale.ts";
 import {
@@ -79,21 +79,6 @@ const tokenOnlyFlag = Flag.Boolean("token-only").pipe(
   Flag.withDefault(false),
 );
 
-const sessionTtlFlag = Flag.String("session-ttl").pipe(
-  Flag.withSchema(DurationFromString),
-  Flag.withDescription(
-    "How long MCP agent sign-ins approved with this code last, for example `180d`. The code then only approves MCP sign-ins.",
-  ),
-  Flag.optional,
-);
-
-const reusableFlag = Flag.Boolean("reusable").pipe(
-  Flag.withDescription(
-    "Approve MCP agent sign-ins until the code expires or is revoked, instead of once. The code then only approves MCP sign-ins.",
-  ),
-  Flag.withDefault(false),
-);
-
 const pairingCreateCommand = Command.make("create", {
   ...authLocationFlags,
   scopes: authScopesFlag(AuthStandardClientScopes),
@@ -101,8 +86,7 @@ const pairingCreateCommand = Command.make("create", {
   label: labelFlag,
   baseUrl: baseUrlFlag,
   json: jsonFlag,
-  sessionTtl: sessionTtlFlag,
-  reusable: reusableFlag,
+  ...mcpApprovalCodeFlags,
 }).pipe(
   Command.withDescription("Issue a new client pairing token."),
   Command.withHandler((flags) =>
@@ -112,15 +96,7 @@ const pairingCreateCommand = Command.make("create", {
         Effect.gen(function* () {
           const issued = yield* environmentAuth.createPairingLink({
             scopes: flags.scopes,
-            subject:
-              Option.isSome(flags.sessionTtl) || flags.reusable
-                ? encodeMcpApprovalSubject({
-                    ...(Option.isSome(flags.sessionTtl)
-                      ? { sessionTtl: flags.sessionTtl.value }
-                      : {}),
-                    reusable: flags.reusable,
-                  })
-                : "one-time-token",
+            subject: pairingLinkSubject(flags),
             ...(Option.isSome(flags.ttl) ? { ttl: flags.ttl.value } : {}),
             ...(Option.isSome(flags.label) ? { label: flags.label.value } : {}),
           });

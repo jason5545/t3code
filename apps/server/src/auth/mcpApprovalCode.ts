@@ -32,3 +32,9 @@ export const decodeMcpApprovalSubject = (subject: string): McpApprovalCodeOption
     reusable: parts.includes("reusable"),
   };
 };
+
+/** The sign-in lifetime an approval code's pairing link subject sets, if any. */
+export const mcpApprovalSessionTtl = (subject: string): { readonly ttl?: Duration.Duration } => {
+  const ttl = decodeMcpApprovalSubject(subject)?.sessionTtl;
+  return ttl === undefined ? {} : { ttl };
+};

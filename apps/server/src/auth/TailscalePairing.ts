@@ -464,6 +464,33 @@ export class TailscalePairing extends Context.Service<
   }
 >()("t3/auth/TailscalePairing") {}
 
+/**
+ * What McpOAuth answers an authorize request from an allowed tagged node with, without
+ * the approval page; none when the request needs a person or the service is not built.
+ */
+export const approveMcpSignIn = <A>(
+  service: Option.Option<TailscalePairing["Service"]>,
+  request: HttpServerRequest.HttpServerRequest,
+  redirectUri: string,
+  approve: (approval: {
+    readonly access: AuthMcpClientAccess;
+    readonly subject: string;
+    readonly nodeName: string;
+  }) => Effect.Effect<A>,
+): Effect.Effect<Option.Option<A>> =>
+  Option.match(service, {
+    onNone: () => Effect.succeedNone,
+    onSome: (pairing) =>
+      pairing.mcpAutoApproval(pairingRequestOf(request), redirectUri).pipe(
+        Effect.flatMap(
+          Option.match({
+            onNone: () => Effect.succeedNone,
+            onSome: (approval) => Effect.asSome(approve(approval)),
+          }),
+        ),
+      ),
+  });
+
 /** @public Service construction is part of the canonical Effect module API. */
 export const make = Effect.gen(function* () {
   const enabled = yield* TailscalePairingEnabled;

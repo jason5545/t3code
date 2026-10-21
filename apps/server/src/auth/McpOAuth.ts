@@ -18,7 +18,6 @@ import { encodeOAuthScope } from "@t3tools/shared/oauthScope";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
-import type * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -30,6 +29,7 @@ import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as McpHttpServer from "../mcp/McpHttpServer.ts";
 import type * as McpInvocationContext from "../mcp/McpInvocationContext.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
+import type { McpClientSessionOptions } from "./mcpClientSubject.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as TailscalePairing from "./TailscalePairing.ts";
 import {
@@ -185,9 +185,7 @@ interface PendingCode {
   readonly codeChallenge: string;
   readonly resource: string;
   readonly access: AuthMcpClientAccess;
-  readonly sessionTtl?: Duration.Duration;
-  /** Fork patch 7: set when a tagged tailnet node was approved without a person. */
-  readonly subject?: string;
+  readonly session?: McpClientSessionOptions;
   readonly expiresAtMs: number;
 }
 
@@ -217,10 +215,7 @@ export class McpOAuth extends Context.Service<
       readonly decision: ApprovalDecision;
     }) => Effect.Effect<string, EnvironmentAuth.ServerAuthMcpApprovalCodeError | McpOAuthPageError>;
     readonly deny: (authorization: AuthorizationRequest) => string;
-    /**
-     * Fork patch 7: the redirect carrying a code when the requester is a
-     * tagged tailnet node allowed to sign in without a person.
-     */
+    /** Fork patch 7: a redirect with a code when a tagged tailnet node may sign in without a person. */
     readonly approveOverTailscale: (
       request: HttpServerRequest.HttpServerRequest,
       authorization: AuthorizationRequest,
@@ -399,8 +394,8 @@ const make = Effect.gen(function* () {
   const mintCode = Effect.fn("McpOAuth.mintCode")(function* (
     authorization: AuthorizationRequest,
     access: AuthMcpClientAccess,
-    sessionTtl: Duration.Duration | undefined,
-    tailnetNode?: { readonly subject: string; readonly nodeName: string },
+    session?: McpClientSessionOptions,
+    clientName = authorization.client.name,
   ) {
     const now = yield* Clock.currentTimeMillis;
     const code = Buffer.from(yield* crypto.randomBytes(32).pipe(Effect.orDie)).toString(
@@ -410,16 +405,12 @@ const make = Effect.gen(function* () {
       const next = new Map(Array.from(current).filter(([, pending]) => pending.expiresAtMs > now));
       next.set(code, {
         clientId: authorization.client.clientId,
-        clientName:
-          tailnetNode === undefined
-            ? authorization.client.name
-            : `${authorization.client.name} (${tailnetNode.nodeName})`,
+        clientName,
         redirectUri: authorization.redirectUri,
         codeChallenge: authorization.codeChallenge,
         resource: authorization.resource,
         access,
-        ...(sessionTtl === undefined ? {} : { sessionTtl }),
-        ...(tailnetNode === undefined ? {} : { subject: tailnetNode.subject }),
+        ...(session === undefined ? {} : { session }),
         expiresAtMs: now + AUTHORIZATION_CODE_TTL_MS,
       });
       return next;
@@ -429,14 +420,9 @@ const make = Effect.gen(function* () {
 
   const approve: McpOAuth["Service"]["approve"] = Effect.fn("McpOAuth.approve")(function* (input) {
     const { decision } = input;
-    let sessionTtl: Duration.Duration | undefined;
+    let granted: McpClientSessionOptions | undefined;
     if (decision._tag === "pairing-code") {
-      yield* environmentAuth.consumeMcpApprovalCode(decision.code, decision.access).pipe(
-        Effect.tap((approval) =>
-          Effect.sync(() => {
-            sessionTtl = approval.sessionTtl;
-          }),
-        ),
+      granted = yield* environmentAuth.consumeMcpApprovalCode(decision.code, decision.access).pipe(
         Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (cause) =>
           Effect.logError("MCP approval code check failed.", { cause }).pipe(
             Effect.andThen(
@@ -463,7 +449,7 @@ const make = Effect.gen(function* () {
         });
       }
     }
-    const code = yield* mintCode(input.authorization, decision.access, sessionTtl);
+    const code = yield* mintCode(input.authorization, decision.access, granted);
     yield* Effect.logInfo("Approved an MCP client sign-in.", {
       client: input.authorization.client.name,
       access: decision.access,
@@ -480,31 +466,22 @@ const make = Effect.gen(function* () {
     request,
     authorization,
   ) =>
-    Option.match(tailscale, {
-      onNone: () => Effect.succeedNone,
-      onSome: (service) =>
-        service
-          .mcpAutoApproval(TailscalePairing.pairingRequestOf(request), authorization.redirectUri)
-          .pipe(
-            Effect.flatMap(
-              Option.match({
-                onNone: () => Effect.succeedNone,
-                onSome: (approval) =>
-                  mintCode(authorization, approval.access, undefined, approval).pipe(
-                    Effect.map((code) =>
-                      Option.some(
-                        redirectWith(authorization.redirectUri, {
-                          code,
-                          state: authorization.state,
-                          iss: authorization.issuer,
-                        }),
-                      ),
-                    ),
-                  ),
-              }),
-            ),
-          ),
-    });
+    TailscalePairing.approveMcpSignIn(tailscale, request, authorization.redirectUri, (approval) =>
+      mintCode(
+        authorization,
+        approval.access,
+        { subject: approval.subject },
+        `${authorization.client.name} (${approval.nodeName})`,
+      ).pipe(
+        Effect.map((code) =>
+          redirectWith(authorization.redirectUri, {
+            code,
+            state: authorization.state,
+            iss: authorization.issuer,
+          }),
+        ),
+      ),
+    );
 
   const deny: McpOAuth["Service"]["deny"] = (authorization) =>
     redirectWith(authorization.redirectUri, {
@@ -555,8 +532,7 @@ const make = Effect.gen(function* () {
         .issueMcpClientSession({
           label: pending.clientName,
           access: pending.access,
-          ...(pending.sessionTtl === undefined ? {} : { ttl: pending.sessionTtl }),
-          ...(pending.subject === undefined ? {} : { subject: pending.subject }),
+          ...pending.session,
           client: deriveAuthClientMetadata({ request }),
         })
         .pipe(
