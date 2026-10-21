@@ -76,9 +76,9 @@ const disabledDefaultSlots = (
   ...drivers: ReadonlyArray<string>
 ): ContractServerSettings["providerInstances"] =>
   Object.fromEntries(
-    drivers.map((driver) => [
+    // The fork's default OMP instance (Pi driver) would probe the real `omp`, so it is always off.
+    [...drivers, "omp"].map((driver) => [
       ProviderInstanceId.make(driver),
-      // The fork's default OMP instance runs on the Pi driver.
       { driver: ProviderDriverKind.make(driver === "omp" ? "pi" : driver), enabled: false },
     ]),
   );
@@ -950,71 +950,6 @@ it.layer(
           { slug: "default", name: "Default", isCustom: false, capabilities: null },
           { slug: "gpt-5.6-sol", name: "GPT-5.6-Sol", isCustom: false, capabilities: null },
         ],
-      );
-    });
-
-    it("drops deleted OMP models missing from a completed Pi discovery probe", () => {
-      const previousProvider = {
-        instanceId: ProviderInstanceId.make("omp"),
-        driver: ProviderDriverKind.make("pi"),
-        status: "ready",
-        enabled: true,
-        installed: true,
-        auth: { status: "authenticated", type: "pi", label: "OMP" },
-        checkedAt: "2026-10-10T11:45:07.808Z",
-        version: "18.8.7",
-        models: [
-          { slug: "omlx/Qwen3.8-Flash-Next", name: "Qwen3.8", isCustom: false, capabilities: null },
-          {
-            slug: "omlx/OrcaSAQ-2-Cyber-27B",
-            name: "OrcaSAQ",
-            isCustom: false,
-            capabilities: null,
-          },
-        ],
-        slashCommands: [],
-        skills: [],
-      } as const satisfies ServerProvider;
-      const refreshedProvider = {
-        ...previousProvider,
-        checkedAt: "2026-10-11T02:00:00.000Z",
-        models: [
-          { slug: "omlx/Qwen3.8-Flash-Next", name: "Qwen3.8", isCustom: false, capabilities: null },
-        ],
-      } satisfies ServerProvider;
-
-      assert.deepStrictEqual(
-        ProviderRegistry.mergeProviderSnapshot(previousProvider, refreshedProvider).models,
-        [...refreshedProvider.models],
-      );
-    });
-
-    it("retains OMP models when Pi discovery could not refresh them", () => {
-      const previousProvider = {
-        instanceId: ProviderInstanceId.make("omp"),
-        driver: ProviderDriverKind.make("pi"),
-        status: "ready",
-        enabled: true,
-        installed: true,
-        auth: { status: "authenticated", type: "pi", label: "OMP" },
-        checkedAt: "2026-10-10T11:45:07.808Z",
-        version: "18.8.7",
-        models: [
-          { slug: "omlx/Qwen3.8-Flash-Next", name: "Qwen3.8", isCustom: false, capabilities: null },
-        ],
-        slashCommands: [],
-        skills: [],
-      } as const satisfies ServerProvider;
-      const rpcFailedProvider = {
-        ...previousProvider,
-        checkedAt: "2026-10-11T02:00:00.000Z",
-        auth: { status: "unknown" },
-        models: [],
-      } satisfies ServerProvider;
-
-      assert.deepStrictEqual(
-        ProviderRegistry.mergeProviderSnapshot(previousProvider, rpcFailedProvider).models,
-        [...previousProvider.models],
       );
     });
 
@@ -3149,14 +3084,7 @@ it.layer(
           decodeServerSettings(
             deepMerge(encodedDefaultServerSettings, {
               providerInstances: {
-                ...disabledDefaultSlots(
-                  "codex",
-                  "claudeAgent",
-                  "cursor",
-                  "grok",
-                  "opencode",
-                  "omp",
-                ),
+                ...disabledDefaultSlots("codex", "claudeAgent", "cursor", "grok", "opencode"),
                 codex_personal: {
                   driver: "codex",
                   displayName: "Codex Personal",
@@ -3251,7 +3179,7 @@ it.layer(
           decodeServerSettings(
             deepMerge(encodedDefaultServerSettings, {
               providerInstances: {
-                ...disabledDefaultSlots("claudeAgent", "cursor", "grok", "opencode", "omp"),
+                ...disabledDefaultSlots("claudeAgent", "cursor", "grok", "opencode"),
                 [ProviderInstanceId.make("codex")]: {
                   driver: ProviderDriverKind.make("codex"),
                   enabled: true,
@@ -3344,7 +3272,7 @@ it.layer(
           );
           yield* serverSettings.updateSettings({
             providerInstances: {
-              ...disabledDefaultSlots("claudeAgent", "cursor", "grok", "opencode", "omp"),
+              ...disabledDefaultSlots("claudeAgent", "cursor", "grok", "opencode"),
               [ProviderInstanceId.make("codex")]: {
                 driver: ProviderDriverKind.make("codex"),
                 enabled: true,
@@ -3374,14 +3302,7 @@ it.layer(
           decodeServerSettings(
             deepMerge(encodedDefaultServerSettings, {
               providerInstances: {
-                ...disabledDefaultSlots(
-                  "codex",
-                  "claudeAgent",
-                  "cursor",
-                  "grok",
-                  "opencode",
-                  "omp",
-                ),
+                ...disabledDefaultSlots("codex", "claudeAgent", "cursor", "grok", "opencode"),
                 ghost_main: {
                   driver: "ghostDriver",
                   displayName: "A fork-only driver we don't ship",

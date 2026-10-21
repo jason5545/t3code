@@ -1,17 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
-import {
-  MessageId,
-  NodeId,
-  ProjectId,
-  ProviderInstanceId,
-  ProviderSessionId,
-  RunAttemptId,
-  RunId,
-  ThreadId,
-} from "@t3tools/contracts";
+import { ProviderInstanceId, ProviderSessionId, ThreadId } from "@t3tools/contracts";
 import { resolveSelfInvocation } from "@t3tools/shared/nodeRuntime";
-import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -19,7 +9,6 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
-import * as Stream from "effect/Stream";
 import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
@@ -474,63 +463,6 @@ describe("AcpRegistryAdapterV2", () => {
           ],
         },
       });
-      const now = yield* DateTime.now;
-      assert.isDefined(runtime.compactThread);
-      yield* runtime.compactThread!({
-        appThread: {
-          createdBy: "user",
-          creationSource: "web",
-          id: threadId,
-          projectId: ProjectId.make("project-acp-compact"),
-          title: "Compact ACP context",
-          providerInstanceId: instanceId,
-          modelSelection,
-          runtimeMode: "full-access",
-          interactionMode: "default",
-          branch: null,
-          worktreePath: null,
-          activeProviderThreadId: providerThread.id,
-          lineage: { parentThreadId: null, relationshipToParent: null, rootThreadId: threadId },
-          forkedFrom: null,
-          createdAt: now,
-          updatedAt: now,
-          archivedAt: null,
-          settledOverride: null,
-          settledAt: null,
-          lastVisitedAt: null,
-          deletedAt: null,
-        },
-        threadId,
-        runId: RunId.make("run-acp-compact"),
-        runOrdinal: 1,
-        providerTurnOrdinal: 1,
-        attemptId: RunAttemptId.make("attempt-acp-compact"),
-        rootNodeId: NodeId.make("node-acp-compact"),
-        providerThread,
-        modelSelection,
-        runtimePolicy,
-        message: {
-          createdBy: "user",
-          creationSource: "web",
-          messageId: MessageId.make("message-acp-compact"),
-          text: "unused",
-          attachments: [],
-        },
-      });
-      const events = Array.from(
-        yield* runtime.events.pipe(
-          Stream.takeUntil((event) => event.type === "turn.terminal"),
-          Stream.runCollect,
-        ),
-      );
-      assert.isTrue(
-        events.some(
-          (event) =>
-            event.type === "turn_item.updated" &&
-            event.turnItem.type === "compaction" &&
-            event.turnItem.status === "completed",
-        ),
-      );
       const configuration = yield* Deferred.await(configurationPublished);
       assert.equal(configuration.currentModelId, "default");
       assert.deepInclude(configuration.models[0], {

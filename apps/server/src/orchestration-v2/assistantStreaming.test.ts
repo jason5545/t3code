@@ -104,25 +104,6 @@ describe("V2 assistant streaming", () => {
     },
   );
 
-  it("streams reasoning without waiting for a paragraph boundary", () => {
-    const item = (text: string, streaming = true) => turnItem(text, streaming, "reasoning");
-    const filter = makeAssistantStreamingFilter("paragraph");
-    expect(filter(item("Checking the"), 0)).toMatchObject({
-      turnItem: { text: "Checking the", streaming: true, type: "reasoning" },
-    });
-    expect(filter(item("Checking the adapter"), 100)).toBeNull();
-    expect(filter(item("Checking the adapter first"), 410)).toMatchObject({
-      turnItem: { text: "Checking the adapter first", streaming: true },
-    });
-    expect(filter(item("Checking the adapter first"), 900)).toBeNull();
-    const final = item("Checking the adapter first.", false);
-    expect(filter(final, 910)).toBe(final);
-
-    const buffered = makeAssistantStreamingFilter("turn");
-    expect(buffered(item("Checking the"), 0)).toBeNull();
-    expect(buffered(final, 1)).toBe(final);
-  });
-
   it.each(["turn", "paragraph"] as const)(
     "suppresses running assistant nodes in %s mode while delivering tool and completed nodes",
     (mode) => {

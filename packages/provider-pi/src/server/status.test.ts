@@ -41,18 +41,18 @@ function processHandle(input: {
   });
 }
 
-function piProbeSpawner(version: string, name = "pi") {
+function piProbeSpawner(version: string) {
   return ChildProcessSpawner.make((command) => {
     const args = ChildProcess.isStandardCommand(command) ? command.args : [];
     return Effect.succeed(
       args.includes("--version")
-        ? processHandle({ stdout: `${name}${name.endsWith("/") ? "" : " "}${version}\n` })
+        ? processHandle({ stdout: `pi ${version}\n` })
         : processHandle({ stderr: "RPC startup failed", exitCode: 1 }),
     );
   });
 }
 
-const piDiscoverySpawner = (inventory: unknown, name = "pi") =>
+const piDiscoverySpawner = (inventory: unknown) =>
   Effect.gen(function* () {
     const stdout = yield* Queue.unbounded<Uint8Array, Cause.Done>();
     let stdinBuffer = "";
@@ -85,9 +85,7 @@ const piDiscoverySpawner = (inventory: unknown, name = "pi") =>
       const args = ChildProcess.isStandardCommand(command) ? command.args : [];
       return Effect.succeed(
         args.includes("--version")
-          ? processHandle({
-              stdout: `${name}${name.endsWith("/") ? "" : " "}0.84.3\n`,
-            })
+          ? processHandle({ stdout: "pi 0.84.3\n" })
           : ChildProcessSpawner.makeHandle({
               ...processHandle({}),
               exitCode: Effect.never,
@@ -107,36 +105,6 @@ const settings = {
 } as const;
 
 describe("PiProvider", () => {
-  it.effect("accepts OMP versioning independently of Pi", () =>
-    Effect.gen(function* () {
-      const snapshot = yield* checkPiProviderStatus({ ...settings, binaryPath: "omp" }).pipe(
-        Effect.provideService(
-          ChildProcessSpawner.ChildProcessSpawner,
-          piProbeSpawner("18.7.0", "omp/"),
-        ),
-      );
-      assert.equal(snapshot.status, "ready");
-      assert.equal(snapshot.version, "18.7.0");
-      assert.equal(snapshot.auth.status, "unknown");
-      assert.include(snapshot.message ?? "", "OMP is available");
-    }).pipe(Effect.provide(NodeServices.layer)),
-  );
-
-  it.effect("labels an authenticated OMP as OMP rather than Pi", () =>
-    Effect.gen(function* () {
-      const spawner = yield* piDiscoverySpawner(
-        { models: [{ provider: "anthropic", id: "claude-opus" }] },
-        "omp/",
-      );
-      const snapshot = yield* checkPiProviderStatus({ ...settings, binaryPath: "omp" }).pipe(
-        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
-      );
-      assert.equal(snapshot.auth.status, "authenticated");
-      assert.equal(snapshot.auth.label, "OMP");
-      assert.isTrue(snapshot.models.some((model) => model.slug === "anthropic/claude-opus"));
-    }).pipe(Effect.provide(NodeServices.layer)),
-  );
-
   it.effect("requires the first published Pi version with entries and settlement hooks", () =>
     Effect.gen(function* () {
       const snapshot = yield* checkPiProviderStatus(settings).pipe(

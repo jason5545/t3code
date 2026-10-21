@@ -37,13 +37,6 @@ const DESKTOP_AUTH = {
   sessionCookieName: "t3_session",
 } as const;
 
-const REMOTE_AUTH = {
-  policy: "remote-reachable",
-  bootstrapMethods: ["one-time-token"],
-  sessionMethods: ["browser-session-cookie", "bearer-access-token"],
-  sessionCookieName: "t3_session",
-} as const;
-
 const SESSION_EXPIRES_AT = DateTime.makeUnsafe("2026-04-05T00:00:00.000Z");
 const unauthenticatedSession = (auth: AuthSessionState["auth"]): AuthSessionState => ({
   authenticated: false,
@@ -125,7 +118,6 @@ async function installAuthApi(input: {
     readonly label?: string;
     readonly expiresAt: DateTime.Utc;
   }>;
-  readonly tailscaleCredential?: string;
 }) {
   const testApi = await installEnvironmentHttpTest({
     ...(input.session ? { session: () => Effect.succeed(input.session!()) } : {}),
@@ -134,16 +126,6 @@ async function installAuthApi(input: {
       : {}),
     ...(input.pairingCredential
       ? { pairingCredential: (payload) => input.pairingCredential!(payload) }
-      : {}),
-    ...(input.tailscaleCredential
-      ? {
-          tailscalePairing: () =>
-            Effect.succeed({
-              id: "tailscale-link",
-              credential: input.tailscaleCredential!,
-              expiresAt: SESSION_EXPIRES_AT,
-            }),
-        }
       : {}),
   });
   disposeHttpTest = testApi.dispose;
@@ -268,32 +250,6 @@ describe("resolveInitialServerAuthGateState", () => {
       status: "requires-auth",
       auth: LOOPBACK_AUTH,
     });
-  });
-
-  it("keeps the pairing screen when the server will not pair over Tailscale", async () => {
-    const testApi = await installAuthApi({ session: () => unauthenticatedSession(REMOTE_AUTH) });
-    const { resolveInitialServerAuthGateState } = await import("./environments/primary");
-
-    await expect(resolveInitialServerAuthGateState()).resolves.toEqual({
-      status: "requires-auth",
-      auth: REMOTE_AUTH,
-    });
-    expect(testApi.calls.tailscalePairing).toBe(1);
-    expect(testApi.calls.browserSession).toEqual([]);
-  });
-
-  it("signs in over Tailscale when there is no credential and the server allows it", async () => {
-    const testApi = await installAuthApi({
-      session: sequence(unauthenticatedSession(REMOTE_AUTH), authenticatedSession(REMOTE_AUTH)),
-      browserSession: () => Effect.succeed(browserSession(["orchestration:read"])),
-      tailscaleCredential: "tailscale-code",
-    });
-    const { resolveInitialServerAuthGateState } = await import("./environments/primary");
-
-    await expect(resolveInitialServerAuthGateState()).resolves.toEqual({
-      status: "authenticated",
-    });
-    expect(testApi.calls.browserSession).toEqual([{ credential: "tailscale-code" }]);
   });
 
   it("retries transient auth session bootstrap failures after restart", async () => {

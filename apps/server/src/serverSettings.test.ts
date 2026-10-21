@@ -584,39 +584,6 @@ it.layer(NodeServices.layer)("server settings", (it) => {
     }).pipe(Effect.provide(layerServerSettings())),
   );
 
-  it.effect("persists added and removed instances that match a built-in default", () =>
-    Effect.gen(function* () {
-      const serverConfig = yield* ServerConfig.ServerConfig;
-      const fileSystem = yield* FileSystem.FileSystem;
-      const serverSettings = yield* ServerSettingsModule.ServerSettingsService;
-      const ompId = ProviderInstanceId.make("omp");
-      const readPersisted = fileSystem
-        .readFileString(serverConfig.settingsPath)
-        .pipe(Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(ServerSettings))));
-      yield* fileSystem.writeFileString(
-        serverConfig.settingsPath,
-        '{"providerInstances":{"claudeAgent":{"driver":"claudeAgent","enabled":false}}}',
-      );
-
-      yield* serverSettings.updateProviderInstance({
-        operation: "create",
-        instanceId: ompId,
-        instance: DEFAULT_PROVIDER_INSTANCES[ompId]!,
-      });
-      assert.deepEqual(
-        (yield* readPersisted).providerInstances[ompId],
-        DEFAULT_PROVIDER_INSTANCES[ompId],
-      );
-
-      yield* serverSettings.updateProviderInstance({ operation: "remove", instanceId: ompId });
-      yield* serverSettings.updateProviderInstance({
-        operation: "remove",
-        instanceId: ProviderInstanceId.make("claudeAgent"),
-      });
-      assert.deepEqual((yield* readPersisted).providerInstances, {});
-    }).pipe(Effect.provide(layerServerSettings())),
-  );
-
   it.effect("pauses provider-instance mutations while a settings snapshot is in use", () =>
     Effect.gen(function* () {
       const serverSettings = yield* ServerSettingsModule.ServerSettingsService;

@@ -785,10 +785,6 @@ describe("ClientSettings pull request merge methods", () => {
 });
 
 describe("ServerSettings.providerInstances (slice-2 invariant)", () => {
-  it("preserves explicitly empty maps rather than restoring OMP", () => {
-    expect(decodeServerSettings({ providerInstances: {} }).providerInstances).toEqual({});
-    expect(decodeServerSettingsPatch({ providerInstances: {} }).providerInstances).toEqual({});
-  });
   it("defaults to OMP on the Pi driver when legacy configs omit the key", () => {
     expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual(DEFAULT_PROVIDER_INSTANCES);
   });

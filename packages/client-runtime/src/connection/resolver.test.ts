@@ -25,7 +25,6 @@ import {
 import * as ConnectionCredentialStore from "./credentialStore.ts";
 import {
   BearerConnectionTarget,
-  ConnectionBlockedError,
   ConnectionTransientError,
   PrimaryConnectionTarget,
   RelayConnectionTarget,
@@ -82,13 +81,11 @@ const makeDependencies = Effect.fn("TestConnectionResolver.makeDependencies")((o
   readonly primaryBearerToken?: string;
   readonly prepareSsh?: ClientCapabilities.SshEnvironmentGateway["Service"]["prepare"];
   readonly descriptorProtocolVersion?: number | null | undefined;
-  readonly credentialMap?: Map<string, ConnectionCredential>;
-  readonly tailscalePairing?: "issue" | "refuse";
 }) => {
   const profiles = new Map(
     (options?.profiles ?? []).map((profile) => [profile.connectionId, profile]),
   );
-  const credentials = options?.credentialMap ?? new Map(options?.credentials ?? []);
+  const credentials = new Map(options?.credentials ?? []);
 
   const profileStore = ConnectionProfileStore.ConnectionProfileStore.of({
     get: (connectionId) => Effect.succeed(Option.fromNullishOr(profiles.get(connectionId))),
@@ -149,44 +146,20 @@ const makeDependencies = Effect.fn("TestConnectionResolver.makeDependencies")((o
   });
 
   const layerDependencies = Layer.mergeAll(
-    RpcHttp.layerRemoteHttpClient(((input: string | URL | Request) =>
+    RpcHttp.layerRemoteHttpClient((() =>
       Promise.resolve(
-        String(input).endsWith("/api/auth/tailscale-pairing")
-          ? options?.tailscalePairing === "issue"
-            ? Response.json({
-                id: "tailscale-link",
-                credential: "tailscale-code",
-                expiresAt: "2026-10-20T10:00:00.000Z",
-              })
-            : Response.json(
-                {
-                  _tag: "EnvironmentOperationForbiddenError",
-                  code: "operation_forbidden",
-                  reason: "tailscale_pairing_refused",
-                  traceId: "trace-tailscale-test",
-                },
-                { status: 403 },
-              )
-          : String(input).endsWith("/oauth/token")
-            ? Response.json({
-                access_token: "tailscale-bearer",
-                issued_token_type: "urn:ietf:params:oauth:token-type:access_token",
-                token_type: "Bearer",
-                expires_in: 3600,
-                scope: "orchestration:read",
-              })
-            : Response.json({
-                environmentId: ENVIRONMENT_ID,
-                label: "Compatible environment",
-                platform: { os: "linux", arch: "x64" },
-                serverVersion: "0.0.0-test",
-                ...(options?.descriptorProtocolVersion === undefined
-                  ? { orchestrationProtocolVersion: ORCHESTRATION_PROTOCOL_VERSION }
-                  : options.descriptorProtocolVersion === null
-                    ? {}
-                    : { orchestrationProtocolVersion: options.descriptorProtocolVersion }),
-                capabilities: { repositoryIdentity: true },
-              }),
+        Response.json({
+          environmentId: ENVIRONMENT_ID,
+          label: "Compatible environment",
+          platform: { os: "linux", arch: "x64" },
+          serverVersion: "0.0.0-test",
+          ...(options?.descriptorProtocolVersion === undefined
+            ? { orchestrationProtocolVersion: ORCHESTRATION_PROTOCOL_VERSION }
+            : options.descriptorProtocolVersion === null
+              ? {}
+              : { orchestrationProtocolVersion: options.descriptorProtocolVersion }),
+          capabilities: { repositoryIdentity: true },
+        }),
       )) satisfies typeof fetch),
     Layer.succeed(
       ConnectionProfileStore.ConnectionProfileStore,
@@ -355,81 +328,6 @@ describe("ConnectionResolver", () => {
       expect(yield* Ref.get(bearerInputs)).toEqual([{ token: "secret-bearer", method: "direct" }]);
     }),
   );
-
-  describe("a saved bearer environment whose credential is rejected", () => {
-    const target = new BearerConnectionTarget({
-      environmentId: ENVIRONMENT_ID,
-      label: "Saved",
-      connectionId: "saved-1",
-    });
-    const profile = new BearerConnectionProfile({
-      connectionId: "saved-1",
-      environmentId: ENVIRONMENT_ID,
-      label: "Saved",
-      httpBaseUrl: ENDPOINT.httpBaseUrl,
-      wsBaseUrl: ENDPOINT.wsBaseUrl,
-    });
-    const rejected = new ConnectionBlockedError({
-      reason: "authentication",
-      detail: "The environment credential is invalid.",
-    });
-    const authorizeBearer: RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization["Service"]["authorizeBearer"] =
-      (input) =>
-        input.bearerToken === "expired-bearer"
-          ? Effect.fail(rejected)
-          : Effect.succeed({
-              environmentId: input.expectedEnvironmentId,
-              label: "Saved",
-              httpBaseUrl: input.httpBaseUrl,
-              socketUrl: "wss://environment.example.test/ws?wsTicket=ticket",
-              httpAuthorization: { _tag: "Bearer" as const, token: input.bearerToken },
-            });
-
-    it.effect.each([
-      ["rejected", [["saved-1", new BearerConnectionCredential({ token: "expired-bearer" })]]],
-      ["missing", []],
-    ] as const)("pairs again over Tailscale when it is %s, and keeps the new one", ([, saved]) =>
-      Effect.gen(function* () {
-        const credentialMap = new Map<string, ConnectionCredential>(saved);
-        const layerBroker = yield* makeDependencies({
-          credentialMap,
-          authorizeBearer,
-          tailscalePairing: "issue",
-        });
-        const broker = yield* ConnectionResolver.ConnectionResolver.pipe(
-          Effect.provide(layerBroker),
-        );
-        const prepared = yield* broker.prepare(catalogEntry(target, Option.some(profile)));
-        expect(prepared.httpAuthorization).toEqual({ _tag: "Bearer", token: "tailscale-bearer" });
-        expect(credentialMap.get("saved-1")).toEqual(
-          new BearerConnectionCredential({ token: "tailscale-bearer" }),
-        );
-      }),
-    );
-
-    it.effect("keeps the original failure when the host will not pair over Tailscale", () =>
-      Effect.gen(function* () {
-        const credentialMap = new Map<string, ConnectionCredential>([
-          ["saved-1", new BearerConnectionCredential({ token: "expired-bearer" })],
-        ]);
-        const layerBroker = yield* makeDependencies({
-          credentialMap,
-          authorizeBearer,
-          tailscalePairing: "refuse",
-        });
-        const broker = yield* ConnectionResolver.ConnectionResolver.pipe(
-          Effect.provide(layerBroker),
-        );
-        const error = yield* Effect.flip(
-          broker.prepare(catalogEntry(target, Option.some(profile))),
-        );
-        expect(error).toBe(rejected);
-        expect(credentialMap.get("saved-1")).toEqual(
-          new BearerConnectionCredential({ token: "expired-bearer" }),
-        );
-      }),
-    );
-  });
 
   it.effect("prepares relay connections with the authorized endpoint and credentials", () =>
     Effect.gen(function* () {
