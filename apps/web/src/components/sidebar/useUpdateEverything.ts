@@ -3,7 +3,6 @@ import { useAtomValue } from "@effect/atom-react";
 import { APP_VERSION } from "~/branding";
 import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
 import { isElectron } from "~/env";
-import { useChinese } from "~/locale/autoTranslateRuntime";
 import { useEnvironments } from "~/state/environments";
 import { useNpmReleasePublished } from "~/state/npmRelease";
 import { environmentIdsKey } from "~/state/environmentAtomList";
@@ -75,9 +74,7 @@ export function useUpdateEverything(localUpdateVersion: string | null) {
       .map((server) => ({
         environmentId: server.environmentId,
         label: server.serverLabel,
-        reason: useChinese
-          ? `npm 上還沒有 t3@${targetVersion}`
-          : `t3@${targetVersion} is not on npm yet`,
+        reason: `t3@${targetVersion} is not on npm yet`,
       })),
   ];
   const restarts = collectRestartingMachines(machines, servers, localUpdateVersion !== null);
@@ -159,11 +156,7 @@ export function useUpdateEverything(localUpdateVersion: string | null) {
               if (runOutcome.status !== "updated") {
                 providerFailures.set(
                   run.environmentId,
-                  runOutcome.status === "failed"
-                    ? runOutcome.line
-                    : useChinese
-                      ? "供應商更新已中斷"
-                      : "Provider update interrupted",
+                  runOutcome.status === "failed" ? runOutcome.line : "Provider update interrupted",
                 );
               }
               return runOutcome;

@@ -1,5 +1,3 @@
-import { englishMessageKeys, zhTWMessages, type TranslationKey } from "./messages";
-
 export type Locale = "en" | "zh-TW";
 export const LOCALE_STORAGE_KEY = "t3code:interface-locale:v1";
 export const LOCALE_OPTIONS = [
@@ -7,8 +5,6 @@ export const LOCALE_OPTIONS = [
   { value: "zh-TW", label: "繁體中文（台灣）" },
 ] as const;
 
-export type TranslationParams = Readonly<Record<string, string | number>>;
-export type Translator = (key: TranslationKey, params?: TranslationParams) => string;
 export type LocaleStorage = Pick<Storage, "getItem" | "setItem">;
 
 export function isLocale(value: unknown): value is Locale {
@@ -56,21 +52,4 @@ export function persistLocalePreference(
     // The in-memory selection remains usable even when persistence is denied.
     return false;
   }
-}
-
-export function translate(
-  locale: Locale,
-  key: TranslationKey,
-  params: TranslationParams = {},
-  translations: Partial<Record<TranslationKey, string>> = zhTWMessages,
-): string {
-  const template = locale === "zh-TW" ? (translations[key] ?? key) : key;
-  return template.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
-    Object.hasOwn(params, name) ? String(params[name]) : placeholder,
-  );
-}
-
-const keySet: ReadonlySet<string> = new Set(englishMessageKeys);
-export function isTranslationKey(value: string): value is TranslationKey {
-  return keySet.has(value);
 }

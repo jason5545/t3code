@@ -1,4 +1,3 @@
-import { useLocale } from "../locale/LocaleProvider";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
@@ -87,20 +86,19 @@ function IndexDraftLanding() {
 }
 
 function DraftStartError({ onRetry }: { readonly onRetry: () => void }) {
-  const { t } = useLocale();
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none">
       {isElectron ? <WorkspacePageHeader electron /> : null}
       <Empty className="flex-1">
         <EmptyHeader className="max-w-md">
-          <EmptyTitle>{t("Couldn’t start a new thread")}</EmptyTitle>
+          <EmptyTitle>Couldn’t start a new thread</EmptyTitle>
           <EmptyDescription>
-            {t("The project is still available. Try opening the draft again.")}
+            The project is still available. Try opening the draft again.
           </EmptyDescription>
           <div className="mt-5 flex justify-center">
             <Button size="sm" onClick={onRetry}>
               <RefreshIcon size="md" />
-              {t("Try again")}
+              Try again
             </Button>
           </div>
         </EmptyHeader>

@@ -2,28 +2,10 @@ import { useAtomValue } from "@effect/atom-react";
 
 import { undoLatestThreadAction, useThreadUndoNotice } from "../../hooks/showThreadUndoNotice";
 import { shortcutLabelForCommand } from "../../keybindings";
-import { useChinese } from "../../locale/autoTranslateRuntime";
+import { threadUndoNoticeText } from "../../locale/assembledText";
 import { primaryServerKeybindingsAtom } from "../../state/server";
 import { Alert, AlertDescription } from "../ui/alert";
 import { InlineButton } from "../ui/button";
-
-// The action and noun are values, so build-time translation cannot reorder them.
-const CHINESE_ACTIONS = {
-  Settled: "已結束",
-  Snoozed: "已延後",
-  Unpinned: "已取消釘選",
-  Archived: "已封存",
-  Discarded: "已捨棄",
-} as const;
-
-function undoNoticeText(notice: { action: keyof typeof CHINESE_ACTIONS; count: number }): string {
-  if (useChinese) {
-    const noun = notice.action === "Discarded" ? "份草稿" : "個對話";
-    return `${CHINESE_ACTIONS[notice.action]} ${notice.count} ${noun}，`;
-  }
-  const noun = `${notice.action === "Discarded" ? "draft" : "thread"}${notice.count === 1 ? "" : "s"}`;
-  return `${notice.action} ${notice.count} ${noun}, `;
-}
 
 export function SidebarThreadUndoNotice() {
   const notice = useThreadUndoNotice((state) => state.notice);
@@ -34,7 +16,7 @@ export function SidebarThreadUndoNotice() {
   return (
     <Alert role="status" variant="sidebar">
       <AlertDescription>
-        {undoNoticeText(notice)}
+        {threadUndoNoticeText(notice)}
         <InlineButton onClick={undoLatestThreadAction}>
           {shortcut ? `${shortcut} to undo` : "Undo"}
         </InlineButton>

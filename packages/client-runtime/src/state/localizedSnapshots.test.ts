@@ -1,7 +1,7 @@
 import type { OrchestrationV2ShellSnapshot } from "@t3tools/contracts";
 import { describe, expect, it } from "@effect/vitest";
 
-import { createDefaultTitleLocalizer } from "./snapshots.ts";
+import { createDefaultTitleLocalizer } from "./localizedSnapshots.ts";
 
 const snapshotWith = (
   projectTitles: ReadonlyArray<string>,

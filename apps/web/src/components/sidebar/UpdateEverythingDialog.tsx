@@ -2,7 +2,11 @@ import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 
-import { useChinese } from "~/locale/autoTranslateRuntime";
+import {
+  runningThreadsText,
+  skippedMachineText,
+  updateEverythingQuestion,
+} from "~/locale/assembledText";
 import { environmentThreadShells } from "~/state/threads";
 import {
   AlertDialog,
@@ -45,20 +49,6 @@ interface UpdateEverythingDialogProps {
   readonly onConfirm: () => void;
 }
 
-// Assembled text sits outside the positions the build-time translation pass
-// rewrites, so it picks the language here.
-const QUESTION_MARK = useChinese ? "？" : "?";
-
-function runningThreadsLabel(running: number): string {
-  if (useChinese) return `${running} 個執行中的對話`;
-  return `${running} running ${running === 1 ? "thread" : "threads"}`;
-}
-
-function skippedMachineLine(machine: SkippedMachine): string {
-  if (useChinese) return `略過 ${machine.label}：${machine.reason}`;
-  return `Skips ${machine.label}: ${machine.reason}`;
-}
-
 export function UpdateEverythingDialog({
   open,
   onOpenChange,
@@ -98,15 +88,12 @@ function UpdateEverythingDialogContent({
     ),
   );
   const running = stopped + continuing;
-  const threads = runningThreadsLabel(running);
+  const threads = runningThreadsText(running);
 
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>
-          {summary}
-          {QUESTION_MARK}
-        </AlertDialogTitle>
+        <AlertDialogTitle>{updateEverythingQuestion(summary)}</AlertDialogTitle>
         <AlertDialogDescription className="whitespace-pre-line">
           {lines.join("\n")}
         </AlertDialogDescription>
@@ -121,7 +108,7 @@ function UpdateEverythingDialogContent({
         ) : null}
         {skipped.length > 0 ? (
           <p className="whitespace-pre-line pt-2 text-sm">
-            {skipped.map(skippedMachineLine).join("\n")}
+            {skipped.map(skippedMachineText).join("\n")}
           </p>
         ) : null}
       </AlertDialogHeader>

@@ -1,4 +1,3 @@
-import { useLocale } from "../locale/LocaleProvider";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { MarkdownFindContext, findRevealRef } from "./chat/markdownFindContext";
 import {
@@ -906,12 +905,11 @@ function MarkdownCodeBlock({
   diagram?: boolean;
   children: ReactNode;
 }) {
-  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const [wrapped, setWrapped] = useState(readInitialWordWrapSetting);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapLabel = wrapped ? "Disable line wrap" : "Wrap lines";
-  const copyLabel = copied ? t("Copied") : t("Copy code");
+  const copyLabel = copied ? "Copied" : "Copy code";
   const command = code.trim();
   const canRun =
     onRunShellCommand !== undefined &&

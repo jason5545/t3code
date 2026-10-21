@@ -10,7 +10,6 @@ import { ElectronBrowserHost } from "./browser/ElectronBrowserHost";
 import { QuitHoldOverlay } from "./components/QuitHoldOverlay";
 import { appAtomRegistry, AppAtomRegistryProvider } from "./rpc/atomRegistry";
 import type { AppRouter } from "./router";
-import { LocaleProvider } from "./locale/LocaleProvider";
 
 /**
  * The Electron browser host intentionally sits outside the router so its
@@ -29,13 +28,11 @@ export function AppRoot({ router }: { readonly router: AppRouter }) {
     [],
   );
   return (
-    <LocaleProvider>
-      <AppAtomRegistryProvider>
-        <RouterProvider router={router} />
-        <ElectronBrowserHost />
-        <BrowserProfileReporter />
-        <QuitHoldOverlay />
-      </AppAtomRegistryProvider>
-    </LocaleProvider>
+    <AppAtomRegistryProvider>
+      <RouterProvider router={router} />
+      <ElectronBrowserHost />
+      <BrowserProfileReporter />
+      <QuitHoldOverlay />
+    </AppAtomRegistryProvider>
   );
 }

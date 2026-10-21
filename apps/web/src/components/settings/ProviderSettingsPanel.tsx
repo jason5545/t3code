@@ -1,4 +1,3 @@
-import { useLocale } from "../../locale/LocaleProvider";
 import { SettingsGroup } from "./SettingsGroup";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import {
@@ -570,7 +569,6 @@ export function EnvironmentProviderSettings({
   readonly projectIds?: readonly ProjectId[];
   readonly readOnly?: boolean;
 }) {
-  const { t } = useLocale();
   const settings = useEnvironmentSettings(environmentId);
   const canWriteSettings = useEnvironmentScope(environmentId, AuthSettingsWriteScope);
   const canRefreshProviders = useEnvironmentScope(environmentId, AuthOrchestrationReadScope);
@@ -990,7 +988,7 @@ export function EnvironmentProviderSettings({
   return (
     <>
       <SettingsSection
-        {...searchableSetting("providers", t)}
+        {...searchableSetting("providers")}
         variant="plain"
         titleAction={
           !readOnly ? (
@@ -1001,13 +999,13 @@ export function EnvironmentProviderSettings({
                     size="icon-xs"
                     variant="ghost-muted"
                     onClick={() => setIsAddInstanceDialogOpen(true)}
-                    aria-label={t("Add provider")}
+                    aria-label="Add provider"
                   >
                     <PlusIcon />
                   </Button>
                 }
               />
-              <TooltipPopup side="top">{t("Add provider")}</TooltipPopup>
+              <TooltipPopup side="top">Add provider</TooltipPopup>
             </Tooltip>
           ) : null
         }
@@ -1025,10 +1023,10 @@ export function EnvironmentProviderSettings({
                     onClick={() => void refreshProviders()}
                   >
                     <RefreshIcon refreshing={isRefreshingProviders} />
-                    <span className="sr-only">{t("Refresh provider status")}</span>
+                    <span className="sr-only">Refresh provider status</span>
                     <span className="hidden min-w-0 truncate sm:inline">
                       {isRefreshingProviders ? (
-                        t("Refreshing providers")
+                        "Refreshing providers"
                       ) : (
                         <ProviderLastChecked environmentId={environmentId} />
                       )}
@@ -1036,7 +1034,7 @@ export function EnvironmentProviderSettings({
                   </Button>
                 }
               />
-              <TooltipPopup side="top">{t("Refresh provider status")}</TooltipPopup>
+              <TooltipPopup side="top">Refresh provider status</TooltipPopup>
             </Tooltip>
           </div>
         }
@@ -1047,7 +1045,7 @@ export function EnvironmentProviderSettings({
         {readOnly ? (
           <SettingsGroup divided={false} className="overflow-hidden">
             <SettingsRow
-              title={t("Limited permissions")}
+              title="Limited permissions"
               description={`This session can view ${environmentLabel}'s providers but can't change their settings.`}
             />
           </SettingsGroup>
@@ -1106,7 +1104,7 @@ export function EnvironmentProviderSettings({
         readOnly={readOnly}
       />
 
-      <SettingsSection title={t("Advanced")}>
+      <SettingsSection title="Advanced">
         <SettingsRow
           id={searchableSetting("provider-health-check-interval").id}
           title={

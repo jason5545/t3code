@@ -1,15 +1,13 @@
 import { describe, expect, it, vi, afterEach } from "vite-plus/test";
+import { localeStorageListener, selectInterfaceLocale } from "./autoTranslateRuntime";
 import {
   browserLocaleStorage,
   defaultLocale,
   isLocale,
-  isTranslationKey,
   LOCALE_STORAGE_KEY,
   persistLocalePreference,
   readLocalePreference,
-  translate,
 } from "./locale";
-import { englishMessageKeys, zhTWMessages } from "./messages";
 function memoryStorage() {
   const entries = new Map<string, string>();
   return {
@@ -77,29 +75,41 @@ describe("interface locale", () => {
     expect(readLocalePreference(blocked, "en-US")).toBe("en");
     expect(() => persistLocalePreference("zh-TW", blocked)).not.toThrow();
   });
-  it("falls back per key and interpolates without rewriting parameter content", () => {
-    expect(translate("zh-TW", "Settings")).toBe("設定");
-    expect(translate("en", "Settings")).toBe("Settings");
-    expect(translate("zh-TW", "New thread ({shortcut})", { shortcut: "⌘N" }, {})).toBe(
-      "New thread (⌘N)",
-    );
-    expect(translate("zh-TW", "Working ({count})", { count: 0 })).toBe("進行中（0）");
-    expect(
-      translate("zh-TW", "No threads in {project} yet", { project: "Settings/<code>/{count}" }),
-    ).toBe("Settings/<code>/{count} 尚無對話");
-    expect(translate("en", "Working ({count})")).toBe("Working ({count})");
-    expect(isTranslationKey("Settings")).toBe(true);
-    expect(isTranslationKey("user chat text")).toBe(false);
+  it("reloads for another window's stored change and ignores unrelated keys", () => {
+    const storage = memoryStorage();
+    vi.stubGlobal("window", { localStorage: storage });
+    const reload = vi.fn();
+    const onStorage = localeStorageListener("zh-TW", reload);
+    storage.setItem(LOCALE_STORAGE_KEY, "en");
+    onStorage({ key: "unrelated" });
+    expect(reload).not.toHaveBeenCalled();
+    onStorage({ key: LOCALE_STORAGE_KEY });
+    expect(reload).toHaveBeenCalledTimes(1);
+    storage.entries.clear();
+    vi.stubGlobal("navigator", { languages: ["zh-TW"], language: "zh-TW" });
+    onStorage({ key: null });
+    expect(reload).toHaveBeenCalledTimes(1);
   });
-  it("covers every declared UI key with matching interpolation placeholders", () => {
-    expect(new Set(englishMessageKeys).size).toBe(englishMessageKeys.length);
-    expect(Object.keys(zhTWMessages).sort()).toEqual([...englishMessageKeys].sort());
-    const placeholders = (text: string) =>
-      [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
-    for (const key of englishMessageKeys) {
-      const value = zhTWMessages[key];
-      expect(value.trim(), key).not.toBe("");
-      expect(placeholders(value), key).toEqual(placeholders(key));
-    }
+  it("applies a selection, reloading only for a stored change from the startup language", () => {
+    const storage = memoryStorage();
+    const documentElement = { lang: "en" };
+    vi.stubGlobal("window", { localStorage: storage });
+    vi.stubGlobal("document", { documentElement });
+    const reload = vi.fn();
+    const startup = readLocalePreference(storage, navigator.languages?.[0] || navigator.language);
+    const other = startup === "en" ? "zh-TW" : "en";
+    selectInterfaceLocale(startup, reload);
+    expect(reload).not.toHaveBeenCalled();
+    selectInterfaceLocale(other, reload);
+    expect(documentElement.lang).toBe(other);
+    expect(storage.entries.get(LOCALE_STORAGE_KEY)).toBe(other);
+    expect(reload).toHaveBeenCalledTimes(1);
+    vi.stubGlobal("window", {
+      get localStorage() {
+        throw new Error("blocked");
+      },
+    });
+    selectInterfaceLocale(other, reload);
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,5 @@
 "use client";
 
-import { useLocale } from "../../locale/LocaleProvider";
-
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -170,7 +168,6 @@ function ProviderCommandArguments({
   value,
   onChange,
 }: Pick<ProviderSettingsFormProps, "value" | "onChange">) {
-  const { t } = useLocale();
   const args = configuredCommandArgs(value);
   const [rows, setRows] = useState(() => args.map(makeCommandArgumentDraftRow));
   const rowsRef = useRef(rows);
@@ -204,8 +201,8 @@ function ProviderCommandArguments({
 
   return (
     <SettingsRow
-      title={t("Arguments")}
-      description={t("One literal argument per row, in launch order.")}
+      title="Arguments"
+      description="One literal argument per row, in launch order."
       control={
         <Button
           type="button"
@@ -214,7 +211,7 @@ function ProviderCommandArguments({
           onClick={() => updateArguments([...rowsRef.current, makeCommandArgumentDraftRow("")])}
         >
           <PlusIcon />
-          {t("Add argument")}
+          Add argument
         </Button>
       }
     >
@@ -233,7 +230,7 @@ function ProviderCommandArguments({
                     ),
                   )
                 }
-                aria-label={t("Argument {number}", { number: index + 1 })}
+                aria-label={`Argument ${index + 1}`}
                 spellCheck={false}
               />
               <Button
@@ -243,7 +240,7 @@ function ProviderCommandArguments({
                 onClick={() =>
                   updateArguments(rowsRef.current.filter((current) => current.id !== argument.id))
                 }
-                aria-label={t("Remove argument {number}", { number: index + 1 })}
+                aria-label={`Remove argument ${index + 1}`}
               >
                 <XIcon />
               </Button>

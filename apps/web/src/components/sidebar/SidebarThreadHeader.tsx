@@ -1,4 +1,3 @@
-import { useLocale } from "../../locale/LocaleProvider";
 import { FolderPlusIcon, SearchIcon, SquarePenIcon, XIcon } from "lucide-react";
 import {
   type ComponentProps,
@@ -52,15 +51,14 @@ export function SidebarThreadHeader({
   activeSearchResultIndex,
   onClearSearch,
 }: SidebarThreadHeaderProps) {
-  const { t } = useLocale();
   const resultsVisible = isSearching && searchResultCount > 0;
   // Results shrink as the query narrows, so the active index can outrun the
   // list; pointing aria-activedescendant at a removed option strands the
   // screen reader on nothing.
   const activeResultExists = resultsVisible && activeSearchResultIndex < searchResultCount;
   const newThreadLabel = newThreadShortcutLabel
-    ? t("New thread ({shortcut})", { shortcut: newThreadShortcutLabel })
-    : t("New thread");
+    ? `New thread (${newThreadShortcutLabel})`
+    : "New thread";
 
   return (
     <div className="flex items-center gap-1">
@@ -76,8 +74,8 @@ export function SidebarThreadHeader({
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
           onKeyDown={onSearchKeyDown}
-          placeholder={t("Search")}
-          aria-label={t("Search threads")}
+          placeholder="Search"
+          aria-label="Search threads"
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={resultsVisible}
@@ -95,7 +93,7 @@ export function SidebarThreadHeader({
             size="icon-micro"
             variant="ghost-muted"
             className="shrink-0"
-            aria-label={t("Clear thread search")}
+            aria-label="Clear thread search"
             onClick={() => {
               onClearSearch();
               searchInputRef.current?.focus();
@@ -109,19 +107,19 @@ export function SidebarThreadHeader({
         {hasProjects ? (
           <>
             {projectScope}
-            <SidebarHeaderIconButton label={t("Add project")} onClick={onNewProject}>
+            <SidebarHeaderIconButton label="Add project" onClick={onNewProject}>
               <FolderPlusIcon />
             </SidebarHeaderIconButton>
           </>
         ) : null}
         <SidebarHeaderIconButton
-          label={t("New thread")}
+          label="New thread"
           tooltip={
             showNewThreadInProjectHint ? (
               <span className="flex flex-col gap-0.5">
                 <span>{newThreadLabel}</span>
                 <span className="text-muted-foreground">
-                  {t("New thread in current project: Shift+click")}
+                  New thread in current project: Shift+click
                   {newThreadInProjectShortcutLabel ? ` (${newThreadInProjectShortcutLabel})` : ""}
                 </span>
               </span>

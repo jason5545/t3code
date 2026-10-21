@@ -1,5 +1,3 @@
-import type { TranslationKey } from "../../locale/messages";
-import { isTranslationKey, type Translator } from "../../locale/locale";
 import { HOSTED_APP_CHANNEL } from "~/branding";
 import { isElectron } from "~/env";
 import { isMacPlatform, isWindowsPlatform, normalizeSearchText } from "~/lib/utils";
@@ -73,7 +71,7 @@ export interface SettingsSearchAvailability {
   readonly managedTunnelActive?: boolean;
 }
 
-export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, TranslationKey>> = {
+export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/diagnostics": "Diagnostics",
   "/settings/projects": "Project",
   "/settings/general": "General",
@@ -1118,15 +1116,12 @@ export function isSettingsOverviewVisible(search: SettingsScopeSearch): boolean 
   return kind === "project" || kind === "checkout";
 }
 
-export function searchableSetting(
-  id: SettingsSearchItemId,
-  t?: Translator,
-): {
+export function searchableSetting(id: SettingsSearchItemId): {
   readonly id: string;
   readonly title: string;
 } {
   const { id: anchorId, title } = SEARCH_ITEMS_BY_ID.get(id)!;
-  return { id: anchorId, title: t && isTranslationKey(title) ? t(title) : title };
+  return { id: anchorId, title };
 }
 
 export function filterAvailableSettingsSearchItems(
@@ -1150,7 +1145,6 @@ export function filterAvailableSettingsSearchItems(
 export function searchSettings(
   query: string,
   items: ReadonlyArray<SettingsSearchItem> = SETTINGS_SEARCH_ITEMS,
-  t?: Translator,
 ): ReadonlyArray<SettingsSearchItem> {
   const normalizedQuery = normalizeSearchText(query);
   if (normalizedQuery.length === 0) return [];
@@ -1165,15 +1159,8 @@ export function searchSettings(
       if (item.windowsOnly && !isWindowsPlatform(platform)) return [];
 
       const title = normalizeSearchText(item.title);
-      const section = SETTINGS_SECTION_LABELS[item.to];
       const fields = [
         title,
-        ...(t
-          ? [
-              normalizeSearchText(isTranslationKey(item.title) ? t(item.title) : item.title),
-              normalizeSearchText(isTranslationKey(section) ? t(section) : section),
-            ]
-          : []),
         normalizeSearchText(SETTINGS_SECTION_LABELS[item.to]),
         ...(item.searchTerms ?? []).map(normalizeSearchText),
       ];

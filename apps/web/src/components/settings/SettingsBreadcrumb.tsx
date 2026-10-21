@@ -1,10 +1,8 @@
-import { useLocale } from "../../locale/LocaleProvider";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
   WorkspaceBreadcrumbSeparator,
 } from "../WorkspaceBreadcrumb";
-import { isTranslationKey } from "../../locale/locale";
 import { SETTINGS_SECTION_LABELS } from "./settingsSearch";
 
 const SETTINGS_BREADCRUMB_LABELS: Readonly<Record<string, string>> = {
@@ -19,23 +17,18 @@ function settingsBreadcrumbLabel(pathname: string): string | null {
 }
 
 export function SettingsBreadcrumb({ pathname }: { pathname: string }) {
-  const { t } = useLocale();
   const sectionLabel = settingsBreadcrumbLabel(pathname);
 
   return (
-    <WorkspaceBreadcrumb ariaLabel={t("Settings breadcrumb")}>
+    <WorkspaceBreadcrumb ariaLabel="Settings breadcrumb">
       {sectionLabel ? (
         <>
-          <WorkspaceBreadcrumbItem>{t("Settings")}</WorkspaceBreadcrumbItem>
+          <WorkspaceBreadcrumbItem>Settings</WorkspaceBreadcrumbItem>
           <WorkspaceBreadcrumbSeparator />
         </>
       ) : null}
       <WorkspaceBreadcrumbItem current className="truncate">
-        {sectionLabel
-          ? isTranslationKey(sectionLabel)
-            ? t(sectionLabel)
-            : sectionLabel
-          : t("Settings")}
+        {sectionLabel ?? "Settings"}
       </WorkspaceBreadcrumbItem>
     </WorkspaceBreadcrumb>
   );

@@ -1,4 +1,3 @@
-import { useLocale } from "../../locale/LocaleProvider";
 import {
   CheckIcon,
   CopyIcon,
@@ -522,7 +521,6 @@ export function ThemeLibrary({
   setThemeHalf: (appearance: ThemeAppearance, themeId: string | null) => boolean;
 }) {
   const openThemeEditor = useThemeEditorStore((store) => store.openThemeEditor);
-  const { t } = useLocale();
   const environmentThemes = useEnvironmentThemeDefinitions();
   const [themeRemovalTarget, setThemeRemovalTarget] = useState<{
     theme: ThemeDefinition;
@@ -676,17 +674,17 @@ export function ThemeLibrary({
   );
 
   const renderModeTiles = () => (
-    <div aria-label={t("Appearance mode")} className="grid w-full grid-cols-3 gap-3" role="group">
+    <div aria-label="Appearance mode" className="grid w-full grid-cols-3 gap-3" role="group">
       {(["system", "light", "dark"] as const).map((mode) => {
         const isActive = appearanceMode === mode;
         return (
           <button
             aria-label={
               mode === "system"
-                ? t("Follow the system appearance")
+                ? "Follow the system appearance"
                 : mode === "light"
-                  ? t("Use light mode")
-                  : t("Use dark mode")
+                  ? "Use light mode"
+                  : "Use dark mode"
             }
             aria-pressed={isActive}
             className={cn(
@@ -707,7 +705,7 @@ export function ThemeLibrary({
                 isActive ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {mode === "system" ? t("System") : mode === "light" ? t("Light") : t("Dark")}
+              {mode === "system" ? "System" : mode === "light" ? "Light" : "Dark"}
             </span>
           </button>
         );
@@ -842,12 +840,12 @@ export function ThemeLibrary({
   return (
     <div className="space-y-3">
       <h3 className="px-3 text-sm font-normal text-foreground/70 sm:px-4">
-        {searchableSetting("color-scheme", t).title}
+        {searchableSetting("color-scheme").title}
       </h3>
       {renderModeTiles()}
       <div className="flex min-h-8 flex-wrap items-center justify-between gap-3 px-3 pt-2 sm:px-4">
         <h3 className="text-sm font-normal text-foreground/70">
-          {searchableSetting("theme", t).title}
+          {searchableSetting("theme").title}
         </h3>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
@@ -863,11 +861,11 @@ export function ThemeLibrary({
             }
           >
             <PaintbrushIcon />
-            {t("Create theme")}
+            Create theme
           </Button>
           <Button size="xs" variant="outline" onClick={() => onImportOpenChange(true)}>
             <PlusIcon />
-            {t("Add theme")}
+            Add theme
           </Button>
         </div>
       </div>

@@ -6,7 +6,6 @@ import { Atom } from "effect/reactivity";
 import { useEffect } from "react";
 
 import { APP_VERSION } from "~/branding";
-import { useChinese } from "~/locale/autoTranslateRuntime";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { useDesktopUpdateState } from "~/state/desktopUpdate";
 import { serverEnvironment } from "~/state/server";
@@ -92,9 +91,7 @@ export function retryFailedUpdateRunServers(
           ? providerFailure
           : outcome.status === "failed"
             ? outcome.message
-            : useChinese
-              ? "無法開始更新"
-              : "Could not start the update",
+            : "Could not start the update",
         { serverUpdated: outcome.status === "updated" },
       ),
     );
@@ -293,12 +290,7 @@ function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>): void {
       }
     };
     const timer = setTimeout(
-      () =>
-        settle(
-          useChinese
-            ? `${HANDOFF_TIMEOUT_MS / 60_000} 分鐘後仍未恢復連線`
-            : `Not back after ${HANDOFF_TIMEOUT_MS / 60_000} minutes`,
-        ),
+      () => settle(`Not back after ${HANDOFF_TIMEOUT_MS / 60_000} minutes`),
       server.startedAt + HANDOFF_TIMEOUT_MS - Date.now(),
     );
     const unsubscribe = appAtomRegistry.subscribe(

@@ -1,19 +1,24 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
-import { isTranslationKey, translate, type Translator } from "../../locale/locale";
-import { zhTWMessages } from "../../locale/messages";
+// Settings titles are translated where they are declared, at build time; this runs that
+// output with the zh-TW branch selected, as a Traditional Chinese device would.
+vi.mock("../../locale/autoTranslateRuntime", () => {
+  const join = (parts: ReadonlyArray<string | number>, values: ReadonlyArray<unknown>) =>
+    parts.map((part) => (typeof part === "number" ? String(values[part]) : part)).join("");
+  return {
+    useChinese: true,
+    __t3_t: (_english: string, chinese: string) => chinese,
+    __t3_tf: (_english: unknown, chinese: ReadonlyArray<string | number>, values: unknown[]) =>
+      join(chinese, values),
+    __t3_tj: (_english: unknown, chinese: ReadonlyArray<string | number>, values: unknown[]) =>
+      join(chinese, values),
+  };
+});
 
-import {
-  getSettingsSearchTargetScope,
-  searchableSetting,
-  searchSettings,
-  SETTINGS_SEARCH_ITEMS,
-  type SettingsSearchItem,
-} from "./settingsSearch";
+const { getSettingsSearchTargetScope, searchableSetting, searchSettings } =
+  await import("./settingsSearch");
 
-describe("localized settings catalog", () => {
-  const t: Translator = (key, params) => translate("zh-TW", key, params);
-
+describe("settings search in zh-TW", () => {
   it.each([
     ["傳送快捷鍵", "send-shortcut"],
     ["外觀", "theme"],
@@ -21,54 +26,30 @@ describe("localized settings catalog", () => {
     ["  語言  ", "interface-language"],
     ["繁體中文", "interface-language"],
     ["Taiwan", "interface-language"],
-    ["send shortcut", "send-shortcut"],
-    ["appearance", "theme"],
     ["語言 English", "interface-language"],
-  ])("finds %s while retaining English aliases", (query, id) => {
-    expect(searchSettings(query, undefined, t).map((item) => item.id)).toContain(id);
+  ])("finds %s", (query, id) => {
+    expect(searchSettings(query).map((item) => item.id)).toContain(id);
   });
 
-  it("preserves destination paths, stable anchors, and device-local scope", () => {
-    expect(searchSettings("傳送快捷鍵", undefined, t)[0]).toMatchObject({
+  it("keeps destination paths, stable anchors, and device-local scope", () => {
+    expect(searchSettings("傳送快捷鍵")[0]).toMatchObject({
       id: "send-shortcut",
-      title: "Send shortcut",
+      title: "傳送快捷鍵",
       to: "/settings/general",
     });
-    expect(searchSettings("介面語言", undefined, t)[0]).toMatchObject({
+    expect(searchSettings("介面語言")[0]).toMatchObject({
       id: "interface-language",
       to: "/settings/general",
     });
-    expect(searchableSetting("send-shortcut", t)).toEqual({
+    expect(searchableSetting("send-shortcut")).toEqual({
       id: "send-shortcut",
       title: "傳送快捷鍵",
     });
-    expect(searchableSetting("interface-language", t)).toEqual({
+    expect(searchableSetting("interface-language")).toEqual({
       id: "interface-language",
       title: "介面語言",
     });
-    expect(searchableSetting("send-shortcut").title).toBe("Send shortcut");
     expect(getSettingsSearchTargetScope("interface-language")?.scope).toBeNull();
-    expect(searchSettings("   ", undefined, t)).toEqual([]);
-  });
-
-  it("falls back for unmapped headings without treating custom text as translation keys", () => {
-    const customItem: SettingsSearchItem = {
-      id: "custom-setting",
-      title: "Custom device setting",
-      to: "/settings/general",
-    };
-    expect(searchSettings("Custom device", [customItem], t)).toEqual([customItem]);
-    expect(searchSettings("一般", [customItem], t)).toEqual([customItem]);
-    expect(searchSettings("不存在的設定", [customItem], t)).toEqual([]);
-  });
-
-  it("covers General and Appearance catalog headings with Taiwan translations", () => {
-    for (const item of SETTINGS_SEARCH_ITEMS) {
-      if (item.to !== "/settings/general" && item.to !== "/settings/appearance") continue;
-      expect(isTranslationKey(item.title), item.title).toBe(true);
-      if (isTranslationKey(item.title)) {
-        expect(zhTWMessages[item.title], item.title).toBeTruthy();
-      }
-    }
+    expect(searchSettings("   ")).toEqual([]);
   });
 });

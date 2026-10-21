@@ -1,4 +1,3 @@
-import { useLocale } from "../locale/LocaleProvider";
 import { type EnvironmentId, type ScopedProjectRef } from "@t3tools/contracts";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
 import { ThreadHoverCard, ThreadHoverCardPopup } from "./ThreadHoverCard";
@@ -177,7 +176,7 @@ import { useThreadSearch } from "../state/queries";
 import { useOrchestrationCommand } from "../state/use-orchestration-command";
 import { readEnvironmentScope, useEnvironmentScope } from "../state/session";
 import { buildThreadRouteParams, resolveActiveThreadRouteRef } from "../threadRoutes";
-import { formatCompactRelativeTime, parseTimestampDate } from "../timestampFormat";
+import { formatRelativeTimeLabel, parseTimestampDate } from "../timestampFormat";
 import type { SidebarThreadSummary } from "../types";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
@@ -836,13 +835,22 @@ function checkThreadOperations(
   return false;
 }
 
+function compactSidebarTimeLabel(label: string): string {
+  if (label === "just now") return "now";
+  // Fork patch 2: zh-TW relative times end in 前 instead of " ago".
+  if (label.endsWith("前")) return label.slice(0, -1);
+  return label.endsWith(" ago") ? label.slice(0, -4) : label;
+}
+
 // Subscribes to the minute tick itself, so only the label re-renders each
 // minute. The minute is passed as the clock so it is the formatter's input.
 function RelativeTimeLabel(props: { timestamp: string | null }) {
   const nowMinute = useNowMinute();
   return props.timestamp === null
     ? null
-    : formatCompactRelativeTime(props.timestamp, Date.parse(`${nowMinute}:00.000Z`));
+    : compactSidebarTimeLabel(
+        formatRelativeTimeLabel(props.timestamp, Date.parse(`${nowMinute}:00.000Z`)),
+      );
 }
 
 function threadTimeTimestamp(thread: SidebarThreadSummary): string {
@@ -2704,7 +2712,6 @@ const SidebarSearchResultRow = memo(function SidebarSearchResultRow(props: {
 });
 
 export default function Sidebar() {
-  const { t } = useLocale();
   const {
     projects,
     serverConfigs,
@@ -4587,10 +4594,8 @@ export default function Sidebar() {
                       <SidebarHeaderIconButton
                         label={
                           scopedProjectGroup
-                            ? t("Filter threads by project: {project}", {
-                                project: scopedProjectGroup.displayName,
-                              })
-                            : t("Filter threads by project")
+                            ? `Filter threads by project: ${scopedProjectGroup.displayName}`
+                            : "Filter threads by project"
                         }
                       />
                     }
@@ -4609,8 +4614,8 @@ export default function Sidebar() {
                     className="max-w-[min(18rem,var(--available-width))] overflow-hidden"
                   >
                     <ComboboxSearchInput
-                      aria-label={t("Search projects")}
-                      placeholder={t("Search projects...")}
+                      aria-label="Search projects"
+                      placeholder="Search projects..."
                       value={projectScopeMenuState.query}
                       onKeyDown={(event) => {
                         if (
@@ -4769,7 +4774,7 @@ export default function Sidebar() {
                 role="status"
                 className="px-2 py-6 text-center text-xs text-sidebar-muted-foreground"
               >
-                {threadSearch.isPending ? t("Searching thread messages…") : t("No threads found")}
+                {threadSearch.isPending ? "Searching thread messages…" : "No threads found"}
               </p>
             )
           ) : null}
@@ -4937,7 +4942,7 @@ export default function Sidebar() {
                               <SidebarDragBoundary
                                 key="pinned-header"
                                 marker="pinned-header"
-                                label={t("Pinned")}
+                                label="Pinned"
                                 visible={from !== null}
                                 isDropTarget={dragTargetSection === "pinned"}
                               />,
@@ -4980,8 +4985,8 @@ export default function Sidebar() {
                                 className="mt-auto"
                                 label={
                                   workingShelfExpanded
-                                    ? t("Working")
-                                    : t("Working ({count})", { count: workingThreads.length })
+                                    ? "Working"
+                                    : `Working (${workingThreads.length})`
                                 }
                                 toggle={{
                                   expanded: workingShelfExpanded,
@@ -4998,8 +5003,8 @@ export default function Sidebar() {
                                 className={cn(workingThreads.length === 0 && "mt-auto")}
                                 label={
                                   snoozedShelfExpanded
-                                    ? t("Snoozed")
-                                    : t("Snoozed ({count})", { count: snoozedThreads.length })
+                                    ? "Snoozed"
+                                    : `Snoozed (${snoozedThreads.length})`
                                 }
                                 toggle={{
                                   expanded: snoozedShelfExpanded,
@@ -5018,8 +5023,8 @@ export default function Sidebar() {
                                 )}
                                 label={
                                   settledShelfExpanded
-                                    ? t("Settled")
-                                    : t("Settled ({count})", { count: settledThreads.length })
+                                    ? "Settled"
+                                    : `Settled (${settledThreads.length})`
                                 }
                                 dragging={from !== null}
                                 isDropTarget={dragTargetSection === "settled"}
@@ -5035,7 +5040,7 @@ export default function Sidebar() {
                               <SidebarSectionPlaceholder
                                 key="settled-placeholder"
                                 marker="settled-placeholder"
-                                label={t("Settled")}
+                                label="Settled"
                                 showHint={
                                   from !== null &&
                                   (renderedSettledThreads.length === 0 ||
@@ -5080,20 +5085,20 @@ export default function Sidebar() {
             <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-muted-foreground/60">
               {projects.length === 0 ? (
                 <>
-                  <span>{t("No projects yet")}</span>
+                  <span>No projects yet</span>
                   <button
                     type="button"
                     onClick={openAddProjectCommandPalette}
                     className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-sidebar-border px-2.5 py-1 text-2xs font-medium text-sidebar-muted-foreground transition-colors hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
                   >
                     <PlusIcon className="-mx-0.5 size-3" />
-                    {t("Add project")}
+                    Add project
                   </button>
                 </>
               ) : scopedProjectGroup ? (
-                t("No threads in {project} yet", { project: scopedProjectGroup.displayName })
+                `No threads in ${scopedProjectGroup.displayName} yet`
               ) : (
-                t("No threads yet")
+                "No threads yet"
               )}
             </div>
           ) : null}

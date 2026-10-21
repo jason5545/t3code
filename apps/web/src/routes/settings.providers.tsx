@@ -1,4 +1,3 @@
-import { useLocale } from "../locale/LocaleProvider";
 import { createFileRoute } from "@tanstack/react-router";
 import { EnvironmentId, ProviderInstanceId } from "@t3tools/contracts";
 
@@ -6,15 +5,14 @@ import { ProviderSettingsPanel } from "../components/settings/ProviderSettingsPa
 import { useSettingsScope } from "../components/settings/SettingsScopeContext";
 
 function SettingsProvidersRoute() {
-  const { t } = useLocale();
   const target = Route.useSearch();
   const { environment, scope } = useSettingsScope();
   if (!environment) {
     return (
       <p className="p-8 text-sm text-muted-foreground">
         {scope.kind === "environment"
-          ? t("Reconnect {environment} to set up its providers.", { environment: scope.label })
-          : t("Connect an environment to set up its providers.")}
+          ? `Reconnect ${scope.label} to set up its providers.`
+          : "Connect an environment to set up its providers."}
       </p>
     );
   }
