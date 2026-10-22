@@ -563,7 +563,11 @@ export class EnvironmentAuth extends Context.Service<
       /** Fork patch 7: an MCP subject naming the tailnet node it was approved for. */
       readonly subject?: string;
     }) => Effect.Effect<
-      { readonly token: string; readonly expiresAt: DateTime.DateTime },
+      {
+        readonly sessionId: AuthSessionId;
+        readonly token: string;
+        readonly expiresAt: DateTime.DateTime;
+      },
       ServerAuthInternalError
     >;
     /**
@@ -1302,7 +1306,11 @@ export const make = Effect.gen(function* () {
         client: { ...input.client, label: input.label, deviceType: "bot" },
       })
       .pipe(
-        Effect.map((issued) => ({ token: issued.token, expiresAt: issued.expiresAt })),
+        Effect.map((issued) => ({
+          sessionId: issued.sessionId,
+          token: issued.token,
+          expiresAt: issued.expiresAt,
+        })),
         Effect.mapError((cause) => new ServerAuthSessionTokenIssueError({ cause })),
         Effect.withSpan("EnvironmentAuth.issueMcpClientSession"),
       );

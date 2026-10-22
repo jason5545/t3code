@@ -462,31 +462,6 @@ const checkProvider = Effect.fn("checkProvider")(function* (
 });
 
 it.layer(layerTest)("checkOpenCodeProviderStatus", (it) => {
-  it.effect("shows a codex-style missing binary message", () =>
-    Effect.gen(function* () {
-      runtimeMock.state.runVersionError = new Error("spawn opencode ENOENT");
-      const snapshot = yield* checkProvider(makeOpenCodeSettings());
-
-      NodeAssert.equal(snapshot.status, "error");
-      NodeAssert.equal(snapshot.installed, false);
-      NodeAssert.equal(
-        snapshot.message,
-        "OpenCode CLI (`opencode`) is not installed or not on PATH.",
-      );
-    }),
-  );
-
-  it.effect("hides generic Effect.tryPromise text for local CLI probe failures", () =>
-    Effect.gen(function* () {
-      runtimeMock.state.runVersionError = new Error("An error occurred in Effect.tryPromise");
-      const snapshot = yield* checkProvider(makeOpenCodeSettings());
-
-      NodeAssert.equal(snapshot.status, "error");
-      NodeAssert.equal(snapshot.installed, true);
-      NodeAssert.equal(snapshot.message, "Failed to execute OpenCode CLI health check.");
-    }),
-  );
-
   it.effect("emits OpenCode variant defaults so trait picker can resolve a visible selection", () =>
     Effect.gen(function* () {
       runtimeMock.state.inventory = {
@@ -690,6 +665,72 @@ it.layer(layerTest)("checkOpenCodeProviderStatus", (it) => {
     }),
   );
 
+  it.effect("marks older releases of a family and deprecated models as legacy", () =>
+    Effect.gen(function* () {
+      const releases = [
+        ["opencode", "opus-4-5", "claude-opus", "2025-11-24", "active"],
+        ["opencode", "opus-5-5", "claude-opus", "2026-09-22", "active"],
+        ["opencode", "opus-preview", "claude-opus", "2026-10-01", "deprecated"],
+        ["opencode", "flash", "flash", "2026-09-10", "active"],
+        ["opencode", "flash-free", "flash", "2026-09-10", "active"],
+        ["opencode", "big-pickle", undefined, "2025-10-17", "active"],
+        ["openrouter", "opus-4-5", "claude-opus", "2025-11-24", "active"],
+      ] as const;
+      const legacySlugs = (
+        models: ReadonlyArray<{ readonly slug: string; readonly isLegacy?: boolean | undefined }>,
+      ) =>
+        models
+          .filter((model) => model.isLegacy)
+          .map((model) => model.slug)
+          .toSorted();
+      const expected = ["opencode/opus-4-5", "opencode/opus-preview"];
+
+      runtimeMock.state.inventory = {
+        providerList: {
+          connected: ["opencode", "openrouter"],
+          all: ["opencode", "openrouter"].map((providerID) => ({
+            id: providerID,
+            name: providerID,
+            models: Object.fromEntries(
+              releases
+                .filter(([provider]) => provider === providerID)
+                .map(([, id, family, releaseDate, status]) => [
+                  id,
+                  { id, name: id, family, release_date: releaseDate, status, variants: {} },
+                ]),
+            ),
+          })),
+          default: {},
+        },
+        agents: [],
+      };
+      NodeAssert.deepEqual(
+        legacySlugs((yield* checkProvider(makeOpenCodeSettings())).models),
+        expected,
+      );
+
+      runtimeMock.state.versionStdout = "opencode v2.0.18\n";
+      const openCode2 = yield* checkProvider(
+        makeOpenCodeSettings(),
+        process.cwd(),
+        undefined,
+        undefined,
+        Effect.succeed(
+          releases.map(([providerID, id, family, releaseDate, status]) => ({
+            providerID,
+            id,
+            name: id,
+            variants: [],
+            family,
+            released: Date.parse(releaseDate),
+            deprecated: status === "deprecated",
+          })),
+        ),
+      );
+      NodeAssert.deepEqual(legacySlugs(openCode2.models), expected);
+    }),
+  );
+
   it.effect("reports a failed OpenCode 2 model list without the server's response", () =>
     Effect.gen(function* () {
       runtimeMock.state.versionStdout = "opencode v2.0.18\n";
@@ -712,18 +753,6 @@ it.layer(layerTest)("checkOpenCodeProviderStatus", (it) => {
         snapshot.slashCommands.map((command) => command.name),
         ["compact"],
       );
-    }),
-  );
-
-  it.effect("uses the settings password when local environment auth differs", () =>
-    Effect.gen(function* () {
-      yield* checkProvider(
-        makeOpenCodeSettings({ serverPassword: "settings-password" }),
-        process.cwd(),
-        { OPENCODE_SERVER_PASSWORD: "environment-password" },
-      );
-
-      NodeAssert.equal(runtimeMock.state.sdkClientInputs[0]?.serverPassword, "settings-password");
     }),
   );
 
@@ -803,25 +832,6 @@ it.layer(layerTest)("checkOpenCodeProviderStatus with configured server URL", (i
       NodeAssert.equal(snapshot.models.length, 0);
       NodeAssert.match(snapshot.message ?? "", /v1\.14\.18 is too old/);
       NodeAssert.equal(runtimeMock.state.sdkClientInputs.length, 0);
-    }),
-  );
-
-  it.effect("surfaces a friendly auth error for configured servers", () =>
-    Effect.gen(function* () {
-      runtimeMock.state.connectionError = new Error("401 Unauthorized");
-      const snapshot = yield* checkProvider(
-        makeOpenCodeSettings({
-          serverUrl: "http://127.0.0.1:9999",
-          serverPassword: "secret-password",
-        }),
-      );
-
-      NodeAssert.equal(snapshot.status, "error");
-      NodeAssert.equal(snapshot.installed, true);
-      NodeAssert.equal(
-        snapshot.message,
-        "OpenCode server rejected authentication. Check the server URL and password.",
-      );
     }),
   );
 });

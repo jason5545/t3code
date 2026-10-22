@@ -210,7 +210,8 @@
       "size-4",
       "submenu-browse",
       "submenu",
-      "root-browse"
+      "root-browse",
+      "Win32"
     ],
     "apps/web/src/components/chat/composerSubmission.ts": ["character", "characters"],
     "apps/mobile/src/features/prompt-links/usePromptLinkResolver.ts": [
@@ -324,7 +325,13 @@
       "retry",
       "empty"
     ],
-    "apps/mobile/src/state/use-thread-composer-state.ts": ["queue", "was", "s were", "auto"],
+    "apps/mobile/src/state/use-thread-composer-state.ts": [
+      "queue",
+      "was",
+      "s were",
+      "auto",
+      "steer"
+    ],
     "apps/mobile/src/features/home/HomeScreen.tsx": ["all", "bg-drawer", "bg-screen"],
     "packages/client-runtime/src/state/server.ts": [
       "downloading",
