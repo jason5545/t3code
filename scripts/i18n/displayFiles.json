@@ -108,6 +108,7 @@
     "apps/web/src/components/chat/ComposerPrimaryActions.tsx",
     "apps/web/src/components/chat/DraftHeroHeadline.tsx",
     "apps/web/src/components/sidebar/useUpdateEverything.ts",
-    "apps/web/src/components/sidebar/updateEverythingRun.tsx"
+    "apps/web/src/components/sidebar/updateEverythingRun.tsx",
+    "apps/web/src/components/chat/ChatHeader.tsx"
   ]
 }
