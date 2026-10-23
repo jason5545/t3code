@@ -11,9 +11,14 @@ import {
 } from "@t3tools/contracts";
 import {
   resolveT3McpToolDefinition,
+  resolveT3McpToolId,
   type T3McpToolDefinition,
   type T3McpToolSummaryAction,
 } from "@t3tools/shared/t3McpToolPresentation";
+import {
+  localizedT3McpToolTitle,
+  localizedWorkLogSummaryJoin,
+} from "@t3tools/shared/t3McpToolText";
 import { classifyMarkdownImageSource } from "@t3tools/client-runtime/markdown-images";
 import { resolveMediaSource } from "@t3tools/client-runtime/media-source";
 import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
@@ -157,6 +162,7 @@ function resolveT3McpToolPresentation(
   definition: T3McpToolDefinition | null,
   status: string | undefined,
   data?: unknown,
+  toolId: string | null = null,
 ) {
   if (!definition) return null;
   const [action, running, completed, detail] = definition.labels;
@@ -195,7 +201,9 @@ function resolveT3McpToolPresentation(
       ? `PR #${number}`
       : detail;
   return {
-    displayName: `${verb} ${target}`,
+    displayName:
+      localizedT3McpToolTitle(toolId, status, target === detail ? null : target) ??
+      `${verb} ${target}`,
     icon: definition.icon,
     ...(actionKind === undefined ? {} : { action: actionKind }),
   };
@@ -216,12 +224,14 @@ export function resolveWorkEntryToolPresentation(
   >,
   fallbackStatus?: "inProgress" | "completed",
 ) {
-  const definition = resolveT3McpToolDefinition(workEntryToolName(entry));
+  const toolName = workEntryToolName(entry);
+  const definition = resolveT3McpToolDefinition(toolName);
   const status = entry.toolLifecycleStatus ?? fallbackStatus;
   return resolveT3McpToolPresentation(
     definition,
     definition && t3ToolResultIndicatesFailure(workEntryToolOutput(entry)) ? "failed" : status,
     entry.toolData,
+    resolveT3McpToolId(toolName),
   );
 }
 
@@ -728,9 +738,10 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
     index === 0 ? label : label.charAt(0).toLowerCase() + label.slice(1),
   );
   const summary =
-    sentenceLabels.length < 3
+    localizedWorkLogSummaryJoin(sentenceLabels) ??
+    (sentenceLabels.length < 3
       ? sentenceLabels.join(" and ")
-      : `${sentenceLabels.slice(0, -1).join(", ")}, and ${sentenceLabels.at(-1)}`;
+      : `${sentenceLabels.slice(0, -1).join(", ")}, and ${sentenceLabels.at(-1)}`);
   return { summary, hasFailure: summaries.some((group) => group.failedCount > 0) };
 }
 

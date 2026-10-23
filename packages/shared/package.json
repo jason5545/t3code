@@ -403,6 +403,10 @@
       "types": "./src/t3McpToolPresentation.ts",
       "import": "./src/t3McpToolPresentation.ts"
     },
+    "./t3McpToolText": {
+      "types": "./src/t3McpToolText.ts",
+      "import": "./src/t3McpToolText.ts"
+    },
     "./Array": {
       "types": "./src/Array.ts",
       "import": "./src/Array.ts"

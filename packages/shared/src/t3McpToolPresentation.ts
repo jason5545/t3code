@@ -1,3 +1,5 @@
+import { localizedT3McpToolName } from "./t3McpToolText.ts";
+
 export type T3McpToolLogo = "t3-code";
 
 export interface T3McpToolPresentation {
@@ -395,5 +397,10 @@ export function resolveT3McpToolPresentation(
   toolName: string | null | undefined,
 ): T3McpToolPresentation | null {
   const definition = resolveT3McpToolDefinition(toolName);
-  return definition === null ? null : { displayName: definition.displayName, logo: "t3-code" };
+  return definition === null
+    ? null
+    : {
+        displayName: localizedT3McpToolName(resolveT3McpToolId(toolName)) ?? definition.displayName,
+        logo: "t3-code",
+      };
 }

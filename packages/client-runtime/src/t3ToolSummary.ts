@@ -1,4 +1,5 @@
 import type { T3McpToolSummaryAction } from "@t3tools/shared/t3McpToolPresentation";
+import { localizedT3ToolSummary } from "@t3tools/shared/t3McpToolText";
 
 export interface T3ToolSummaryCall {
   readonly input: unknown;
@@ -441,5 +442,5 @@ export function summarizeT3ToolCalls(
       label = phrase("Checked", "check", `orchestration capabilities ${times}`);
       break;
   }
-  return { label, failedCount };
+  return { label: localizedT3ToolSummary(label) ?? label, failedCount };
 }
