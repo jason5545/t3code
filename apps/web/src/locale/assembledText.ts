@@ -60,3 +60,9 @@ export function skippedMachineText(machine: {
   if (useChinese) return `略過 ${machine.label}：${machine.reason}`;
   return `Skips ${machine.label}: ${machine.reason}`;
 }
+
+/** The composer's compact toggle, a word the catalog translates as 全寬 for the chat width setting. */
+export function compactSendModeText(keepFullHistory: boolean): string {
+  if (useChinese) return keepFullHistory ? "完整" : "壓縮";
+  return keepFullHistory ? "Full" : "Compact";
+}

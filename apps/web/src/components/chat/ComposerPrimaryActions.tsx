@@ -5,7 +5,7 @@ import { MorphIcon } from "~/components/MorphIcon";
 import { useEnvironmentIdentificationMode } from "~/hooks/useSettings";
 import { formatContextWindowTokens } from "~/lib/contextWindow";
 import { cn } from "~/lib/utils";
-import { followUpClickTooltip } from "~/locale/assembledText";
+import { compactSendModeText, followUpClickTooltip } from "~/locale/assembledText";
 import { useShortcutModifierState } from "../../shortcutModifierState";
 import { StageBackdropButtonArt, useSidebarStageBackdropVariant } from "../SidebarStageBackdrop";
 import { Button } from "../ui/button";
@@ -384,7 +384,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           }
         >
           <Minimize2Icon aria-hidden="true" />
-          {keepFullHistory ? "Full" : "Compact"}
+          {compactSendModeText(keepFullHistory)}
           <span>{compactTokens}</span>
         </TooltipTrigger>
         <TooltipPopup>
