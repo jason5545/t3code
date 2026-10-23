@@ -33,6 +33,7 @@ import {
   type ThreadStructure,
   type ThreadStructureRuntime,
 } from "./models.ts";
+import { localizedBackgroundWorkNoun, localizedBackgroundWorkTitle } from "./backgroundWorkText.ts";
 import { formatSubagentDisplayTitle } from "./subagentDisplay.ts";
 
 const ACTIVITY_RUN_STATUSES = new Set(["preparing", "starting", "running", "waiting"]);
@@ -328,7 +329,7 @@ export function presentPendingBackgroundWork(
         kind: task.kind,
         label:
           label === undefined || label.length === 0
-            ? BACKGROUND_WORK_KINDS[task.kind].singular
+            ? (localizedBackgroundWorkNoun(task.kind) ?? BACKGROUND_WORK_KINDS[task.kind].singular)
             : label,
         childThreadId: task.kind === "subagent" ? task.childThreadId : undefined,
       };
@@ -338,6 +339,8 @@ export function presentPendingBackgroundWork(
       (left, right) =>
         BACKGROUND_WORK_KINDS[left.kind].order - BACKGROUND_WORK_KINDS[right.kind].order,
     );
+  const localizedTitle = localizedBackgroundWorkTitle(items, waiting);
+  if (localizedTitle !== null) return { title: localizedTitle, items, waiting };
   const [only] = items;
   if (items.length === 1 && only !== undefined) {
     const noun = BACKGROUND_WORK_KINDS[only.kind].singular;
