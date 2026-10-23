@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../components/ui/Toast";
 import { APP_BAR_HEIGHT } from "../../lib/layoutMetrics";
+import { threadUndoNoticeText } from "../../locale/assembledText";
 import { dismissThreadUndoNotice, useThreadUndoNotice } from "./thread-undo-notice";
 
 export function ThreadUndoNotice(props: { readonly visible: boolean }) {
@@ -15,7 +16,7 @@ export function ThreadUndoNotice(props: { readonly visible: boolean }) {
       pointerEvents="box-none"
     >
       <Toast
-        message={`${notice.action} thread`}
+        message={threadUndoNoticeText(notice.action)}
         action={{
           label: "Undo",
           onPress: () => {
