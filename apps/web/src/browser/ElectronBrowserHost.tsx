@@ -135,6 +135,7 @@ export function ElectronBrowserHost() {
                   serverRendering: {
                     colorScheme: snapshot.colorScheme ?? "system",
                     zoomFactor: snapshot.zoomFactor ?? 1,
+                    agentDriven: snapshot.automationOwner !== undefined,
                   },
                 }
               : {})}
