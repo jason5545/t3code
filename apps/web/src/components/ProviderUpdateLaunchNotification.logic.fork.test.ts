@@ -4,7 +4,7 @@ import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@t3
 import {
   canOneClickUpdateProviderCandidate,
   collectProviderUpdateCandidates,
-  getProviderUpdateInitialToastView,
+  getProviderUpdateSidebarPillView,
   type ProviderUpdateCandidate,
 } from "./ProviderUpdateLaunchNotification.logic";
 
@@ -62,10 +62,19 @@ describe("provider update launch notification logic (fork)", () => {
       true,
     );
     expect(
-      getProviderUpdateInitialToastView({
-        updateProviders: [omp as ProviderUpdateCandidate],
-        oneClickProviders: [omp as ProviderUpdateCandidate],
-      }).title,
-    ).toBe("Update Available: OMP v18.8.0");
+      getProviderUpdateSidebarPillView([
+        pi,
+        {
+          ...omp,
+          updateState: {
+            status: "running",
+            startedAt: checkedAt,
+            finishedAt: null,
+            message: null,
+            output: null,
+          },
+        },
+      ])?.title,
+    ).toBe("Updating OMP");
   });
 });

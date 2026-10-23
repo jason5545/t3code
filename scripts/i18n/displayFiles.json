@@ -3,7 +3,6 @@
     "apps/web/src/components/chat/ProviderStatusBanner.tsx",
     "apps/web/src/components/settings/providerStatus.ts",
     "apps/web/src/components/ProviderUpdateLaunchNotification.logic.ts",
-    "apps/web/src/components/ProviderUpdateEnvironmentRows.tsx",
     "apps/web/src/components/settings/ProviderAuthenticationSection.tsx",
     "apps/web/src/components/settings/ProviderSetupSection.tsx",
     "apps/web/src/components/settings/ProviderInstanceCard.tsx",
@@ -109,6 +108,7 @@
     "apps/web/src/components/chat/DraftHeroHeadline.tsx",
     "apps/web/src/components/sidebar/useUpdateEverything.ts",
     "apps/web/src/components/sidebar/updateEverythingRun.tsx",
-    "apps/web/src/components/chat/ChatHeader.tsx"
+    "apps/web/src/components/chat/ChatHeader.tsx",
+    "apps/web/src/components/chat/MessagesTimeline.logic.ts"
   ]
 }

@@ -438,7 +438,8 @@
       "was",
       "s were",
       "a new worktree",
-      "the current checkout"
+      "the current checkout",
+      "offline"
     ],
     "apps/mobile/src/features/threads/ThreadGitControls.tsx": ["PR #{gitStatus.pr.number}"],
     "apps/mobile/src/features/threads/git/GitOverviewSheet.tsx": [
@@ -515,6 +516,19 @@
       "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-message-action font-medium text-base text-message-action-foreground shadow-xs shadow-message-action/24 outline-none hover:bg-message-action-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 disabled:shadow-none sm:text-sm"
     ],
     "apps/web/src/components/chat/DraftHeroHeadline.tsx": ["add-project"],
-    "apps/web/src/components/chat/ChatHeader.tsx": ["none"]
+    "apps/web/src/components/chat/ChatHeader.tsx": ["none"],
+    "apps/web/src/components/settings/ProviderInstanceCard.tsx": ["{0}, view details"],
+    "apps/mobile/src/features/threads/DraftEnvironmentControl.tsx": [
+      "Choose environment, {props.label}, {0}"
+    ],
+    "apps/web/src/components/chat/MessagesTimeline.logic.ts": [
+      " a T3 thread",
+      "a T3 thread",
+      "{0} thread",
+      "command",
+      "calc(100vh - 18rem)",
+      "min({naturalHeight}px, {TIMELINE_MINIMAP_MAX_HEIGHT_CSS})",
+      "22rem"
+    ]
   }
 }
