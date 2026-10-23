@@ -7086,5 +7086,17 @@
   "Double tap to {0} the message.": "點兩下以顯示或隱藏訊息。",
   "Opens the draft in the new task composer. Swipe left to {0}.": "在新工作輸入區開啟草稿。向左滑動可捨棄。",
   "Sends when the environment reconnects. Opens the task for editing. Swipe left to {0}.": "環境重新連線時送出。開啟工作以編輯。向左滑動可刪除。",
-  "{0} connection details for {props.title}": "顯示或隱藏 {props.title} 的連線詳細資料"
+  "{0} connection details for {props.title}": "顯示或隱藏 {props.title} 的連線詳細資料",
+  "Browser previews are only available in the T3 Code desktop app.": "只有 T3 Code 桌面版 App 才能使用瀏覽器預覽。",
+  "Terminal surfaces are only available from a project thread.": "只有專案裡的對話才能開終端機。",
+  "Files are only available when a project is open.": "開啟專案後才能使用檔案。",
+  "Diff is only available for server threads in Git repositories.": "只有 Git 存放庫裡的伺服器對話才能看差異。",
+  "This thread's branch has no pull request yet.": "這個對話的分支還沒有提取請求。",
+  "No linked pull requests are available for this thread.": "這個對話沒有已連結的提取請求。",
+  "Devices are only available from a thread.": "要在對話裡才能使用裝置。",
+  "Available when a project is open.": "開啟專案後可用。",
+  "Available for Git repositories.": "Git 存放庫可用。",
+  "No pull request on this branch yet.": "這個分支還沒有提取請求。",
+  "No linked pull requests available.": "沒有已連結的提取請求。",
+  "Available from a thread.": "在對話裡可用。"
 }

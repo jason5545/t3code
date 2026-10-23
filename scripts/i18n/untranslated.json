@@ -201,7 +201,12 @@
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
     "apps/web/src/components/GitActionsControl.logic.ts": ["Commit", "Push"],
-    "apps/web/src/components/RightPanelTabs.tsx": ["Browser"],
+    "apps/web/src/components/RightPanelTabs.tsx": [
+      "none",
+      "muted",
+      "audible",
+      "(prefers-reduced-motion: reduce)"
+    ],
     "apps/web/src/state/sourceControlActions.ts": ["Running source control action"],
     "apps/web/src/components/usage/usagePriceTable.ts": ["Mixed", "Unavailable"],
     "apps/mobile/src/components/ComposerContextSheet.tsx": ["HTML", "Styles"],

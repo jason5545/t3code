@@ -484,14 +484,16 @@ function RightPanelEmptyState(props: {
                   <span
                     className={cn(
                       "min-w-0 flex-1 truncate",
-                      action.label === "Browser" && props.browserProfiles.length > 1 && "pr-7",
+                      action.onClick === props.onAddBrowser &&
+                        props.browserProfiles.length > 1 &&
+                        "pr-7",
                     )}
                   >
                     {action.label}
                   </span>
                   <Kbd>{action.shortcut}</Kbd>
                 </button>
-                {action.label === "Browser" && props.browserProfiles.length > 1 ? (
+                {action.onClick === props.onAddBrowser && props.browserProfiles.length > 1 ? (
                   <Menu>
                     <MenuTrigger
                       render={
@@ -1337,7 +1339,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                 >
                   {addSurfaceActions.map((action) => {
                     const Icon = action.icon;
-                    if (action.label === "Browser" && action.available) {
+                    if (action.onClick === props.onAddBrowser && action.available) {
                       return (
                         <MenuSub key={action.label}>
                           <MenuSubTrigger
