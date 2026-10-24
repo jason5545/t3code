@@ -58,6 +58,7 @@ import {
   type AcpAdapterV2Flavor,
   type AcpAdapterV2RuntimeInput,
 } from "@t3tools/provider-acp/server/adapter";
+import { makeBackgroundCompactionRuntime } from "./backgroundCompaction.ts";
 
 export const ACP_REGISTRY_PROVIDER = ProviderDriverKind.make("acpRegistry");
 export const ACP_REGISTRY_DEFAULT_INSTANCE_ID = defaultInstanceIdForDriver(ACP_REGISTRY_PROVIDER);
@@ -248,7 +249,10 @@ export const makeAcpRegistryAdapterV2 = Effect.fn("makeAcpRegistryAdapterV2")(fu
           normalizeSessionUpdate: copilotRouting.normalizeSessionUpdate,
           extractSubagentUpdate: extractCopilotSubagentUpdate,
         }),
-    makeRuntime: options.makeRuntime ?? makeAcpRegistryRuntime(runtimeOptions, catalog),
+    makeRuntime: (input) =>
+      (options.makeRuntime ?? makeAcpRegistryRuntime(runtimeOptions, catalog))(input).pipe(
+        Effect.map(makeBackgroundCompactionRuntime),
+      ),
     ...(runtimeCoordinator === undefined
       ? {}
       : {
