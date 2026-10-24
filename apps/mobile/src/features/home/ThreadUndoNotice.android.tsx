@@ -15,6 +15,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../components/ui/Toast";
 import { MOBILE_MOTION } from "../../lib/designTokens";
+import { threadUndoNoticeText } from "../../locale/assembledText";
 import {
   dismissThreadUndoNotice,
   readThreadUndoNotice,
@@ -109,7 +110,7 @@ function SwipeableUndoNotice(props: {
             accessible
             accessibilityRole="alert"
             accessibilityLiveRegion="assertive"
-            accessibilityLabel={`${notice.action} thread`}
+            accessibilityLabel={threadUndoNoticeText(notice.action)}
             accessibilityActions={[{ name: "dismiss", label: "Dismiss message" }]}
             onAccessibilityAction={({ nativeEvent }) => {
               if (nativeEvent.actionName === "dismiss") dismiss();
@@ -118,7 +119,7 @@ function SwipeableUndoNotice(props: {
             style={StyleSheet.absoluteFill}
           />
           <Toast
-            message={`${notice.action} thread`}
+            message={threadUndoNoticeText(notice.action)}
             action={{ label: "Undo", onPress: () => void notice.undo() }}
           />
         </Animated.View>
