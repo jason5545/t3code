@@ -1,4 +1,5 @@
 import {
+  translateAgentNotice,
   translateProviderOptionLabel,
   translateProviderStatusMessage,
 } from "@t3tools/client-runtime/providerStatusMessages";
@@ -21,4 +22,10 @@ export function localizeProviderOptionLabel(label: string | null | undefined): s
 export function localizeProviderOptionLabel(label: string | null | undefined): string | null {
   if (!label || !useChinese) return label ?? null;
   return translateProviderOptionLabel(label) ?? label;
+}
+
+/** Shows an agent's fixed English notice (kimi-code's compaction notices) in the interface language. */
+export function localizeAgentNotice(text: string): string {
+  if (!useChinese) return text;
+  return translateAgentNotice(text) ?? text;
 }

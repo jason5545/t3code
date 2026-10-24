@@ -13,6 +13,7 @@ import { Pressable, View } from "react-native";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import type { PendingApproval } from "../../lib/threadActivity";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 export interface PendingApprovalCardProps {
   readonly canOperateThread: boolean;
@@ -84,7 +85,7 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
         {options.map((option) => (
           <Button
             key={option.decision}
-            label={option.label}
+            label={localizeServerMessage(option.label)}
             tone={
               option.decision === "accept"
                 ? "primary"

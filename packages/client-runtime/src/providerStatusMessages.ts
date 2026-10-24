@@ -7,6 +7,8 @@
 type Rule = readonly [pattern: RegExp, chinese: (match: RegExpExecArray) => string];
 
 const NAME = String.raw`(.+?)`;
+// Server and agent text uses em dashes, which the product-copy lint rejects as literals.
+const EM_DASH = String.fromCharCode(0x2014);
 const rule = (source: string, chinese: (match: RegExpExecArray) => string): Rule => [
   new RegExp(`^${source}$`),
   chinese,
@@ -147,12 +149,21 @@ const RULES: ReadonlyArray<Rule> = [
   rule(`Provider updated\\.`, () => "供應商已更新。"),
   // Client-side update errors that reach the same display paths as server text.
   rule(`Provider update failed\\.`, () => "供應商更新失敗。"),
-  rule(`Update timed out — try again\\.`, () => "更新逾時，請再試一次。"),
+  rule(`Update timed out ${EM_DASH} try again\\.`, () => "更新逾時，請再試一次。"),
   rule(
-    `This environment isn’t connected — try again once it reconnects\\.`,
+    `This environment isn’t connected ${EM_DASH} try again once it reconnects\\.`,
     () => "這個環境尚未連線，重新連線後再試一次。",
   ),
   rule(`This connection cannot manage provider accounts\\.`, () => "此連線無法管理供應商帳號。"),
+  // Approval option labels that adapters send with an approval request.
+  rule(`Approve`, () => "核准"),
+  rule(`Decline`, () => "拒絕"),
+  rule(`Cancel`, () => "取消"),
+  rule(`Always allow`, () => "一律允許"),
+  rule(`Always allow this session`, () => "在此工作階段一律允許"),
+  rule(`Allow all edits this session`, () => "在此工作階段允許所有編輯"),
+  rule(`Allow every ${NAME} request this session`, (m) => `在此工作階段允許所有 ${m[1]} 請求`),
+  rule(`Allow ${NAME} this session`, (m) => `在此工作階段允許 ${m[1]}`),
 ];
 
 /** The zh-TW text for a known server provider status message, or null. */
@@ -162,6 +173,43 @@ export function translateProviderStatusMessage(message: string): string | null {
     if (match) return chinese(match);
   }
   return null;
+}
+
+/**
+ * kimi-code answers `/compact` with fixed English notices as assistant text, and the end
+ * notice arrives in the same message right after the start notice. Only a message that opens
+ * with one of them is rewritten, so an agent quoting these words mid-answer stays as written.
+ */
+const COMPACTION_STARTED = `Context compaction started ${EM_DASH} it runs in the background and the compacted context applies once it finishes.`;
+type Phrases = ReadonlyArray<readonly [english: string, chinese: string]>;
+const COMPACTION_NOTICES: Phrases = [
+  [COMPACTION_STARTED, "已開始壓縮上下文，會在背景執行，完成後才套用壓縮後的上下文。"],
+  ["A context compaction is already running.", "已經有一個上下文壓縮在執行。"],
+  ["Compaction completed.", "壓縮完成。"],
+  ["Compaction cancelled.", "壓縮已取消。"],
+  [
+    "Compaction is blocked by the current turn; retry when the turn is idle.",
+    "目前的回合擋住了壓縮，等回合結束再試一次。",
+  ],
+];
+const COMPACTION_STATS: Phrases = [
+  ["- Messages compacted: ", "- 已壓縮訊息："],
+  ["- Tokens before: ", "- 壓縮前 token："],
+  ["- Tokens after: ", "- 壓縮後 token："],
+];
+
+/** The zh-TW text for an assistant message made of kimi-code compaction notices, or null. */
+export function translateAgentNotice(text: string): string | null {
+  if (!COMPACTION_NOTICES.some(([english]) => text.startsWith(english))) return null;
+  // kimi joins the end notice to the start notice with no break; give it its own paragraph.
+  let translated = text.replace(
+    `${COMPACTION_STARTED}Compaction`,
+    `${COMPACTION_STARTED}\n\nCompaction`,
+  );
+  for (const [english, chinese] of [...COMPACTION_NOTICES, ...COMPACTION_STATS]) {
+    translated = translated.replaceAll(english, chinese);
+  }
+  return translated;
 }
 
 /**

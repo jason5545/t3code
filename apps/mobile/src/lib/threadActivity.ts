@@ -73,6 +73,8 @@ import {
 } from "@t3tools/shared/toolOutput";
 import * as DateTime from "effect/DateTime";
 
+import { localizeAgentNotice } from "../locale/serverMessages";
+
 export type PendingApproval = ThreadPendingApproval;
 export type PendingUserInput = ThreadPendingUserInput;
 
@@ -2143,7 +2145,7 @@ export function buildThreadFeed(
         message: {
           id: item.messageId,
           role: item.type === "user_message" ? "user" : "assistant",
-          text: item.text,
+          text: item.type === "assistant_message" ? localizeAgentNotice(item.text) : item.text,
           ...(item.type === "user_message" && item.context ? { context: item.context } : {}),
           attachments: item.attachments ?? [],
           runId: item.runId,

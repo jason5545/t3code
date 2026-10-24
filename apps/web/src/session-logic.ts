@@ -49,6 +49,7 @@ import {
   type SessionPhase,
   type TurnDiffSummary,
 } from "./types";
+import { localizeAgentNotice } from "./locale/serverMessages";
 import * as DateTime from "effect/DateTime";
 import * as Equal from "effect/Equal";
 import { shallow } from "zustand/vanilla/shallow";
@@ -697,7 +698,7 @@ export function deriveTimelineEntriesFromVisibleTurnItems(
       const message: ChatMessage = {
         id: item.messageId,
         role: item.type === "user_message" ? "user" : "assistant",
-        text: item.text,
+        text: item.type === "assistant_message" ? localizeAgentNotice(item.text) : item.text,
         ...(item.type === "user_message" && item.context ? { context: item.context } : {}),
         ...((item.attachments?.length ?? 0) > 0
           ? {
