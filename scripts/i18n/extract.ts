@@ -1,3 +1,4 @@
+// @effect-diagnostics nodeBuiltinImport:off globalConsole:off - A command-line report run with node.
 /**
  * Lists interface text the zh-TW catalog does not cover yet, using the same
  * rules as the build plugin. Run after syncing upstream:

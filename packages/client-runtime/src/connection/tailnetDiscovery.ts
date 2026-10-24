@@ -38,7 +38,7 @@ export const mergeDiscoveredServers = (
 };
 
 /** Asks each connected environment which other servers its tailnet has. */
-export const discoverServersThroughEnvironments = Effect.fn(
+const discoverServersThroughEnvironments = Effect.fn(
   "clientRuntime.connection.discoverServersThroughEnvironments",
 )(function* () {
   const registry = yield* EnvironmentRegistry.EnvironmentRegistry;
@@ -107,7 +107,7 @@ export class TailscaleApiError extends Schema.TaggedError<TailscaleApiError>()(
 const CLIENT_ONLY_OS = new Set(["android", "iOS"]);
 
 /** Where an untagged device may serve T3 Code: its tailnet IPv4, then Tailscale Serve. */
-export const tailscaleApiServerUrls = (
+const tailscaleApiServerUrls = (
   device: (typeof TailscaleApiDevices.Type.devices)[number],
 ): ReadonlyArray<string> => {
   if ((device.tags?.length ?? 0) > 0 || CLIENT_ONLY_OS.has(device.os ?? "")) return [];

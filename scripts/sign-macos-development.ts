@@ -1,4 +1,4 @@
-// @effect-diagnostics nodeBuiltinImport:off - Signing is an electron-builder hook.
+// @effect-diagnostics nodeBuiltinImport:off globalConsole:off - Signing is an electron-builder hook.
 import * as NodeChildProcess from "node:child_process";
 import * as NodeURL from "node:url";
 import { sign as signApplication, type SignOptions } from "@electron/osx-sign";
@@ -31,15 +31,16 @@ export default async function sign(options: SignOptions): Promise<void> {
   const entitlements = NodeURL.fileURLToPath(
     new URL("./entitlements.fork-development.plist", import.meta.url),
   );
+  const signOptions = { ...options };
+  delete signOptions.provisioningProfile;
   await signApplication({
-    ...options,
+    ...signOptions,
     identity: configuration.identity,
     type: "development",
     platform: "darwin",
     // Electron Builder passes a dispatch placeholder, never use it as identity.
     identityValidation: false,
     preAutoEntitlements: false,
-    provisioningProfile: undefined,
     batchCodesignCalls: true,
     optionsForFile: (path, electronVersion) => ({
       ...options.optionsForFile?.(path, electronVersion),

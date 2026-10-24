@@ -28,6 +28,7 @@
         "mobile-native-client.ts",
         "setup-worktree.ts",
         "sign-macos.ts",
+        "sign-macos-development.ts",
         "verify-windows-desktop-artifact.ts",
       ],
       "ignoreDependencies": ["esbuild"],

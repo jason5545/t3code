@@ -1,9 +1,10 @@
+// @effect-diagnostics nodeBuiltinImport:off - Writes a temporary catalog and loads the CommonJS Babel plugin through require.
 import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import * as NodeModule from "node:module";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vite-plus/test";
 
 import { catalogFile } from "./extract.ts";
 

@@ -18,7 +18,7 @@ import { isMcpClientSubject } from "./mcpClientSubject.ts";
  * over the token's `exp` claim. The update lives in this module rather than
  * the repository, and needs no migration, so upstream merges stay small.
  */
-export const RENEWED_SESSION_LIFETIME = Duration.days(30);
+const RENEWED_SESSION_LIFETIME = Duration.days(30);
 // One write per session per day at most, and a connection made at least every
 // 29 days always finds its session alive.
 const RENEW_WITHIN_REMAINING = Duration.days(29);
@@ -32,7 +32,7 @@ const ExtendSessionExpiryInput = Schema.Struct({
 const remainingMillis = (session: AuthSessions.AuthSessionRecord, now: DateTime.DateTime) =>
   session.expiresAt.epochMilliseconds - now.epochMilliseconds;
 
-export const isRenewable = (session: AuthSessions.AuthSessionRecord): boolean =>
+const isRenewable = (session: AuthSessions.AuthSessionRecord): boolean =>
   session.revokedAt === null &&
   // MCP sign-ins last what the user chose with `t3 auth pairing create --session-ttl`.
   !isMcpClientSubject(session.subject) &&
@@ -42,10 +42,7 @@ export const isRenewable = (session: AuthSessions.AuthSessionRecord): boolean =>
   session.expiresAt.epochMilliseconds - session.issuedAt.epochMilliseconds >=
     Duration.toMillis(RENEWED_SESSION_LIFETIME);
 
-export const isRenewalDue = (
-  session: AuthSessions.AuthSessionRecord,
-  now: DateTime.DateTime,
-): boolean => {
+const isRenewalDue = (session: AuthSessions.AuthSessionRecord, now: DateTime.DateTime): boolean => {
   const remaining = remainingMillis(session, now);
   return (
     isRenewable(session) && remaining > 0 && remaining <= Duration.toMillis(RENEW_WITHIN_REMAINING)

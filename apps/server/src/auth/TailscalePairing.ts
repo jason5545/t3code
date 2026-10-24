@@ -45,18 +45,18 @@ import { MCP_CLIENT_SUBJECT } from "./mcpClientSubject.ts";
  * applies, because a web page can reach tailnet addresses and a standard
  * session can run a terminal.
  */
-export const TailscalePairingEnabled = Config.Boolean("T3CODE_TAILSCALE_PAIRING").pipe(
+const TailscalePairingEnabled = Config.Boolean("T3CODE_TAILSCALE_PAIRING").pipe(
   Config.withDefault(false),
 );
 
-export const TAILSCALE_SESSION_SUBJECT_PREFIX = "tailscale:";
-export const TAILSCALE_MCP_SUBJECT_PREFIX = `${MCP_CLIENT_SUBJECT}:${TAILSCALE_SESSION_SUBJECT_PREFIX}`;
+const TAILSCALE_SESSION_SUBJECT_PREFIX = "tailscale:";
+const TAILSCALE_MCP_SUBJECT_PREFIX = `${MCP_CLIENT_SUBJECT}:${TAILSCALE_SESSION_SUBJECT_PREFIX}`;
 const PAIRING_CREDENTIAL_TTL = Duration.minutes(1);
 
-export const tailscaleSessionSubject = (stableNodeId: string) =>
+const tailscaleSessionSubject = (stableNodeId: string) =>
   `${TAILSCALE_SESSION_SUBJECT_PREFIX}${stableNodeId}`;
 
-export const tailscaleMcpSubject = (stableNodeId: string) =>
+const tailscaleMcpSubject = (stableNodeId: string) =>
   `${TAILSCALE_MCP_SUBJECT_PREFIX}${stableNodeId}`;
 
 const MCP_ACCESS_ORDER = AuthMcpClientAccess.literals;
@@ -68,7 +68,7 @@ const isMcpClientAccess = Schema.is(AuthMcpClientAccess);
  * get. Entries that do not parse are skipped, so a typo only leaves that tag
  * on manual approval.
  */
-export const parseMcpTagAccess = (value: string) => {
+const parseMcpTagAccess = (value: string) => {
   const grants = new Map<string, AuthMcpClientAccess>();
   const skipped: Array<string> = [];
   for (const entry of value.split(",")) {
@@ -86,9 +86,7 @@ export const parseMcpTagAccess = (value: string) => {
   return { grants, skipped };
 };
 
-export const TailscaleMcpTags = Config.String("T3CODE_TAILSCALE_MCP_TAGS").pipe(
-  Config.withDefault(""),
-);
+const TailscaleMcpTags = Config.String("T3CODE_TAILSCALE_MCP_TAGS").pipe(Config.withDefault(""));
 
 const isLoopbackRedirect = (redirectUri: string) => {
   try {
@@ -156,7 +154,7 @@ export class TailscaleNodeLookup extends Context.Service<
   }
 >()("t3/auth/TailscalePairing/TailscaleNodeLookup") {}
 
-export const layerNodeLookup = Layer.effect(
+const layerNodeLookup = Layer.effect(
   TailscaleNodeLookup,
   Effect.gen(function* () {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
@@ -198,7 +196,7 @@ export class EnvironmentProbe extends Context.Service<
 
 const decodeDescriptor = Schema.decodeUnknownEffect(ExecutionEnvironmentDescriptor);
 
-export const layerEnvironmentProbe = Layer.effect(
+const layerEnvironmentProbe = Layer.effect(
   EnvironmentProbe,
   Effect.gen(function* () {
     const http = yield* HttpClient.HttpClient;
