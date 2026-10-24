@@ -197,6 +197,7 @@ describe("autoTranslate", () => {
       `const STATES = { cancel: "Cancel", icon: "folder" };`,
       `const b = { notice: "Could not save" };`,
       `track("Cancel");`,
+      `const err = new Error("Could not save", { cause });`,
     ].join("\n");
     const output = transform(source, "components/chat/ProviderStatusBanner.tsx");
     expect(output).toContain(`fail(detail ?? __t3_t("Could not save", "無法儲存"))`);
@@ -209,6 +210,7 @@ describe("autoTranslate", () => {
     expect(output).toContain(`notice: __t3_t("Could not save", "無法儲存")`);
     // A single word handed to a call is usually an identifier.
     expect(output).toContain(`track("Cancel")`);
+    expect(output).toContain(`new Error(__t3_t("Could not save", "無法儲存"), {`);
     expect(transform(source)).toBe(untouched(source));
   });
 

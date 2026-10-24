@@ -529,6 +529,11 @@ module.exports = function autoTranslate(babel, options) {
         for (const arg of args) translateSentences(state, arg, "argument");
       }
     },
+    // `throw new Error("…")` in a display file carries text a toast shows as is.
+    NewExpression(path, state) {
+      if (!state.displayFile) return;
+      for (const arg of path.get("arguments")) translateSentences(state, arg, "argument");
+    },
   };
 
   return {

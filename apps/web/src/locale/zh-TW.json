@@ -7122,5 +7122,16 @@
   "Search labels…": "搜尋標籤…",
   "Search authors…": "搜尋作者…",
   "Approval feedback": "核准意見",
-  "Send approval feedback without attachments or added context.": "核准意見只能傳送文字，請移除附件和加入的上下文。"
+  "Send approval feedback without attachments or added context.": "核准意見只能傳送文字，請移除附件和加入的上下文。",
+  "The file could not be fetched. The host may block browser access (CORS), or the connection may be unavailable.": "無法取得這個檔案。對方主機可能不允許瀏覽器存取（CORS），或是連線目前無法使用。",
+  "The file could not be fetched (HTTP {response.status}).": "無法取得這個檔案（HTTP {response.status}）。",
+  "This link returned a web page instead of media. Open the original URL.": "這個連結回傳的是網頁，不是媒體檔案。請開啟原始網址。",
+  "The browser could not decode this image for copying. Try saving it instead.": "瀏覽器無法解碼這張圖片來複製，請改用儲存。",
+  "This image is too large or has no usable dimensions. Try saving it instead.": "這張圖片太大或沒有可用的尺寸，請改用儲存。",
+  "Image copying is unavailable in this browser.": "這個瀏覽器無法複製圖片。",
+  "The image could not be converted to PNG.": "無法把這張圖片轉成 PNG。",
+  "This media is unavailable. Try reopening the preview.": "無法使用這個媒體，請重新開啟預覽。",
+  "Reconnect to this environment and try again.": "請重新連線到這個環境後再試一次。",
+  "The environment returned an invalid media URL.": "環境回傳了無效的媒體網址。",
+  "Image copying is unavailable. Use a secure browser connection or save the image.": "無法複製圖片。請改用安全的瀏覽器連線，或儲存圖片。"
 }
