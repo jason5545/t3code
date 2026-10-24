@@ -2793,7 +2793,7 @@
   "Preparing voice input": "正在準備語音輸入",
   "Preparing worktree": "正在準備工作樹",
   "Preparing worktree...": "正在準備工作樹…",
-  "Preparing {noun} download…": "正在準備下載 {noun}…",
+  "Preparing {noun} download…": "正在準備下載{noun}…",
   "Preset…": "預設…",
   "Press a shortcut. Use {0} to clear. Shortcuts are environment-wide. Projects using the same action share its shortcut.": "請按下快捷鍵。按 {0} 可清除。快捷鍵套用到整個環境，使用相同動作的專案會共用快捷鍵。",
   "Press Shift+Escape to leave the browser page.": "按 Shift+Escape 離開瀏覽器頁面。",
@@ -3414,7 +3414,7 @@
   "Save thread settings": "儲存對話設定",
   "Save to workspace": "儲存到工作區",
   "Save your work, then sign out and back in. Your setup will be waiting here.": "請先儲存你的工作，再登出並重新登入。你的設定會在這裡等你。",
-  "Save {noun}": "儲存 {noun}",
+  "Save {noun}": "儲存{noun}",
   "Saved": "已儲存",
   "Saved for {0}.": "已為 {0} 儲存。",
   "Saved securely and kept private": "已安全儲存並保持私密",
@@ -7101,5 +7101,8 @@
   "Available from a thread.": "在對話裡可用。",
   "Compacts automatically at about {0} tokens.": "約 {0} 個 token 時會自動壓縮。",
   "Context for {modelDisplayName} compacts automatically when needed.": "{modelDisplayName} 的上下文會在需要時自動壓縮。",
-  "Context compacts automatically when needed.": "上下文會在需要時自動壓縮。"
+  "Context compacts automatically when needed.": "上下文會在需要時自動壓縮。",
+  "Could not open media menu": "無法開啟媒體選單",
+  "Could not {0}": "無法{0}",
+  "complete media action": "完成媒體操作"
 }
