@@ -12,6 +12,7 @@
     "apps/web/src/components/CommandPalette.logic.ts",
     "apps/web/src/components/promptLinks/HostedPromptLinkLanding.tsx",
     "apps/web/src/components/chat/ComposerServerUpdateStatus.tsx",
+    "apps/web/src/components/chat/ContextWindowMeter.logic.ts",
     "apps/mobile/src/components/RenderErrorBoundary.tsx",
     "apps/mobile/src/components/VideoPreviewModal.ios.tsx",
     "apps/mobile/src/features/cloud/T3ConnectProfilePage.tsx",

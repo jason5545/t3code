@@ -7098,5 +7098,8 @@
   "Available for Git repositories.": "Git 存放庫可用。",
   "No pull request on this branch yet.": "這個分支還沒有提取請求。",
   "No linked pull requests available.": "沒有已連結的提取請求。",
-  "Available from a thread.": "在對話裡可用。"
+  "Available from a thread.": "在對話裡可用。",
+  "Compacts automatically at about {0} tokens.": "約 {0} 個 token 時會自動壓縮。",
+  "Context for {modelDisplayName} compacts automatically when needed.": "{modelDisplayName} 的上下文會在需要時自動壓縮。",
+  "Context compacts automatically when needed.": "上下文會在需要時自動壓縮。"
 }
