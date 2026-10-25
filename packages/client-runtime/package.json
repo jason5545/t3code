@@ -263,6 +263,10 @@
       "types": "./src/providerStatusMessages.ts",
       "default": "./src/providerStatusMessages.ts"
     },
+    "./changeRequestTermText": {
+      "types": "./src/changeRequestTermText.ts",
+      "default": "./src/changeRequestTermText.ts"
+    },
     "./state/shell": {
       "types": "./src/state/shell.ts",
       "default": "./src/state/shell.ts"

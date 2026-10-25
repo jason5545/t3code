@@ -1,3 +1,4 @@
+import { withChineseChangeRequestTerms } from "@t3tools/client-runtime/changeRequestTermText";
 import { setChineseProviderOptionLabels } from "@t3tools/client-runtime/providerStatusMessages";
 import { setChineseDurations } from "@t3tools/shared/durationFormat";
 import { createElement, Fragment, type ReactNode } from "react";
@@ -26,7 +27,7 @@ export function __t3_t(english: string, chinese: string): string {
 
 export function __t3_tf(english: Parts, chinese: Parts, values: ReadonlyArray<unknown>): string {
   let text = "";
-  for (const part of useChinese ? chinese : english) {
+  for (const part of useChinese ? withChineseChangeRequestTerms(chinese, values) : english) {
     text += typeof part === "number" ? String(values[part]) : part;
   }
   return text;
@@ -37,7 +38,7 @@ export function __t3_tj(
   chinese: Parts,
   values: ReadonlyArray<ReactNode>,
 ): ReactNode {
-  const parts = useChinese ? chinese : english;
+  const parts = useChinese ? withChineseChangeRequestTerms(chinese, values) : english;
   return createElement(
     Fragment,
     null,
