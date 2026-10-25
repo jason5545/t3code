@@ -31,7 +31,6 @@ import { cn } from "~/lib/utils";
 import { localizeProviderOptionLabel } from "~/locale/serverMessages";
 import { deriveProviderInstanceEntries, shouldShowInstanceBadge } from "../../providerInstances";
 
-/** Geometry and preview limits stay identical in lineage and timeline tooltips. */
 export function SubagentTooltipContent(props: {
   title: string;
   model: string | null;

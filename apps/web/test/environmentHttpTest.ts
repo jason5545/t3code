@@ -123,6 +123,7 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
               }),
             )
             .handle("webSocketTicket", () => unexpectedEndpoint("auth.webSocketTicket"))
+            .handle("webSocketTicketFor", () => unexpectedEndpoint("auth.webSocketTicketFor"))
             .handle(
               "pairingCredential",
               Effect.fn("test.environment.auth.pairingCredential")(function* ({ payload }) {

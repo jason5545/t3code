@@ -64,12 +64,11 @@ import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 import java.util.Locale
 
-private val TABS = listOf("threads", "pullRequests", "settings")
-
 class T3WorkspaceNavigationModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("T3WorkspaceNavigation")
     View(T3WorkspaceNavigationView::class) {
+      Prop("tabs") { view: T3WorkspaceNavigationView, value: List<String> -> view.tabs = value }
       Prop("selectedTab") { view: T3WorkspaceNavigationView, value: String ->
         view.selectedTab = value
       }
@@ -131,6 +130,7 @@ class T3WorkspaceNavigationView(
   private val onTabSelected by EventDispatcher()
   private val onNewThread by EventDispatcher()
   private val onOverlayChange by EventDispatcher()
+  var tabs by mutableStateOf(listOf("threads", "pullRequests", "usage", "settings"))
   var selectedTab by mutableStateOf("threads")
   var rail by mutableStateOf(false)
   var dark by mutableStateOf(false)
@@ -185,7 +185,7 @@ class T3WorkspaceNavigationView(
                 tonalElevation = androidx.compose.ui.unit.Dp(0f),
                 windowInsets = WindowInsets(0),
               ) {
-                TABS.forEach { tab ->
+                tabs.forEach { tab ->
                   NavigationBarItem(
                     selected = selectedTab == tab,
                     onClick = { onTabSelected(mapOf("tab" to tab)) },
@@ -281,12 +281,14 @@ class T3WorkspaceNavigationView(
             )
           }
         }
-        newThreadButton(fraction) {
-          expanded = false
-          onNewThread(emptyMap<String, Any>())
+        if (selectedTab == "threads") {
+          newThreadButton(fraction) {
+            expanded = false
+            onNewThread(emptyMap<String, Any>())
+          }
         }
         Spacer(Modifier.weight(1f))
-        TABS.forEach { tab ->
+        tabs.forEach { tab ->
           railItem(tab, fraction) {
             expanded = false
             onTabSelected(mapOf("tab" to tab))
@@ -370,7 +372,8 @@ class T3WorkspaceNavigationView(
 
   private fun tabTitle(tab: String) = when (tab) {
     "threads" -> zh("Chats", "對話")
-    "pullRequests" -> zh("PRs", "PR")
+    "pullRequests" -> zh("Pulls", "PR")
+    "usage" -> zh("Usage", "用量")
     else -> zh("Settings", "設定")
   }
 
@@ -382,6 +385,7 @@ class T3WorkspaceNavigationView(
     when (tab) {
       "threads" -> R.drawable.t3_chats
       "pullRequests" -> R.drawable.t3_pull_requests
+      "usage" -> R.drawable.t3_usage
       else -> R.drawable.t3_settings
     }
   )

@@ -1,7 +1,9 @@
 import { useAtomValue } from "@effect/atom-react";
+import { useEffect } from "react";
 
 import { undoLatestThreadAction, useThreadUndoNotice } from "../../hooks/showThreadUndoNotice";
 import { shortcutLabelForCommand } from "../../keybindings";
+import { announce, cancelAnnouncement } from "../../lib/announce";
 import { threadUndoNoticeText } from "../../locale/assembledText";
 import { primaryServerKeybindingsAtom } from "../../state/server";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -11,15 +13,24 @@ export function SidebarThreadUndoNotice() {
   const notice = useThreadUndoNotice((state) => state.notice);
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
 
-  if (!notice) return null;
   const shortcut = shortcutLabelForCommand(keybindings, "thread.undo");
+  const undoLabel = shortcut ? `${shortcut} to undo` : "Undo";
+  const summary = notice ? threadUndoNoticeText(notice) : null;
+
+  // A live region that mounts already filled is skipped by screen readers, and settling
+  // usually moves focus to the next thread at the same moment.
+  useEffect(() => {
+    if (summary) announce(`${summary}${undoLabel}`, "thread-undo-notice");
+    else cancelAnnouncement("thread-undo-notice");
+  }, [summary, undoLabel]);
+
+  if (!summary) return null;
+
   return (
-    <Alert role="status" variant="sidebar">
+    <Alert role="group" variant="sidebar">
       <AlertDescription>
-        {threadUndoNoticeText(notice)}
-        <InlineButton onClick={undoLatestThreadAction}>
-          {shortcut ? `${shortcut} to undo` : "Undo"}
-        </InlineButton>
+        {summary}
+        <InlineButton onClick={undoLatestThreadAction}>{undoLabel}</InlineButton>
       </AlertDescription>
     </Alert>
   );

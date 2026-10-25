@@ -167,7 +167,7 @@ export const authenticateMediaRequest =
   Effect.fnUntraced(function* (requiredScope: AuthEnvironmentScope) {
     const request = yield* HttpServerRequest.HttpServerRequest;
     const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
-    const session = yield* serverAuth.authenticateWebSocketUpgrade(request).pipe(
+    const session = yield* serverAuth.authenticateWebSocketUpgrade(request, "media").pipe(
       Effect.catch((error) =>
         Effect.gen(function* () {
           if (EnvironmentAuth.isServerAuthCredentialError(error)) {
@@ -432,6 +432,20 @@ export const layer = HttpApiBuilder.group(
             yield* appendCredentialResponseHeaders;
             yield* fork.renewBrowserSessionCookie(session);
             return yield* serverAuth.issueWebSocketTicket(session);
+          },
+          Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
+            failEnvironmentInternal("websocket_ticket_issuance_failed", error),
+          ),
+        ),
+      )
+      .handle(
+        "webSocketTicketFor",
+        Effect.fn("environment.auth.webSocketTicketFor")(
+          function* (args) {
+            yield* annotateEnvironmentRequest(args.endpoint.name);
+            const session = yield* EnvironmentAuthenticatedPrincipal;
+            yield* appendCredentialResponseHeaders;
+            return yield* serverAuth.issueWebSocketTicket(session, { use: args.params.use });
           },
           Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
             failEnvironmentInternal("websocket_ticket_issuance_failed", error),

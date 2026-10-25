@@ -618,6 +618,19 @@ it.effect("MCP lists, reads and searches never show an ephemeral thread", () =>
           ),
           [visible],
         );
+        for (const query of ["First line", "needle"]) {
+          assert.deepEqual(
+            (yield* search.searchThreads({ query, limit: 10 })).matches.map((hit) => hit.threadId),
+            [visible],
+          );
+        }
+        // Index segments keep deleted text until a merge, so ephemeral text never enters it.
+        const sql = yield* SqlClient.SqlClient;
+        const indexed = yield* sql<{ readonly hits: number }>`
+          SELECT count(*) AS hits FROM orchestration_v2_message_search
+          WHERE orchestration_v2_message_search MATCH 'needle'
+        `;
+        assert.equal(indexed[0]?.hits, 1);
       }).pipe(
         Effect.provide(makeLayer({ baseDir, database: SqlitePersistence.layerMemory, deletes })),
       );

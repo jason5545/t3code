@@ -73,7 +73,9 @@ function makeHarness(scratchRoot: string, baseDir: string) {
     { databaseLayer: layerDatabase, runEffectWorker: false },
   );
   const layerSettings = ServerSettings.layerTest({
-    providerInstances: { [ompInstance]: { driver: "pi", config: { binaryPath: "omp" } } },
+    providerInstances: {
+      [ompInstance]: { driver: "pi", enabled: true, config: { binaryPath: "omp" } },
+    },
   });
   const layerReceipts = CommandReceiptStore.layer.pipe(Layer.provide(layerDatabase));
   const layerStores = Layer.mergeAll(

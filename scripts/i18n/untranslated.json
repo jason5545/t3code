@@ -196,7 +196,17 @@
     "EAS Simulator",
     "opened, reopened",
     "opened",
-    "{0} GiB"
+    "{0} GiB",
+    "stop guest share",
+    "resolve guest message",
+    "save {label} account settings",
+    "save {definition.label} token",
+    "max-h-64 cursor-text overflow-auto whitespace-pre-wrap break-words font-mono text-secondary-label text-(length:--font-size-code,var(--text-2xs)) leading-relaxed select-text",
+    "circle-alert",
+    "font-medium text-warning",
+    "font-medium text-destructive",
+    "Muse Code",
+    "10 seconds"
   ],
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
