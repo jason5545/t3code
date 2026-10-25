@@ -316,4 +316,24 @@ describe("claudeRateLimitEventToUpdate", () => {
       ],
     });
   });
+
+  it("keeps the top-level window when unifiedWindows does not report it", () => {
+    const event = {
+      status: "allowed",
+      rateLimitType: "five_hour",
+      utilization: 0.5,
+      unifiedWindows: { seven_day_unknown: { utilization: 0.1 } },
+    } as const;
+    expect(claudeRateLimitEventToUpdate(event, noNames)).toEqual({
+      windows: [
+        {
+          id: "five_hour",
+          kind: "session",
+          label: "Session",
+          usedPercent: 50,
+          windowDurationMins: 300,
+        },
+      ],
+    });
+  });
 });

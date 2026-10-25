@@ -182,9 +182,14 @@ function readStreamedWindows(info: SDKRateLimitInfo): ReadonlyArray<StreamedWind
       }
     }
   }
-  if (windows.length === 0 && info.rateLimitType && typeof info.utilization === "number") {
+  const topLevelType = info.rateLimitType;
+  if (
+    topLevelType &&
+    typeof info.utilization === "number" &&
+    !windows.some((window) => window.type === topLevelType)
+  ) {
     windows.push({
-      type: info.rateLimitType,
+      type: topLevelType,
       utilization: info.utilization,
       resetsAt: info.resetsAt,
     });
