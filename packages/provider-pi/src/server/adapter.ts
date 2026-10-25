@@ -2270,8 +2270,8 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
         const existing = threadInput.existingProviderThread;
         const resumeId = existing?.nativeThreadRef?.nativeId;
         const needsNewSession = resumeId == null && registrationAttempted;
-        // An ephemeral conversation has no session file: switch_session would
-        // load an empty one, so only this process's own session can continue.
+        // An ephemeral conversation ends with its OMP process, so only this
+        // process's own session can continue.
         if (ephemeral) {
           if (resumeId != null && resumeId === lastNativeThreadId && threadState !== null) {
             return threadState.providerThread;
@@ -2325,10 +2325,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           baselineThinking = recordString(stateData, "thinkingLevel") ?? null;
         }
         // switch_session accepts a file path, not Pi's display session UUID.
-        // Ephemeral sessions have no file and never switch, so the id names them.
-        const nativeId =
-          recordString(stateData, "sessionFile") ??
-          (ephemeral ? recordString(stateData, "sessionId") : undefined);
+        const nativeId = recordString(stateData, "sessionFile");
         if (nativeId === undefined) {
           return yield* protocolError("get_state returned no persisted sessionFile", stateData);
         }

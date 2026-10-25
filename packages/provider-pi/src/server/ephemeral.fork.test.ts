@@ -8,11 +8,11 @@ import {
 import { T3_MCP_BEARER_ENV, T3_MCP_URL_ENV } from "./mcpExtensionSource.ts";
 
 describe("ephemeral OMP launch", () => {
-  it("runs without a session file, title model or T3 MCP, under the overlay", () => {
+  it("keeps its sessions in the Scratch folder, without a title model or T3 MCP", () => {
     const overlayPath = "/cache/omp-ephemeral-session.yml";
     const launch = buildOmpEphemeralLaunch({
       launchArgs: ["--thinking", "high"],
-      restrictions: ompEphemeralLaunchArgs(overlayPath),
+      restrictions: ompEphemeralLaunchArgs(overlayPath, "/scratch/thread/.omp-sessions"),
       environment: {
         PATH: "/usr/bin",
         [T3_MCP_URL_ENV]: "http://127.0.0.1:3773/mcp",
@@ -22,7 +22,10 @@ describe("ephemeral OMP launch", () => {
       runtimeMode: "approval-required",
     });
 
-    assert.deepEqual(launch.args.slice(0, 3), ["--mode", "rpc", "--no-session"]);
+    assert.notInclude(launch.args, "--no-session");
+    const sessionDir = launch.args.indexOf("--session-dir");
+    assert.isAbove(sessionDir, launch.args.indexOf("high"));
+    assert.equal(launch.args[sessionDir + 1], "/scratch/thread/.omp-sessions");
     assert.include(launch.args, "--no-title");
     const config = launch.args.indexOf("--config");
     assert.isAbove(config, launch.args.indexOf("high"));
@@ -40,7 +43,7 @@ describe("ephemeral OMP launch", () => {
   it("keeps the tools and extensions of any OMP thread", () => {
     const launch = buildOmpEphemeralLaunch({
       launchArgs: ["--extension", "/home/me/.omp/agent/extensions/local-models.ts"],
-      restrictions: ompEphemeralLaunchArgs("/cache/overlay.yml"),
+      restrictions: ompEphemeralLaunchArgs("/cache/overlay.yml", "/scratch/thread/.omp-sessions"),
       environment: { PATH: "/usr/bin" },
       extensionPath: "/cache/pi-t3-mcp-extension.ts",
       runtimeMode: "full-access",

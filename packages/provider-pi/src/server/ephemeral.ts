@@ -1,7 +1,8 @@
 /**
- * Fork patch 11: an ephemeral thread's OMP process keeps no session file, title
- * model, T3 MCP or OMP memory, and an overlay keeps every model call on this
- * machine. Tools, extensions and the user's MCP servers are any OMP thread's.
+ * Fork patch 11: an ephemeral thread's OMP process runs like any OMP thread but
+ * keeps its sessions in the thread's Scratch folder, which the purge removes,
+ * and has no title model, T3 MCP or OMP memory; an overlay keeps every model
+ * call on this machine.
  */
 import { isLoopbackBaseUrl } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
@@ -40,11 +41,14 @@ export function ompEphemeralOverlay(models: ReadonlyArray<OmpModelEndpoint>): st
 }
 
 /** Appended after the user's launch args so none of them can lift a restriction. */
-export function ompEphemeralLaunchArgs(overlayPath: string): ReadonlyArray<string> {
-  return ["--no-title", "--config", overlayPath];
+export function ompEphemeralLaunchArgs(
+  overlayPath: string,
+  sessionDir: string,
+): ReadonlyArray<string> {
+  return ["--no-title", "--session-dir", sessionDir, "--config", overlayPath];
 }
 
-/** No session file and no T3 MCP; the T3 extension still loads for the approval hook. */
+/** No T3 MCP; the T3 extension still loads for the approval hook. */
 export function buildOmpEphemeralLaunch(input: {
   readonly launchArgs: ReadonlyArray<string>;
   readonly restrictions: ReadonlyArray<string>;
@@ -58,7 +62,6 @@ export function buildOmpEphemeralLaunch(input: {
     mcpSession: undefined,
     extensionPath: input.extensionPath,
     ...(input.runtimeMode === undefined ? {} : { runtimeMode: input.runtimeMode }),
-    ephemeral: true,
   });
 }
 
@@ -116,6 +119,6 @@ export const prepareOmpEphemeralLaunch = Effect.fn("PiAdapter.prepareOmpEphemera
     yield* fileSystem
       .writeFileString(input.overlayPath, ompEphemeralOverlay(models))
       .pipe(Effect.mapError((cause) => new PiRpcError({ operation: "launch", cause })));
-    return ompEphemeralLaunchArgs(input.overlayPath);
+    return ompEphemeralLaunchArgs(input.overlayPath, `${input.cwd}/.omp-sessions`);
   },
 );
