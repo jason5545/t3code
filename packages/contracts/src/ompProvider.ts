@@ -1,17 +1,14 @@
-import {
-  ProviderDriverKind,
-  ProviderInstanceId,
-  type ProviderInstanceConfigMap,
-} from "./providerInstance.ts";
+import { ProviderDriverKind, type ProviderInstanceConfig } from "./providerInstance.ts";
 
-/** Built-in instances that share a driver but have independent CLI configuration. */
-export const DEFAULT_PROVIDER_INSTANCES: ProviderInstanceConfigMap = {
-  [ProviderInstanceId.make("omp")]: {
-    driver: ProviderDriverKind.make("pi"),
-    displayName: "OMP",
-    enabled: true,
-    config: { binaryPath: "omp", launchArgs: "", customModels: [] },
-  },
+/**
+ * The instance Settings → Providers adds for OMP: the Pi driver with its own CLI configuration.
+ * Not a default, since a server without `omp` would show it as not installed.
+ */
+export const OMP_PROVIDER_INSTANCE: ProviderInstanceConfig = {
+  driver: ProviderDriverKind.make("pi"),
+  displayName: "OMP",
+  enabled: true,
+  config: { binaryPath: "omp", launchArgs: "", customModels: [] },
 };
 
 const OMP_MARK_SVG =

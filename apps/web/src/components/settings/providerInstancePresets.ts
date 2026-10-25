@@ -1,16 +1,10 @@
-import {
-  DEFAULT_PROVIDER_INSTANCES,
-  ProviderDriverKind,
-  ProviderInstanceId,
-} from "@t3tools/contracts";
+import { OMP_PROVIDER_INSTANCE, ProviderDriverKind } from "@t3tools/contracts";
 
 import { providerClients } from "./providerDriverMeta";
 
 const PI = ProviderDriverKind.make("pi");
 const OMP = ProviderDriverKind.make("omp");
-const OMP_DEFAULT_CONFIG = DEFAULT_PROVIDER_INSTANCES[ProviderInstanceId.make("omp")]!.config as
-  | Record<string, unknown>
-  | undefined;
+const OMP_DEFAULT_CONFIG = OMP_PROVIDER_INSTANCE.config as Record<string, unknown> | undefined;
 
 /**
  * The creation wizard keys its choices and drafts by driver kind. OMP is a preset of the

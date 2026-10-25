@@ -79,10 +79,9 @@ const disabledDefaultSlots = (
   ...drivers: ReadonlyArray<string>
 ): ContractServerSettings["providerInstances"] =>
   Object.fromEntries(
-    // The fork's default OMP instance (Pi driver) would probe the real `omp`, so it is always off.
-    [...drivers, "omp"].map((driver) => [
+    drivers.map((driver) => [
       ProviderInstanceId.make(driver),
-      { driver: ProviderDriverKind.make(driver === "omp" ? "pi" : driver), enabled: false },
+      { driver: ProviderDriverKind.make(driver), enabled: false },
     ]),
   );
 

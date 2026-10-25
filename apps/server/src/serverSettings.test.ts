@@ -1,6 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import {
-  DEFAULT_PROVIDER_INSTANCES,
   DEFAULT_SERVER_SETTINGS,
   ModelSelection,
   ProjectId,
@@ -821,9 +820,7 @@ it.layer(NodeServices.layer)("server settings", (it) => {
 
       const settings = yield* serverSettings.getSettings;
 
-      // Legacy files omit `providerInstances`, so the fork's OMP default joins the migrated slots.
       assert.deepEqual(settings.providerInstances, {
-        ...DEFAULT_PROVIDER_INSTANCES,
         [ProviderInstanceId.make("codex")]: {
           driver: ProviderDriverKind.make("codex"),
           config: { binaryPath: "/opt/guard/bin/codex" },

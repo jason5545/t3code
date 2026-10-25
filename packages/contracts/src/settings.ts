@@ -40,7 +40,6 @@ import {
   PreviewViewportSetting,
   PreviewZoomFactor,
 } from "./preview.ts";
-import { DEFAULT_PROVIDER_INSTANCES } from "./ompProvider.ts";
 import {
   ProviderInstanceConfig,
   ProviderInstanceId,
@@ -1296,7 +1295,7 @@ export const ServerSettings = Schema.Struct({
   // round-trip without loss. See providerInstance.ts for the forward/backward
   // compatibility invariant.
   providerInstances: Schema.Record(ProviderInstanceId, ProviderInstanceConfig).pipe(
-    Schema.withDecodingDefault(Effect.succeed(DEFAULT_PROVIDER_INSTANCES)),
+    Schema.withDecodingDefault(Effect.succeed({})),
   ),
   observability: ObservabilitySettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   sourceControlHosts: Schema.Record(Schema.String, SourceControlHostSettings).pipe(

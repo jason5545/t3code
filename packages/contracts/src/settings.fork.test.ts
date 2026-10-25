@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vite-plus/test";
 import * as Schema from "effect/Schema";
 
-import { DEFAULT_PROVIDER_INSTANCES } from "./ompProvider.ts";
 import { DEFAULT_SERVER_SETTINGS, ServerSettings, ServerSettingsPatch } from "./settings.ts";
 
 const decodeServerSettings = Schema.decodeUnknownSync(ServerSettings);
 const decodeServerSettingsPatch = Schema.decodeUnknownSync(ServerSettingsPatch);
 
 describe("ServerSettings.providerInstances (fork)", () => {
-  it("defaults to OMP on the Pi driver when legacy configs omit the key", () => {
-    expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual(DEFAULT_PROVIDER_INSTANCES);
+  // OMP is added per machine; a server without `omp` showed it as not installed.
+  it("adds no OMP instance when settings omit the key", () => {
+    expect(DEFAULT_SERVER_SETTINGS.providerInstances).toEqual({});
+    expect(decodeServerSettings({}).providerInstances).toEqual({});
   });
 
-  it("preserves explicitly empty maps rather than restoring OMP", () => {
+  it("preserves explicitly empty maps", () => {
     expect(decodeServerSettings({ providerInstances: {} }).providerInstances).toEqual({});
     expect(decodeServerSettingsPatch({ providerInstances: {} }).providerInstances).toEqual({});
   });
