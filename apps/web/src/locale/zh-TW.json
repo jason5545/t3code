@@ -6220,6 +6220,7 @@
   "Start a task": "開始工作",
   "The thread could not be {0}.": "無法完成這個對話操作。",
   "Delete thread?": "要刪除對話嗎？",
+  "Delete thread": "刪除對話",
   "“{thread.title}” will be permanently deleted, including its terminal history.": "「{thread.title}」會被永久刪除，包括它的終端機記錄。",
   "Reconnect to merge.": "重新連線後才能合併。",
   "This environment can display stacks but cannot merge them.": "此環境可以顯示堆疊，但無法合併。",

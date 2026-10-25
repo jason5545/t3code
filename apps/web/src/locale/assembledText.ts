@@ -43,6 +43,15 @@ export function threadUndoNoticeText(notice: {
   return `${notice.action} ${notice.count} ${noun}, `;
 }
 
+/** The sidebar's confirmation before deleting selected threads. */
+export function deleteThreadsConfirmation(count: number): string {
+  if (useChinese) return `要刪除 ${count} 個對話嗎？\n這會永久清除這些對話的歷史紀錄。`;
+  return [
+    `Delete ${count} thread${count === 1 ? "" : "s"}?`,
+    "This permanently clears conversation history for these threads.",
+  ].join("\n");
+}
+
 /** The Update everything confirmation's title, a question about its summary. */
 export function updateEverythingQuestion(summary: string): string {
   return `${summary}${useChinese ? "？" : "?"}`;

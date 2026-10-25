@@ -227,6 +227,7 @@ import {
 } from "./sidebar/SidebarThreadRow";
 import { SidebarDraftBlock } from "./sidebar/SidebarDraftBlock";
 import { ephemeralDeleteConfirmation } from "./ephemeralThreadText";
+import { deleteThreadsConfirmation } from "../locale/assembledText";
 import {
   SidebarDragBoundary,
   SidebarSectionHeader,
@@ -788,6 +789,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     markThreadUnread,
     archiveThread,
     deleteThread,
+    confirmAndDeleteThread,
   } = useThreadActions();
   const updateThreadMetadata = useOrchestrationCommand(threadEnvironment.updateMetadata, {
     reportFailure: false,
@@ -1377,6 +1379,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     threadRef: ScopedThreadRef,
     opts: { coSettlingKeys?: ReadonlySet<string> } = {},
   ) => {
+    // Fork patch 11: the server refuses to settle an ephemeral thread; a sweep may cross one.
+    if (isEphemeralThreadShell(readThreadShell(threadRef))) return;
     void (async () => {
       const threadKey = scopedThreadKey(threadRef);
       if (settlingThreadKeysRef.current.has(threadKey)) return;
@@ -1411,6 +1415,20 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     })();
   };
   useEffect(() => registerSettleAndAdvance(attemptSettle), [attemptSettle]);
+  const attemptDelete = (threadRef: ScopedThreadRef) => {
+    void (async () => {
+      const result = await confirmAndDeleteThread(threadRef);
+      if (result._tag === "Success" || isAtomCommandInterrupted(result)) return;
+      const error = squashAtomCommandFailure(result);
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: "Failed to delete thread",
+          description: error instanceof Error ? error.message : "An error occurred.",
+        }),
+      );
+    })();
+  };
   const settleThreads = (threadKeys: readonly string[]) => {
     const coSettlingKeys = new Set(threadKeys);
     for (const threadKey of threadKeys) {
@@ -2209,8 +2227,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         const confirmed = await settlePromise(() =>
           api.dialogs.confirm(
             [
-              `Delete ${count} thread${count === 1 ? "" : "s"}?`,
-              "This permanently clears conversation history for these threads.",
+              deleteThreadsConfirmation(count),
               ...(includesEphemeral ? [ephemeralDeleteConfirmation()] : []),
             ].join("\n"),
             { variant: "destructive" },
@@ -3030,6 +3047,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             onSettle={attemptSettle}
                             onActionSweepStart={startActionSweep}
                             onUnsettle={attemptUnsettle}
+                            onDelete={attemptDelete}
                             onSnooze={attemptSnooze}
                             onUnsnooze={attemptUnsnooze}
                             onUnpin={attemptUnpin}
