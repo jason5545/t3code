@@ -1,4 +1,8 @@
-import { type EnvironmentId, type ScopedProjectRef } from "@t3tools/contracts";
+import {
+  isEphemeralThreadShell,
+  type EnvironmentId,
+  type ScopedProjectRef,
+} from "@t3tools/contracts";
 import type { EnvironmentServerConfig } from "@t3tools/client-runtime/connection";
 import { ThreadContextDragGhost } from "./chat/ThreadContextDragGhost";
 import {
@@ -209,6 +213,7 @@ import {
   type SidebarSweepAction,
 } from "./sidebar/SidebarThreadRow";
 import { SidebarDraftBlock } from "./sidebar/SidebarDraftBlock";
+import { ephemeralDeleteConfirmation } from "./ephemeralThreadText";
 import {
   SidebarDragBoundary,
   SidebarSectionHeader,
@@ -2168,12 +2173,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         return;
       }
       if (clicked.value !== "delete") return;
-      if (confirmThreadDelete) {
+      const includesEphemeral = threadKeys.some((threadKey) =>
+        isEphemeralThreadShell(threadByKeyRef.current.get(threadKey)),
+      );
+      if (confirmThreadDelete || includesEphemeral) {
         const confirmed = await settlePromise(() =>
           api.dialogs.confirm(
             [
               `Delete ${count} thread${count === 1 ? "" : "s"}?`,
               "This permanently clears conversation history for these threads.",
+              ...(includesEphemeral ? [ephemeralDeleteConfirmation()] : []),
             ].join("\n"),
             { variant: "destructive" },
           ),
@@ -2501,13 +2510,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
             return;
           }
           case "delete": {
-            if (confirmThreadDelete) {
+            const ephemeral = isEphemeralThreadShell(thread);
+            if (confirmThreadDelete || ephemeral) {
               const confirmed = await settlePromise(() =>
                 api.dialogs.confirm(
-                  [
-                    `Delete thread "${thread.title}"?`,
-                    "This permanently clears conversation history for this thread.",
-                  ].join("\n"),
+                  ephemeral
+                    ? ephemeralDeleteConfirmation()
+                    : [
+                        `Delete thread "${thread.title}"?`,
+                        "This permanently clears conversation history for this thread.",
+                      ].join("\n"),
                   { variant: "destructive" },
                 ),
               );

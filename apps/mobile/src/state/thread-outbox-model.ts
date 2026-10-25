@@ -73,6 +73,8 @@ export interface QueuedThreadCreation {
   readonly worktreePath: string | null;
   readonly startFromOrigin?: boolean;
   readonly pullRequestReference?: string;
+  /** Fork patch 11: such a message is never written to disk. */
+  readonly ephemeral?: boolean;
 }
 
 export interface QueuedThreadMessage {

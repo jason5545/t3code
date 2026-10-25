@@ -7133,5 +7133,14 @@
   "This media is unavailable. Try reopening the preview.": "無法使用這個媒體，請重新開啟預覽。",
   "Reconnect to this environment and try again.": "請重新連線到這個環境後再試一次。",
   "The environment returned an invalid media URL.": "環境回傳了無效的媒體網址。",
-  "Image copying is unavailable. Use a secure browser connection or save the image.": "無法複製圖片。請改用安全的瀏覽器連線，或儲存圖片。"
+  "Image copying is unavailable. Use a secure browser connection or save the image.": "無法複製圖片。請改用安全的瀏覽器連線，或儲存圖片。",
+  "Ephemeral": "無痕",
+  "Ephemeral thread": "無痕對話",
+  "Conversation ended and erased": "對話已結束並清除",
+  "Nothing is kept once the conversation ends": "對話結束後不留任何紀錄",
+  "Ephemeral threads keep no stash": "無痕對話不能擱置提示詞",
+  "Delete this ephemeral thread? Its conversation is erased at once and cannot be recovered.": "要刪除這個無痕對話嗎？對話會立即清除，無法復原。",
+  "Nothing of this ephemeral thread was kept.": "這個無痕對話沒有留下任何紀錄。",
+  "Back to threads": "回到對話列表",
+  "This ephemeral thread is erased at once and cannot be recovered.": "這個無痕對話會立即清除，無法復原。"
 }

@@ -2,9 +2,11 @@ import { assert, describe, it } from "@effect/vitest";
 
 import {
   buildOmpEphemeralLaunch,
+  OMP_EPHEMERAL_TOOLS,
+  OMP_FOREIGN_CONFIG_SOURCES,
   ompEphemeralLaunchArgs,
   ompEphemeralOverlay,
-  OMP_FOREIGN_CONFIG_SOURCES,
+  ompToolsBeyondAllowlist,
 } from "./ephemeral.ts";
 import { T3_MCP_BEARER_ENV, T3_MCP_URL_ENV } from "./mcpExtensionSource.ts";
 
@@ -25,13 +27,11 @@ describe("ephemeral OMP launch", () => {
 
     assert.deepEqual(launch.args.slice(0, 3), ["--mode", "rpc", "--no-session"]);
     assert.include(launch.args, "--no-title");
-    assert.include(launch.args, "--no-extensions");
     const config = launch.args.indexOf("--config");
     assert.isAbove(config, launch.args.indexOf("high"));
     assert.equal(launch.args[config + 1], overlayPath);
-    assert.isTrue(launch.args.some((arg) => arg.startsWith("--tools=")));
-    assert.notInclude(launch.args.find((arg) => arg.startsWith("--tools=")) ?? "", "web_search");
-    // The approval hook still loads; --no-extensions only stops discovery.
+    assert.include(launch.args, "--tools=ask,edit,glob,grep,read,todo,write");
+    // The approval hook still loads.
     assert.equal(
       launch.args[launch.args.indexOf("--extension") + 1],
       "/cache/pi-t3-mcp-extension.ts",
@@ -39,6 +39,21 @@ describe("ephemeral OMP launch", () => {
     assert.isFalse(launch.hasT3Mcp);
     assert.isUndefined(launch.env[T3_MCP_URL_ENV]);
     assert.isUndefined(launch.env[T3_MCP_BEARER_ENV]);
+  });
+
+  it("allows nothing that runs code, reaches the network or spawns subagents", () => {
+    for (const tool of ["bash", "eval", "web_search", "task"]) {
+      assert.notInclude(OMP_EPHEMERAL_TOOLS, tool);
+    }
+    const state = (names: ReadonlyArray<string>) => ({
+      dumpTools: names.map((name) => ({ name })),
+    });
+    assert.deepEqual(ompToolsBeyondAllowlist(state(["read", "write", "todo"])), []);
+    assert.deepEqual(ompToolsBeyondAllowlist(state(["read", "mcp__memory__save", "bash"])), [
+      "mcp__memory__save",
+      "bash",
+    ]);
+    assert.isUndefined(ompToolsBeyondAllowlist({ model: null }));
   });
 
   it("disables every hosted model provider and foreign config source", () => {

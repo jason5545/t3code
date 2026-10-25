@@ -8,6 +8,7 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import { canSnooze, effectiveSnoozed } from "@t3tools/client-runtime/state/thread-settled";
 import {
+  isEphemeralThreadShell,
   AuthOrchestrationOperateScope,
   type ScopedThreadRef,
   type ThreadId,
@@ -46,6 +47,7 @@ import { useCopyToClipboard } from "./useCopyToClipboard";
 import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";
 import { useThreadActions } from "./useThreadActions";
+import { ephemeralDeleteConfirmation } from "../components/ephemeralThreadText";
 
 function failureToast(title: string, error: unknown) {
   toastManager.add(
@@ -288,13 +290,16 @@ export function useThreadActionMenu(input: {
           return;
         }
         case "delete": {
-          if (confirmThreadDelete) {
+          const ephemeral = isEphemeralThreadShell(thread);
+          if (confirmThreadDelete || ephemeral) {
             const confirmed = await settlePromise(() =>
               api.dialogs.confirm(
-                [
-                  `Delete thread "${thread.title}"?`,
-                  "This permanently clears conversation history for this thread.",
-                ].join("\n"),
+                ephemeral
+                  ? ephemeralDeleteConfirmation()
+                  : [
+                      `Delete thread "${thread.title}"?`,
+                      "This permanently clears conversation history for this thread.",
+                    ].join("\n"),
                 { variant: "destructive" },
               ),
             );

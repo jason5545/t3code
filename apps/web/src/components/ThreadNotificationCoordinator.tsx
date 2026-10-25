@@ -5,7 +5,12 @@ import {
 import { pendingSubagentRequestsByThread } from "@t3tools/client-runtime/state/threads";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import type { EnvironmentId, OrchestrationV2ThreadShell, ThreadId } from "@t3tools/contracts";
+import {
+  EPHEMERAL_THREAD_PLACEHOLDER_TEXT,
+  type EnvironmentId,
+  type OrchestrationV2ThreadShell,
+  type ThreadId,
+} from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import {
   CircleAlertIcon,
@@ -160,6 +165,9 @@ function EnvironmentNotifications({
             ? "completion"
             : null;
       if (!kind) continue;
+      // Fork patch 11: an ephemeral thread's title is its first message.
+      const notificationBody =
+        rawThread.ephemeral === true ? EPHEMERAL_THREAD_PLACEHOLDER_TEXT : thread.title;
       const title =
         kind === "completion"
           ? "Thread completed"
@@ -184,7 +192,7 @@ function EnvironmentNotifications({
         const toastId = toastManager.add({
           type: kind === "completion" ? "success" : status === "failed" ? "error" : "warning",
           title,
-          description: thread.title,
+          description: notificationBody,
           data: {
             hideCopyButton: true,
             leadingIcon:
@@ -220,7 +228,7 @@ function EnvironmentNotifications({
         continue;
       try {
         const notification = new Notification(title, {
-          body: thread.title,
+          body: notificationBody,
           tag: threadNotificationTag(environmentId, thread.id),
           silent: true,
         });

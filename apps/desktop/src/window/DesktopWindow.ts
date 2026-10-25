@@ -8,7 +8,11 @@ import * as Ref from "effect/Ref";
 
 import * as Electron from "electron";
 
-import { type DesktopSnapShotEvent, DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts";
+import {
+  type DesktopSnapShotEvent,
+  DEFAULT_CLIENT_SETTINGS,
+  EPHEMERAL_THREAD_PLACEHOLDER_TEXT,
+} from "@t3tools/contracts";
 
 import * as DesktopAssets from "../app/DesktopAssets.ts";
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
@@ -681,9 +685,15 @@ export const make = Effect.gen(function* () {
       runFork(zoomWindow(window, direction));
     });
 
-    window.on("page-title-updated", (event) => {
+    window.on("page-title-updated", (event, pageTitle) => {
       event.preventDefault();
-      window.setTitle(environment.displayName);
+      // Fork patch 11: voice input reads the window title (AXTitle) to pause
+      // personal learning. Only the marker crosses over, never a thread title.
+      window.setTitle(
+        pageTitle.includes(EPHEMERAL_THREAD_PLACEHOLDER_TEXT)
+          ? `${environment.displayName}（${EPHEMERAL_THREAD_PLACEHOLDER_TEXT}）`
+          : environment.displayName,
+      );
     });
     window.on("resize", scheduleBoundsPersist);
     window.on("move", scheduleBoundsPersist);

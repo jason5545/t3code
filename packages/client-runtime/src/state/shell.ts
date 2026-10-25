@@ -67,6 +67,20 @@ function withoutDeferredPullRequests(value: DeferredShellSnapshot): Orchestratio
 
 const SHELL_SYNCHRONIZATION_ERROR_MESSAGE = "Could not synchronize environment data.";
 
+/** Fork patch 11: ephemeral threads live only in memory, never in the cached shell. */
+function withoutEphemeralThreads(
+  snapshot: OrchestrationV2ShellSnapshot,
+): OrchestrationV2ShellSnapshot {
+  const keep = (thread: OrchestrationV2ThreadShell) => thread.ephemeral !== true;
+  return snapshot.threads.every(keep) && snapshot.archivedThreads.every(keep)
+    ? snapshot
+    : {
+        ...snapshot,
+        threads: snapshot.threads.filter(keep),
+        archivedThreads: snapshot.archivedThreads.filter(keep),
+      };
+}
+
 export const makeEnvironmentShellState = Effect.fn("EnvironmentShellState.make")(function* () {
   const supervisor = yield* EnvironmentSupervisor.EnvironmentSupervisor;
   const cache = yield* Persistence.EnvironmentCacheStore;
@@ -111,7 +125,7 @@ export const makeEnvironmentShellState = Effect.fn("EnvironmentShellState.make")
       if (Option.isNone(latest) || latest.value === lastPersisted) return;
       if (latest.value.threads.some((thread) => pendingLinkRows.has(thread))) return;
       const snapshot = latest.value;
-      const saved = yield* cache.saveShell(environmentId, snapshot).pipe(
+      const saved = yield* cache.saveShell(environmentId, withoutEphemeralThreads(snapshot)).pipe(
         Effect.as(true),
         Effect.catch((error) =>
           Effect.logWarning("Could not persist environment shell cache.").pipe(

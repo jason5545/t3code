@@ -35,6 +35,8 @@ export interface ProjectThreadStartTurnSpec {
   readonly worktreePath: string | null;
   readonly startFromOrigin: boolean;
   readonly worktreeBranchName: string;
+  /** Fork patch 11. */
+  readonly ephemeral?: boolean;
 }
 
 export function buildProjectThreadStartTurnInput(spec: ProjectThreadStartTurnSpec) {
@@ -68,6 +70,7 @@ export function buildProjectThreadStartTurnInput(spec: ProjectThreadStartTurnSpe
         branch: spec.branch,
         worktreePath: isWorktree ? null : spec.worktreePath,
         createdAt: spec.createdAt,
+        ...(spec.ephemeral === true ? { ephemeral: true } : {}),
       },
       ...(isWorktree
         ? {

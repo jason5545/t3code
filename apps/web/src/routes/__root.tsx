@@ -54,6 +54,8 @@ import {
   toastManager,
 } from "../components/ui/toast";
 import { isElectron } from "../env";
+import { EPHEMERAL_THREAD_PLACEHOLDER_TEXT } from "@t3tools/contracts";
+import { EphemeralThreadsWatcher, useEphemeralForeground } from "../components/EphemeralThreads";
 import { cn } from "../lib/utils";
 import { applyAppearanceFontVariables } from "~/appearanceFonts";
 import { applyAppearanceContrast } from "~/appearanceContrast";
@@ -226,6 +228,7 @@ function RootRouteView() {
         <FontAppearanceSync />
         <ProviderAuthCallbackCoordinator />
         <ChatGptWelcomeCoordinator />
+        <EphemeralThreadsWatcher />
         <FirstRunGate
           enabled={primaryEnvironmentAuthenticated}
           hostedStatic={authGateState.status === "hosted-static"}
@@ -363,9 +366,13 @@ function DocumentTitleSync() {
     primaryServerVersion,
   });
 
+  // Fork patch 11: voice input reads the window title; it names no thread.
+  const ephemeralForeground = useEphemeralForeground();
   useEffect(() => {
-    document.title = title;
-  }, [title]);
+    document.title = ephemeralForeground
+      ? `${title}（${EPHEMERAL_THREAD_PLACEHOLDER_TEXT}）`
+      : title;
+  }, [title, ephemeralForeground]);
 
   return null;
 }

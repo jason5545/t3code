@@ -408,6 +408,8 @@ export interface DraftSessionState {
   envMode: DraftThreadEnvMode;
   startFromOrigin: boolean;
   promotedTo?: ScopedThreadRef | null;
+  /** Fork patch 11: launch it ephemeral; such a draft never reaches storage. */
+  ephemeral?: boolean;
 }
 
 export type DraftThreadState = DraftSessionState;
@@ -423,6 +425,8 @@ interface ComposerDraftStoreState {
   draftThreadsByThreadKey: Record<string, DraftThreadState>;
   logicalProjectDraftThreadKeyByLogicalProjectKey: Record<string, string>;
   backgroundSubmissionThreadKeys: Record<string, true>;
+  /** Fork patch 11: server threads whose drafts stay in memory only. */
+  ephemeralThreadKeys: ReadonlySet<string>;
   rewindingThreadKeys: ReadonlySet<string>;
   stickyModelSelectionByProvider: Partial<Record<ProviderInstanceId, ModelSelection>>;
   stickyOptionsByModelByProvider: Partial<
@@ -1996,14 +2000,22 @@ export function partializeComposerDraftStoreState(
   const mappedDraftKeys = new Set(
     Object.values(state.logicalProjectDraftThreadKeyByLogicalProjectKey),
   );
+  // Fork patch 11: ephemeral drafts and their threads' drafts stay in memory.
+  const ephemeralKeys = new Set([
+    ...state.ephemeralThreadKeys,
+    ...Object.entries(state.draftThreadsByThreadKey)
+      .filter(([, draftThread]) => draftThread.ephemeral === true)
+      .map(([threadKey]) => threadKey),
+  ]);
   const keptSessionKeys = new Set(
     Object.entries(state.draftThreadsByThreadKey)
       .filter(
         ([threadKey, draftThread]) =>
-          mappedDraftKeys.has(threadKey) ||
-          isDraftThreadPromoting(draftThread) ||
-          composerDraftHasUserContent(state.draftsByThreadKey[threadKey]) ||
-          draftThreadHasOpenPreview(draftThread),
+          !ephemeralKeys.has(threadKey) &&
+          (mappedDraftKeys.has(threadKey) ||
+            isDraftThreadPromoting(draftThread) ||
+            composerDraftHasUserContent(state.draftsByThreadKey[threadKey]) ||
+            draftThreadHasOpenPreview(draftThread)),
       )
       .map(([threadKey]) => threadKey),
   );
@@ -2012,6 +2024,9 @@ export function partializeComposerDraftStoreState(
   > = {};
   for (const [threadKey, draft] of Object.entries(state.draftsByThreadKey)) {
     if (typeof threadKey !== "string" || threadKey.length === 0) {
+      continue;
+    }
+    if (ephemeralKeys.has(threadKey)) {
       continue;
     }
     if (state.draftThreadsByThreadKey[threadKey] !== undefined && !keptSessionKeys.has(threadKey)) {
@@ -2414,6 +2429,7 @@ const composerDraftStore = create<ComposerDraftStoreState>()(
         draftThreadsByThreadKey: {},
         logicalProjectDraftThreadKeyByLogicalProjectKey: {},
         backgroundSubmissionThreadKeys: {},
+        ephemeralThreadKeys: new Set<string>(),
         rewindingThreadKeys: new Set<string>(),
         stickyModelSelectionByProvider: {},
         stickyOptionsByModelByProvider: {},
@@ -4216,6 +4232,30 @@ export function subscribeComposerDraftModelReconciliation(input: {
     unsubscribeMatches();
     unsubscribeDrafts();
   };
+}
+
+/** Fork patch 11: marks a new-thread draft to launch ephemeral, which also keeps it out of storage. */
+export function setDraftSessionEphemeral(draftId: DraftId, ephemeral: boolean): void {
+  useComposerDraftStore.setState((state) => {
+    const session = state.draftThreadsByThreadKey[draftId];
+    if (session === undefined || (session.ephemeral === true) === ephemeral) return state;
+    return {
+      draftThreadsByThreadKey: {
+        ...state.draftThreadsByThreadKey,
+        [draftId]: { ...session, ephemeral },
+      },
+    };
+  });
+}
+
+/** Fork patch 11: server threads known to be ephemeral; their drafts stay in memory. */
+export function setEphemeralThreadKeys(keys: ReadonlySet<string>): void {
+  useComposerDraftStore.setState((state) =>
+    state.ephemeralThreadKeys.size === keys.size &&
+    [...keys].every((key) => state.ephemeralThreadKeys.has(key))
+      ? state
+      : { ephemeralThreadKeys: keys },
+  );
 }
 
 export function beginBackgroundDraftSubmissionByRef(threadRef: ScopedThreadRef): void {

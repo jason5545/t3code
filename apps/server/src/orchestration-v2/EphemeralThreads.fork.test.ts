@@ -482,6 +482,61 @@ it.effect("refuses an ephemeral thread outside Scratch or on a hosted model", ()
   ),
 );
 
+it.effect("lets the launch record an ephemeral thread's Scratch folder, never move it", () =>
+  withTempDir((baseDir) =>
+    Effect.gen(function* () {
+      const deletes = yield* Deferred.make<ThreadId>();
+      yield* Effect.gen(function* () {
+        const projections = yield* ProjectionStore.ProjectionStoreV2;
+        const threads = yield* EphemeralThreads.EphemeralThreads;
+        yield* createScratchProject(`${baseDir}/scratch`);
+        const launching = ThreadId.make("thread:launching");
+        const settled = ThreadId.make("thread:settled");
+        const ownFolder = `${baseDir}/scratch/2026-10-25-launching`;
+        const settledFolder = `${baseDir}/scratch/2026-10-25-settled`;
+        yield* projections.apply(threadCreated(launching, { ephemeral: true }));
+        yield* projections.apply(
+          threadCreated(settled, { ephemeral: true, worktreePath: settledFolder }),
+        );
+        const update = (
+          threadId: ThreadId,
+          worktreePath: string,
+          branch: string | null = null,
+        ): OrchestrationV2ServerCommand => ({
+          type: "thread.metadata.update",
+          commandId: CommandId.make(`update:${threadId}:${worktreePath}:${branch}`),
+          threadId,
+          branch,
+          worktreePath,
+        });
+        const next = () => Effect.succeed({ sequence: 1, storedEvents: [] });
+        const refusedTag = (command: OrchestrationV2ServerCommand) =>
+          threads.dispatch(command, next).pipe(
+            Effect.as("accepted"),
+            Effect.catch((error) => Effect.succeed(error._tag)),
+          );
+
+        assert.equal(yield* refusedTag(update(launching, ownFolder)), "accepted");
+        assert.equal(yield* refusedTag(update(settled, settledFolder)), "accepted");
+        assert.equal(
+          yield* refusedTag(update(launching, `${baseDir}/elsewhere`)),
+          "OrchestratorCommandRejectedError",
+        );
+        assert.equal(
+          yield* refusedTag(update(settled, ownFolder)),
+          "OrchestratorCommandRejectedError",
+        );
+        assert.equal(
+          yield* refusedTag(update(launching, ownFolder, "feature")),
+          "OrchestratorCommandRejectedError",
+        );
+      }).pipe(
+        Effect.provide(makeLayer({ baseDir, database: SqlitePersistence.layerMemory, deletes })),
+      );
+    }),
+  ),
+);
+
 it.effect("MCP lists, reads and searches never show an ephemeral thread", () =>
   withTempDir((baseDir) =>
     Effect.gen(function* () {

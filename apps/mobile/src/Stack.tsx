@@ -141,6 +141,7 @@ import { deriveLayout } from "./lib/layout";
 import { useNativeLayoutMetrics } from "./native/native-layout-metrics";
 import { nativeHeaderScrollEdgeEffects } from "./native/StackHeader";
 import { HORIZONTAL_FORM_SHEET_OPTIONS, formSheetDetents } from "./native/sheet-surface";
+import { useEphemeralThreadTracking } from "./state/ephemeral-threads";
 import { useThreadOutboxDrain } from "./state/use-thread-outbox-drain";
 import { useComposerAttachmentUploadWorker } from "./state/composer-attachment-uploads";
 
@@ -521,6 +522,7 @@ function workspaceLocationFromState(state: NavigationState) {
 // updates from re-rendering RootStackLayout (and with it every screen) on
 // each enqueue, shell change, or reconnect.
 function ThreadOutboxDrainWorker() {
+  useEphemeralThreadTracking();
   useThreadOutboxDrain();
   useComposerAttachmentUploadWorker();
   return null;

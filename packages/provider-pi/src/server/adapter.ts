@@ -75,7 +75,11 @@ import {
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
 import { isOmpBinary, ompTodoSteps, type OmpTodoStep } from "./rpcDialect.ts";
-import { buildOmpEphemeralLaunch, prepareOmpEphemeralLaunch } from "./ephemeral.ts";
+import {
+  buildOmpEphemeralLaunch,
+  ompToolsBeyondAllowlist,
+  prepareOmpEphemeralLaunch,
+} from "./ephemeral.ts";
 
 export const PI_PROVIDER = ProviderDriverKind.make("pi");
 const PI_DRIVER_KIND = PI_PROVIDER;
@@ -553,6 +557,28 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           Effect.matchEffect({ onFailure: () => stopScope, onSuccess: () => stopScope }),
           Effect.forkIn(scope),
         );
+      }
+      // MCP servers from OMP's own config cannot be switched off without its
+      // models, so an ephemeral process offering anything more is refused.
+      if (ephemeral) {
+        const beyond = ompToolsBeyondAllowlist(
+          yield* connection.request({ type: "get_state" }).pipe(
+            Effect.mapError(
+              (cause) =>
+                new ProviderAdapter.ProviderAdapterOpenSessionError({
+                  driver: PI_PROVIDER,
+                  providerSessionId: input.providerSessionId,
+                  cause,
+                }),
+            ),
+          ),
+        );
+        if (beyond !== undefined && beyond.length > 0) {
+          yield* connection.terminate;
+          return yield* protocolError(
+            `An ephemeral OMP session offered tools beyond its allowlist: ${beyond.join(", ")}`,
+          );
+        }
       }
       const now = yield* DateTime.now;
       let sessionEntity: OrchestrationV2ProviderSession = {

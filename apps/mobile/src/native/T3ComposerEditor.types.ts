@@ -51,6 +51,8 @@ export interface ComposerEditorProps {
   readonly scrollEnabled?: boolean;
   readonly autoCorrect?: boolean;
   readonly spellCheck?: boolean;
+  /** Fork patch 11, Android: keep the keyboard from learning what is typed. No-op on iOS. */
+  readonly noPersonalizedLearning?: boolean;
   readonly multiline?: boolean;
   readonly contentInsetVertical?: number;
   /** Android: center a single line vertically (collapsed pill); no-op on iOS. */

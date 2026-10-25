@@ -67,6 +67,7 @@ import { shouldRecedeThreadRow } from "./thread-row-emphasis";
 import { ThreadSearchMatchExcerpt } from "./thread-search-match";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
 import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
+import { EphemeralTitleMarker } from "./EphemeralThreads";
 
 interface StatusLabel {
   readonly label: string;
@@ -1088,6 +1089,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         )}
         numberOfLines={2}
       >
+        <EphemeralTitleMarker thread={thread} />
         {thread.title}
       </Text>
       {props.searchMatch ? (
@@ -1318,6 +1320,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               )}
               numberOfLines={1}
             >
+              <EphemeralTitleMarker thread={thread} />
               {thread.title}
             </Text>
             {props.searchMatch ? (

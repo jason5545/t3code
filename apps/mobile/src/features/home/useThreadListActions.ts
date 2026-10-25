@@ -3,7 +3,7 @@ import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell
 import * as ThreadUndo from "@t3tools/client-runtime/state/thread-undo";
 import { showThreadUndoNotice } from "./thread-undo-notice";
 import { canSnooze, effectiveSnoozed } from "@t3tools/client-runtime/state/thread-settled";
-import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+import { isEphemeralThreadShell, AuthOrchestrationOperateScope } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import * as Haptics from "expo-haptics";
 import { useRef } from "react";
@@ -32,6 +32,7 @@ import {
 import { getThreadListV2OrderedSection } from "../threads/threadListV2";
 import { threadCanArchive } from "./threadArchive";
 import { resolveThreadTitleRename } from "../threads/thread-title-rename";
+import { EPHEMERAL_DELETE_MESSAGE } from "../threads/ephemeralThreadText";
 
 /** Version skew: never send settle/unsettle to a server that predates them
     (capability defaults false on decode for older servers). */
@@ -212,7 +213,9 @@ function confirmThreadDeletion(
 ) {
   if (!checkThreadOperationPermission(thread, actionFailureTitle("delete"))) return;
   const title = "Delete thread?";
-  const message = `“${thread.title}” will be permanently deleted, including its terminal history.`;
+  const message = isEphemeralThreadShell(thread)
+    ? EPHEMERAL_DELETE_MESSAGE
+    : `“${thread.title}” will be permanently deleted, including its terminal history.`;
   Dialog.confirm({
     title,
     message,

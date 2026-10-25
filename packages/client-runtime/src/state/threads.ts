@@ -110,6 +110,8 @@ function shouldPersistThread(
   thread: OrchestrationV2ThreadProjection,
   history: ThreadHistoryMeta,
 ): boolean {
+  // Fork patch 11: nothing of an ephemeral thread reaches the device's storage.
+  if (thread.thread.ephemeral === true) return false;
   // After the user loads older pages the in-memory timeline can grow large.
   // Keep those expanded projections out of the monolithic cache.
   if (history.expanded) {

@@ -147,6 +147,8 @@ interface StartThreadBootstrap {
     readonly branch: string | null;
     readonly worktreePath: string | null;
     readonly createdAt: string;
+    /** Fork patch 11: the server refuses it outside No project, OMP and a local model. */
+    readonly ephemeral?: boolean;
   };
   readonly prepareWorktree?: {
     readonly requireWorktree?: boolean;
@@ -682,6 +684,7 @@ export const startThreadTurn = Effect.fn("EnvironmentCommands.startThreadTurn")(
         ...(context ? { context } : {}),
         attachments,
       },
+      ...(bootstrap?.ephemeral === true ? { ephemeral: true } : {}),
     });
   }
 

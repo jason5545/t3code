@@ -444,5 +444,12 @@ export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
         Stream.runCollect,
         Effect.map((results) => results[results.length - 1]!),
       ),
+    // Fork patch 11: a purged thread's parsed text must not outlive its rows.
+    forgetThread: (threadId: ThreadId) =>
+      Effect.sync(() => {
+        for (const [key, scan] of scans) {
+          if (scan.sourceThreadIds.includes(threadId)) scans.delete(key);
+        }
+      }),
   };
 });

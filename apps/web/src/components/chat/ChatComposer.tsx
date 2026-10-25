@@ -31,6 +31,7 @@ import type {
   ThreadId,
 } from "@t3tools/contracts";
 import {
+  isEphemeralThreadShell,
   EnvironmentRequestInvalidError,
   AuthOrchestrationOperateScope,
   ProviderDriverKind,
@@ -205,6 +206,8 @@ import {
 } from "./ComposerAttachmentStrip";
 import { ComposerPrimaryActions } from "./ComposerPrimaryActions";
 import { ComposerFooterPrimaryActions } from "./ComposerFooterControls";
+import { EphemeralDraftToggle } from "./EphemeralDraftToggle";
+import { canStartEphemeralThread } from "@t3tools/contracts";
 import { ComposerPendingApprovalPanel } from "./ComposerPendingApprovalPanel";
 import { ComposerPendingUserInputPanel } from "./ComposerPendingUserInputPanel";
 import { ComposerPlanFollowUpBanner } from "./ComposerPlanFollowUpBanner";
@@ -393,6 +396,8 @@ export interface ChatComposerProps {
   isLocalDraftThread: boolean;
   forceExpandedOnMobile: boolean;
   projectSelectionRequired: boolean;
+  /** Fork patch 11: No project is the only place an ephemeral thread can start. */
+  projectIsScratch?: boolean;
 
   phase: SessionPhase;
   canInterrupt: boolean;
@@ -964,6 +969,20 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     lockedInstanceId:
       activeThread?.runtime?.providerInstanceId ?? activeThreadModelSelection?.instanceId,
   });
+  const ephemeralDraft = useComposerDraftStore(
+    (store) => draftId !== null && store.getDraftSession(draftId)?.ephemeral === true,
+  );
+  const ephemeral = isEphemeralThreadShell(props.activeThreadShell) || ephemeralDraft;
+  const canStartEphemeral =
+    routeKind === "draft" &&
+    multipleModelSelections === null &&
+    canStartEphemeralThread({
+      projectIsScratch: props.projectIsScratch === true,
+      driver: selectedProviderEntry?.driverKind,
+      instanceDisplayName: selectedProviderEntry?.displayName,
+      model: selectedModel,
+      models: selectedProviderModels,
+    });
   const noProviderAvailable =
     selectedProviderEntry === undefined && multipleModelSelections === null;
   const providerCatalogPending = noProviderAvailable && !providerCatalogKnown;
@@ -2309,6 +2328,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     composerMenuOpen,
     isComposerModelPickerOpen,
     isComposerCollapsedMobile,
+    ephemeral,
     composerPreviewAnnotations,
     composerReviewComments,
     composerThreadContexts,
@@ -2547,59 +2567,62 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     ? restingControlsIconOnlyBlockCount
     : expandedControlsIconOnlyBlockCount;
   const composerControls = (
-    <ComposerControlsBar
-      environmentId={environmentId}
-      routeKind={routeKind}
-      routeThreadRef={routeThreadRef}
-      draftId={draftId}
-      selectedProvider={selectedProvider}
-      selectedInstanceId={selectedInstanceId}
-      selectedModel={selectedModel}
-      selectedProviderModels={selectedProviderModels}
-      composerModelOptions={composerModelOptions}
-      reportedModelSelection={reportedModelSelection}
-      promptUltrathink={promptUltrathink}
-      onPromptEdit={editPromptFromTraitsStable}
-      planModeEnabled={settings.planModeEnabled}
-      planModeUiEnabled={planModeUiEnabled}
-      interactionMode={interactionMode}
-      compatibleRuntimeMode={compatibleRuntimeMode}
-      compatibleRuntimeModeOptions={compatibleRuntimeModeOptions}
-      toggleInteractionMode={toggleInteractionMode}
-      handleRuntimeModeChange={handleRuntimeModeChange}
-      composerControlsCollapsed={composerControlsCollapsed}
-      composerControlsHidden={composerControlsHidden}
-      restingHiddenBlockCount={restingHiddenBlockCount}
-      iconOnlyBlockCount={iconOnlyBlockCount}
-      showInlineRestingControls={showInlineRestingControls}
-      showLeadingSeparator={
-        composerControlsCollapsed &&
-        restingControlsHost !== null &&
-        restingControlsHaveLeadingContext
-      }
-      showProviderUnavailable={showProviderUnavailable}
-      providerSetupInstanceId={providerSetupInstanceId}
-      onOpenProviderSetup={onOpenProviderSetup}
-      providerCatalogPending={providerCatalogPending}
-      isSendBusy={isSendBusy}
-      multipleModelsEnabled={routeKind === "draft" && supportsMultipleModels}
-      multipleModelSelections={multipleModelSelections}
-      onMultipleModelSelectionsChange={setMultipleModelSelections}
-      selectedModelSelection={selectedModelSelection}
-      onProviderModelSelect={onProviderModelSelect}
-      activeThreadModelSelection={activeThreadModelSelection}
-      selectedModelForPickerWithCustomFallback={selectedModelForPickerWithCustomFallback}
-      lockedProvider={lockedProvider}
-      lockedContinuationGroupKey={lockedContinuationGroupKey}
-      providerInstanceEntries={providerInstanceEntries}
-      keybindings={keybindings}
-      modelOptionsByInstance={modelOptionsByInstance}
-      terminalOpen={terminalOpen}
-      modelPickerOpen={isComposerModelPickerOpen}
-      onModelPickerOpenChange={setIsComposerModelPickerOpen}
-      modelPickerIconClassName={composerProviderState.modelPickerIconClassName}
-      getModelDisabledReason={getModelDisabledReason}
-    />
+    <>
+      <EphemeralDraftToggle draftId={draftId} available={canStartEphemeral} />
+      <ComposerControlsBar
+        environmentId={environmentId}
+        routeKind={routeKind}
+        routeThreadRef={routeThreadRef}
+        draftId={draftId}
+        selectedProvider={selectedProvider}
+        selectedInstanceId={selectedInstanceId}
+        selectedModel={selectedModel}
+        selectedProviderModels={selectedProviderModels}
+        composerModelOptions={composerModelOptions}
+        reportedModelSelection={reportedModelSelection}
+        promptUltrathink={promptUltrathink}
+        onPromptEdit={editPromptFromTraitsStable}
+        planModeEnabled={settings.planModeEnabled}
+        planModeUiEnabled={planModeUiEnabled}
+        interactionMode={interactionMode}
+        compatibleRuntimeMode={compatibleRuntimeMode}
+        compatibleRuntimeModeOptions={compatibleRuntimeModeOptions}
+        toggleInteractionMode={toggleInteractionMode}
+        handleRuntimeModeChange={handleRuntimeModeChange}
+        composerControlsCollapsed={composerControlsCollapsed}
+        composerControlsHidden={composerControlsHidden}
+        restingHiddenBlockCount={restingHiddenBlockCount}
+        iconOnlyBlockCount={iconOnlyBlockCount}
+        showInlineRestingControls={showInlineRestingControls}
+        showLeadingSeparator={
+          composerControlsCollapsed &&
+          restingControlsHost !== null &&
+          restingControlsHaveLeadingContext
+        }
+        showProviderUnavailable={showProviderUnavailable}
+        providerSetupInstanceId={providerSetupInstanceId}
+        onOpenProviderSetup={onOpenProviderSetup}
+        providerCatalogPending={providerCatalogPending}
+        isSendBusy={isSendBusy}
+        multipleModelsEnabled={routeKind === "draft" && supportsMultipleModels}
+        multipleModelSelections={multipleModelSelections}
+        onMultipleModelSelectionsChange={setMultipleModelSelections}
+        selectedModelSelection={selectedModelSelection}
+        onProviderModelSelect={onProviderModelSelect}
+        activeThreadModelSelection={activeThreadModelSelection}
+        selectedModelForPickerWithCustomFallback={selectedModelForPickerWithCustomFallback}
+        lockedProvider={lockedProvider}
+        lockedContinuationGroupKey={lockedContinuationGroupKey}
+        providerInstanceEntries={providerInstanceEntries}
+        keybindings={keybindings}
+        modelOptionsByInstance={modelOptionsByInstance}
+        terminalOpen={terminalOpen}
+        modelPickerOpen={isComposerModelPickerOpen}
+        onModelPickerOpenChange={setIsComposerModelPickerOpen}
+        modelPickerIconClassName={composerProviderState.modelPickerIconClassName}
+        getModelDisabledReason={getModelDisabledReason}
+      />
+    </>
   );
   const showTasksTab =
     !hasBannerItems &&

@@ -66,6 +66,7 @@ import {
   type QueuedThreadMessage,
 } from "./thread-outbox-model";
 import { flushThreadOutbox, threadOutboxManager } from "./thread-outbox";
+import { isEphemeralQueuedMessage, isEphemeralThreadKey } from "./ephemeral-thread-keys";
 import { composerDraftEnvironmentId } from "../lib/composerAttachmentUploadQueue";
 
 const COMPOSER_DRAFTS_SCHEMA_VERSION = 1;
@@ -341,6 +342,8 @@ export interface ComposerDraft {
   readonly interactionMode?: ProviderInteractionMode;
   readonly workspaceSelection?: ComposerDraftWorkspaceSelection;
   readonly project?: ComposerDraftProject;
+  /** Fork patch 11: a new task that starts ephemeral; never written to disk. */
+  readonly ephemeral?: boolean;
 }
 
 export interface ComposerDraftProject {
@@ -576,7 +579,7 @@ function withComposerDraft(
   draftKey: string,
   draft: ComposerDraft,
 ): Record<string, ComposerDraft> {
-  if (isEmptyDraft(draft) && draft.project === undefined) {
+  if (isEmptyDraft(draft) && draft.project === undefined && draft.ephemeral !== true) {
     const next = { ...current };
     delete next[draftKey];
     return next;
@@ -713,8 +716,11 @@ async function writePersistedComposerState(
   try {
     const file = await getComposerDraftsFile();
     operation = "encode";
+    // Fork patch 11: ephemeral drafts stay in memory.
+    const keepDraft = ([key, draft]: readonly [string, ComposerDraft]) =>
+      draft.ephemeral !== true && !isEphemeralThreadKey(key);
     const nonEmptyDrafts = Object.fromEntries(
-      Object.entries(drafts).filter(([, draft]) => !isEmptyDraft(draft)),
+      Object.entries(drafts).filter((entry) => !isEmptyDraft(entry[1]) && keepDraft(entry)),
     );
     const document = {
       schemaVersion: COMPOSER_DRAFTS_SCHEMA_VERSION,
@@ -730,8 +736,10 @@ async function writePersistedComposerState(
               Object.entries(cloudDrafts.signedOut).map(([id, saved]) => [
                 id,
                 {
-                  drafts: saved.drafts,
-                  queuedMessages: saved.queuedMessages.map(encodeQueuedThreadMessage),
+                  drafts: Object.fromEntries(Object.entries(saved.drafts).filter(keepDraft)),
+                  queuedMessages: saved.queuedMessages
+                    .filter((message) => !isEphemeralQueuedMessage(message))
+                    .map(encodeQueuedThreadMessage),
                 },
               ]),
             ),
@@ -1453,6 +1461,16 @@ export function setComposerDraftAttachmentUpload(
   });
   if (previous) scheduleUnusedComposerAttachmentCleanup([previous]);
   return previous !== undefined;
+}
+
+/** Fork patch 11: marks a new task to start ephemeral, which also keeps its draft off disk. */
+export function setComposerDraftEphemeral(draftKey: string, ephemeral: boolean): void {
+  updateComposerDrafts((current) => {
+    const existing = normalizeDraft(current[draftKey]);
+    if ((existing.ephemeral === true) === ephemeral) return current;
+    const { ephemeral: _previous, ...rest } = existing;
+    return withComposerDraft(current, draftKey, ephemeral ? { ...rest, ephemeral } : rest);
+  });
 }
 
 export function updateComposerDraftSettings(

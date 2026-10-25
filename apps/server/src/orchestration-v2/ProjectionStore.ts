@@ -394,6 +394,8 @@ export interface ProjectionStoreV2Shape {
   readonly getThreadAttachmentIds: (
     threadId: ThreadId,
   ) => Effect.Effect<ReadonlyArray<string>, ProjectionStoreV2Error>;
+  /** Fork patch 11: drops cached in-thread search text when an ephemeral thread is purged. */
+  readonly forgetThreadSearch?: (threadId: ThreadId) => Effect.Effect<void>;
   readonly getThreadHistoryPage: (
     threadId: ThreadId,
     cursor: string,
@@ -5419,7 +5421,7 @@ export const layer: Layer.Layer<ProjectionStoreV2, never, SqlClient.SqlClient> =
         ),
     );
 
-    const { searchThread, searchThreadStream } = yield* makeThreadFind((threadId) =>
+    const { searchThread, searchThreadStream, forgetThread } = yield* makeThreadFind((threadId) =>
       readTimelineIndex(threadId, new Set()).pipe(Effect.map((index) => index.visible)),
     );
 
@@ -6582,6 +6584,7 @@ export const layer: Layer.Layer<ProjectionStoreV2, never, SqlClient.SqlClient> =
       searchThread: readOnReader(searchThread),
       searchThreadStream,
       getThreadAttachmentIds: readOnReader(getThreadAttachmentIds),
+      forgetThreadSearch: forgetThread,
     } satisfies ProjectionStoreV2Shape;
   }),
 );

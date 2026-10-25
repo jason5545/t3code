@@ -37,6 +37,7 @@ import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
 import { textDirection } from "~/textDirection";
 import { useClientSettings } from "../../hooks/useSettings";
+import { EphemeralThreadBadge } from "./EphemeralDraftToggle";
 
 interface ChatHeaderProps {
   activeThreadEnvironmentId: EnvironmentId;
@@ -49,6 +50,8 @@ interface ChatHeaderProps {
   rightPanelOpen: boolean;
   onNewThreadInProject: () => void;
   onOpenProjectSettings?: (() => void) | undefined;
+  /** Fork patch 11. */
+  ephemeral?: boolean;
 }
 
 function resolveRenameCommit(input: {
@@ -77,6 +80,7 @@ export const ChatHeader = memo(function ChatHeader({
   rightPanelOpen,
   onNewThreadInProject,
   onOpenProjectSettings,
+  ephemeral,
 }: ChatHeaderProps) {
   const activeProjectName = activeProject?.isScratch ? "No project" : activeProject?.title;
   const activeProjectCwd = activeProject?.workspaceRoot ?? null;
@@ -404,6 +408,7 @@ export const ChatHeader = memo(function ChatHeader({
               <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
             </Tooltip>
           )}
+          {ephemeral === true ? <EphemeralThreadBadge /> : null}
         </WorkspaceBreadcrumbItem>
       </WorkspaceBreadcrumb>
     </div>

@@ -116,6 +116,9 @@ class T3ComposerEditorModule : Module() {
       Prop("spellCheck") { view: T3ComposerEditorView, spellCheck: Boolean ->
         view.setSpellCheck(spellCheck)
       }
+      Prop("noPersonalizedLearning") { view: T3ComposerEditorView, value: Boolean ->
+        view.setNoPersonalizedLearning(value)
+      }
       Prop("textPasteThresholdBytes") { view: T3ComposerEditorView, threshold: Int ->
         view.setTextPasteThresholdBytes(threshold)
       }

@@ -1070,6 +1070,7 @@ export function NewTaskFlowProvider(
         ...((workspaceSelection?.startFromOrigin ?? startFromOrigin)
           ? { startFromOrigin: true }
           : {}),
+        ...(draft.ephemeral === true ? { ephemeral: true } : {}),
       },
       createdAt: metadata.createdAt,
     };

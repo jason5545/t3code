@@ -1,3 +1,4 @@
+import { useAtomValue } from "@effect/atom-react";
 import * as Dialog from "../../components/ui/Dialog";
 import { useOpenPullRequest } from "../../native/useOpenPullRequest";
 import { makeTurnCommandMetadata } from "../../lib/commandMetadata";
@@ -14,6 +15,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Option from "effect/Option";
 import {
+  isEphemeralThreadShell,
   AuthOrchestrationOperateScope,
   AuthTerminalOperateScope,
   AuthTerminalReadScope,
@@ -39,6 +41,8 @@ import { useEnvironmentQuery } from "../../state/query";
 import { dismissGitActionResult, useGitActionProgress } from "../../state/use-vcs-action-state";
 import { vcsEnvironment } from "../../state/vcs";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { endedEphemeralThreadKeysAtom } from "../../state/ephemeral-thread-keys";
+import { ephemeralThreadLabel } from "./ephemeralThreadText";
 import { LoadingScreen } from "../../components/LoadingScreen";
 import { scopedThreadKey } from "../../lib/scopedEntities";
 import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
@@ -184,6 +188,32 @@ function ThreadUnavailableScreen(props: {
   );
 }
 
+/** Fork patch 11: a purged ephemeral thread has nothing to reconnect to. */
+function EphemeralThreadEndedScreen() {
+  const goBack = useWorkspaceBackNavigation("threads");
+  return (
+    <ThreadRouteFallbackLayout>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "center",
+          paddingHorizontal: 24,
+          paddingVertical: 32,
+        }}
+        className="bg-screen flex-1 android:bg-transparent"
+      >
+        <EmptyState
+          title="Conversation ended and erased"
+          detail="Nothing of this ephemeral thread was kept."
+          actionLabel="Back to threads"
+          onAction={goBack}
+        />
+      </ScrollView>
+    </ThreadRouteFallbackLayout>
+  );
+}
+
 export function ThreadRouteScreen(props: ThreadRouteScreenProps) {
   return (
     <ThreadScreenHost>
@@ -223,6 +253,7 @@ function LiveThreadRouteController(props: ThreadRouteScreenProps) {
       ? null
       : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
   const selectedThreadDetailState = useSelectedThreadDetailState();
+  const endedEphemeralThreadKeys = useAtomValue(endedEphemeralThreadKeysAtom);
   useThreadPromptLink(params, routeThreadKey);
 
   if (environmentId === null || threadIdRaw === null) {
@@ -231,6 +262,10 @@ function LiveThreadRouteController(props: ThreadRouteScreenProps) {
 
   if (selectedThread !== null && selectedThreadKey === routeThreadKey) {
     return <ThreadRouteContent {...props} selectedThreadDetailState={selectedThreadDetailState} />;
+  }
+
+  if (routeThreadKey !== null && endedEphemeralThreadKeys.has(routeThreadKey)) {
+    return <EphemeralThreadEndedScreen />;
   }
 
   const stillHydrating = threadRouteIsHydrating({
@@ -435,6 +470,7 @@ function ThreadRouteContent(
 
   const usesNativeHeaderGlass = NATIVE_LIQUID_GLASS_SUPPORTED;
   const headerSubtitle = [
+    isEphemeralThreadShell(selectedThread) ? ephemeralThreadLabel : null,
     selectedThreadProject?.title ?? null,
     selectedEnvironmentConnection?.environmentLabel ?? null,
   ]

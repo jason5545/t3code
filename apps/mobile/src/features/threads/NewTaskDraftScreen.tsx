@@ -10,7 +10,7 @@ import { ThreadScreenBinding, ThreadScreenFallback } from "./ThreadScreenHost";
 import { draftThreadShell } from "./draft-thread-shell";
 import { connectionTone } from "../connection/connectionTone";
 import { AppBar } from "../../components/ui/AppBar";
-import { ThreadId } from "@t3tools/contracts";
+import { canStartEphemeralThread, ThreadId } from "@t3tools/contracts";
 
 import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
@@ -95,6 +95,7 @@ import { appAtomRegistry } from "../../state/atom-registry";
 import { serverEnvironment } from "../../state/server";
 
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
+import { EphemeralNewTaskToggle } from "./EphemeralThreads";
 
 function NewTaskWorkspaceIcon(props: {
   readonly workspaceMode: "local" | "worktree";
@@ -1154,6 +1155,16 @@ export function NewTaskDraftScreen(props: {
       </ThreadScreenFallback>
     );
   }
+  const ephemeralAvailable =
+    flow.editingPendingTask === null &&
+    canStartEphemeralThread({
+      projectIsScratch: flow.isScratchDraft,
+      driver: flow.selectedProviderStatus?.driver,
+      instanceDisplayName: flow.selectedProviderStatus?.displayName,
+      instanceIconUrl: flow.selectedProviderStatus?.iconUrl,
+      model: flow.selectedModel.model,
+      models: flow.selectedProviderStatus?.models ?? [],
+    });
   const thread = draftThreadShell({
     environmentId: selectedProject.environmentId,
     projectId: selectedProject.id,
@@ -1201,6 +1212,13 @@ export function NewTaskDraftScreen(props: {
                 </View>
               ) : null}
               {flow.canChooseWorkspace ? workspaceControls : null}
+              <View className="flex-row px-2">
+                <EphemeralNewTaskToggle
+                  draftKey={flow.draftKey}
+                  available={ephemeralAvailable}
+                  disabled={isComposerInteractionLocked}
+                />
+              </View>
             </View>
           ),
           editorRef: promptInputRef,

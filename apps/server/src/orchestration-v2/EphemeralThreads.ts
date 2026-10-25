@@ -269,11 +269,15 @@ const make = Effect.gen(function* () {
     if (!CHECKED_COMMANDS.has(command.type)) {
       return yield* refused(command, "An ephemeral thread cannot do this; delete it to end it.");
     }
+    // The launch records the Scratch folder it made with a metadata update of its own.
+    const recordsOwnFolder = (worktreePath: string | null) =>
+      worktreePath === thread.worktreePath ||
+      (thread.worktreePath === null && worktreePath !== null && insideScratch(worktreePath));
     if (
       command.type === "thread.metadata.update" &&
       (command.regenerateTitle === true ||
-        command.branch !== undefined ||
-        command.worktreePath !== undefined)
+        (command.branch !== undefined && command.branch !== null) ||
+        (command.worktreePath !== undefined && !recordsOwnFolder(command.worktreePath)))
     ) {
       return yield* refused(command, "An ephemeral thread keeps its title and folder.");
     }
@@ -357,6 +361,9 @@ const make = Effect.gen(function* () {
       Effect.retry({ times: 10, schedule: Schedule.spaced(Duration.seconds(1)) }),
       Effect.ignore,
     );
+    if (projections.forgetThreadSearch !== undefined) {
+      yield* projections.forgetThreadSearch(threadId);
+    }
     yield* Ref.update(purgedThrough, (current) => Math.max(current, lastEventSequence));
     yield* Ref.update(live, (current) => {
       const next = new Set(current);

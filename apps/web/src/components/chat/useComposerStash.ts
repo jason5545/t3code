@@ -81,6 +81,7 @@ export function useComposerStash(input: {
   readonly composerMenuOpen: boolean;
   readonly isComposerModelPickerOpen: boolean;
   readonly isComposerCollapsedMobile: boolean;
+  readonly ephemeral?: boolean;
   readonly composerPreviewAnnotations: ReadonlyArray<PreviewAnnotationPayload>;
   readonly composerReviewComments: ReadonlyArray<ReviewCommentContext>;
   readonly composerThreadContexts: ReadonlyArray<ThreadContextRecord>;
@@ -468,6 +469,11 @@ export function useComposerStash(input: {
   const deleteStashEntryStable = useStableCallback(deleteStashEntry);
 
   const stashCurrentPrompt = async () => {
+    // Fork patch 11: the stash lives in browser storage, which an ephemeral draft never reaches.
+    if (input.ephemeral === true) {
+      toastManager.add({ type: "info", title: "Ephemeral threads keep no stash" });
+      return;
+    }
     // Stashing clears the draft. A pasted attachment still downloading would then land in the
     // emptied composer instead of travelling with the entry it belongs to.
     if (pendingDraftWork.has(attachmentTargetKeyRef.current)) {

@@ -50,6 +50,7 @@ import { useChatShortcuts } from "./chat/useChatShortcuts";
 import { ChatBannerLane } from "./chat/ChatBannerLane";
 import * as Schema from "effect/Schema";
 import {
+  isEphemeralThreadShell,
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
   AuthPreviewOperateScope,
@@ -3205,6 +3206,7 @@ export default function ChatView(props: ChatViewProps) {
             activeThreadId={activeThread.id}
             isServerThread={isServerThread}
             activeThreadTitle={isServerThread ? activeThread.title : newThreadDisplayTitle}
+            ephemeral={isEphemeralThreadShell(serverThreadShell) || draftThread?.ephemeral === true}
             activeProject={activeProject ?? null}
             parentThreadLink={parentThreadLink}
             onOpenThread={onOpenRelatedThreadStable}
@@ -3525,6 +3527,7 @@ export default function ChatView(props: ChatViewProps) {
                               projectSelectionRequired={
                                 isLocalDraftThread && activeProject === null
                               }
+                              projectIsScratch={activeProjectIsScratch}
                               phase={phase}
                               isCompacting={isCompacting}
                               canInterrupt={canInterruptRunningThread}

@@ -2,12 +2,14 @@ import { appAtomRegistry } from "./atom-registry";
 import { createThreadOutboxManager } from "./thread-outbox-manager";
 import type { QueuedThreadMessage } from "./thread-outbox-model";
 import { expoThreadOutboxStorage, flushThreadOutboxWrites } from "./thread-outbox-storage";
+import { withoutEphemeralWrites } from "./ephemeral-thread-keys";
 
 export * from "./thread-outbox-model";
 
 export const threadOutboxManager = createThreadOutboxManager({
   registry: appAtomRegistry,
-  storage: expoThreadOutboxStorage,
+  // Fork patch 11: an ephemeral thread's queued messages are never written.
+  storage: withoutEphemeralWrites(expoThreadOutboxStorage),
 });
 
 /**

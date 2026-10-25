@@ -335,6 +335,20 @@ class T3ComposerEditorView(context: Context, appContext: AppContext) : ExpoView(
     updateInputFlags()
   }
 
+  // Fork patch 11: the keyboard must not learn from an ephemeral thread.
+  fun setNoPersonalizedLearning(value: Boolean) {
+    val flags = if (value) {
+      editor.imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
+    } else {
+      editor.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING.inv()
+    }
+    if (flags == editor.imeOptions) return
+    editor.imeOptions = flags
+    // A connected keyboard reads imeOptions only when its input starts.
+    (context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+      ?.restartInput(editor)
+  }
+
   fun setTextPasteThresholdBytes(threshold: Int) {
     editor.textPasteThresholdBytes = threshold
   }

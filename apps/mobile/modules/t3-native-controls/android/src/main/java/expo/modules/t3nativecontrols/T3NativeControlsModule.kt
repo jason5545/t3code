@@ -2,6 +2,7 @@ package expo.modules.t3nativecontrols
 
 import android.content.Intent
 import android.text.format.DateFormat
+import android.view.WindowManager
 import androidx.core.content.FileProvider
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
@@ -19,6 +20,20 @@ class T3NativeControlsModule : Module() {
     Function("is24HourFormat") {
       val context = appContext.reactContext ?: error("The app is not active.")
       DateFormat.is24HourFormat(context)
+    }
+
+    // Fork patch 11: while an ephemeral thread is open, screenshots and adb
+    // screencap capture nothing.
+    Function("setSecureWindow") { secure: Boolean ->
+      appContext.currentActivity?.let { activity ->
+        activity.runOnUiThread {
+          if (secure) {
+            activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+          } else {
+            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+          }
+        }
+      }
     }
 
     AsyncFunction("openFile") { uri: String, mimeType: String, promise: Promise ->

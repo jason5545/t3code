@@ -8,6 +8,7 @@ import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime
 import { canSnooze, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
 import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
 import {
+  isEphemeralThreadShell,
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
   EnvironmentAuthorizationError,
@@ -53,6 +54,7 @@ import { useTerminalUiStateStore } from "../terminalUiStateStore";
 import { buildThreadRouteParams, resolveThreadRouteRef } from "../threadRoutes";
 import { formatWorktreePathForDisplay, getOrphanedWorktreePathForThread } from "../worktreeCleanup";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
+import { ephemeralDeleteConfirmation } from "../components/ephemeralThreadText";
 import { useClientSettings } from "./useSettings";
 import * as ThreadUndo from "./threadUndo";
 import { showThreadUndoNotice } from "./showThreadUndoNotice";
@@ -876,14 +878,17 @@ export function useThreadActions() {
     const localApi = readLocalApi();
     const resolved = resolveThreadTarget(target);
 
-    if (confirmThreadDelete && localApi) {
+    const ephemeral = isEphemeralThreadShell(resolved?.thread);
+    if ((confirmThreadDelete || ephemeral) && localApi) {
       const title = resolved?.thread.title ?? "this thread";
       const confirmationResult = await settlePromise(() =>
         localApi.dialogs.confirm(
-          [
-            `Delete thread "${title}"?`,
-            "This permanently clears conversation history for this thread.",
-          ].join("\n"),
+          ephemeral
+            ? ephemeralDeleteConfirmation()
+            : [
+                `Delete thread "${title}"?`,
+                "This permanently clears conversation history for this thread.",
+              ].join("\n"),
           { variant: "destructive" },
         ),
       );

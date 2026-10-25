@@ -11,6 +11,8 @@ import { useAtomValue } from "@effect/atom-react";
 import { clampFileAttachmentUploadBytes } from "@t3tools/client-runtime/state/attachments";
 import { pastedTextDisposition, replaceTextSelection } from "@t3tools/client-runtime/text-paste";
 import {
+  isEphemeralThreadShell,
+  EPHEMERAL_THREAD_PLACEHOLDER_TEXT,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
   type ChatAttachment,
@@ -74,6 +76,7 @@ import {
 import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import { ComposerEditor, type ComposerEditorHandle } from "../../components/ComposerEditor";
+import { SecureWindow } from "./SecureWindow";
 import { fileRoutePathSegments } from "../files/filePath";
 import { ComposerActionButton, ComposerToolbarRow } from "../../components/ComposerToolbar";
 import { ComposerModelControl } from "../../components/ComposerModelControl";
@@ -470,7 +473,12 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   const [previewVideo, setPreviewVideo] = useState<VideoPreviewSource | null>(null);
   const composerOwnerKey = scopedThreadKey(props.environmentId, props.selectedThread.id);
   const composerDraftKey = props.draftKey ?? composerOwnerKey;
-  const { text: draftMessage, attachments: draftAttachments } = useComposerDraft(composerDraftKey);
+  const {
+    text: draftMessage,
+    attachments: draftAttachments,
+    ephemeral: draftEphemeral,
+  } = useComposerDraft(composerDraftKey);
+  const ephemeral = isEphemeralThreadShell(props.selectedThread) || draftEphemeral === true;
   const queuedEdit = props.queuedEdit ?? null;
   const hasContent =
     draftMessage.trim().length > 0 ||
@@ -712,7 +720,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
     // with the queued-message feedback on the tap frame.
     armAgentAwarenessLiveActivityForLocalWork({
       environmentId: props.environmentId,
-      threadTitle: props.selectedThread.title,
+      threadTitle: ephemeral ? EPHEMERAL_THREAD_PLACEHOLDER_TEXT : props.selectedThread.title,
       projectTitle: props.environmentLabel ?? "T3 Code",
     });
   };
@@ -878,6 +886,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
           Platform.OS === "android" ? themeColorWithAlpha(composerPanel, 1) : undefined,
       }}
     >
+      <SecureWindow active={ephemeral && !props.hidden} />
       {/* The backdrop gradient lives on a plain View: Reanimated's Animated.View
           silently drops experimental_backgroundImage on Android, which left this
           strip fully transparent and the feed text legible through the composer. */}
@@ -1056,6 +1065,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
               <ComposerEditor
                 hidden={props.hidden}
                 draftKey={composerDraftKey}
+                noPersonalizedLearning={ephemeral}
                 environmentId={props.environmentId}
                 onOpenMention={(path) => {
                   Keyboard.dismiss();

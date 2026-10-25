@@ -31,20 +31,36 @@ export const OMP_FOREIGN_CONFIG_SOURCES = [
   "codex",
 ] as const;
 
-/** OMP 18.12.6's default built-in tools without `web_search`. */
-const OMP_EPHEMERAL_TOOLS = [
+/**
+ * OMP 18.12.6's default built-in tools minus everything that runs code or
+ * reaches the network: no `bash` or `eval`, no `web_search`, and no `task`,
+ * whose subagents take their tools from the agent definition, not `--tools`
+ * (nor `wait`, which only waits on them). `write` and `edit` still follow the
+ * approval mode.
+ */
+export const OMP_EPHEMERAL_TOOLS: ReadonlyArray<string> = [
   "ask",
-  "bash",
   "edit",
-  "eval",
   "glob",
   "grep",
   "read",
-  "task",
   "todo",
-  "wait",
   "write",
-] as const;
+];
+
+/**
+ * Tools the running process offers beyond the allowlist, from `get_state`'s
+ * `dumpTools`. Undefined when OMP does not report them.
+ */
+export function ompToolsBeyondAllowlist(state: unknown): ReadonlyArray<string> | undefined {
+  const tools = piRecordField(state, "dumpTools");
+  if (!Array.isArray(tools)) return undefined;
+  const allowed = new Set(OMP_EPHEMERAL_TOOLS);
+  return tools.flatMap((tool) => {
+    const name = piRecordString(tool, "name");
+    return name === undefined || allowed.has(name) ? [] : [name];
+  });
+}
 
 export interface OmpModelEndpoint {
   readonly provider: string;
@@ -78,21 +94,16 @@ export function ompEphemeralOverlay(models: ReadonlyArray<OmpModelEndpoint>): st
   ].join("\n")}\n`;
 }
 
-/** Appended after the user's launch args so none of them can lift a restriction. */
+/**
+ * Appended after the user's launch args so none of them can lift a restriction.
+ * No `--no-extensions`: the local provider's credentials come from an OMP
+ * extension, so without them OMP finds no usable model and exits.
+ */
 export function ompEphemeralLaunchArgs(overlayPath: string): ReadonlyArray<string> {
-  return [
-    "--no-title",
-    "--no-extensions",
-    `--tools=${OMP_EPHEMERAL_TOOLS.join(",")}`,
-    "--config",
-    overlayPath,
-  ];
+  return ["--no-title", `--tools=${OMP_EPHEMERAL_TOOLS.join(",")}`, "--config", overlayPath];
 }
 
-/**
- * No session file and no T3 MCP. The T3 extension still loads (`--extension`
- * survives `--no-extensions`) because it carries the approval hook.
- */
+/** No session file and no T3 MCP; the T3 extension still loads for its approval hook. */
 export function buildOmpEphemeralLaunch(input: {
   readonly launchArgs: ReadonlyArray<string>;
   readonly restrictions: ReadonlyArray<string>;
@@ -112,7 +123,8 @@ export function buildOmpEphemeralLaunch(input: {
 
 /**
  * The overlay names every hosted provider, so a throwaway process lists OMP's
- * models first. It runs without extensions and is gone before the real one starts.
+ * models first and is gone before the real one starts. It keeps extensions:
+ * without the local provider's credentials it would list no local model.
  */
 export const prepareOmpEphemeralLaunch = Effect.fn("PiAdapter.prepareOmpEphemeralLaunch")(
   function* (input: {
@@ -128,7 +140,6 @@ export const prepareOmpEphemeralLaunch = Effect.fn("PiAdapter.prepareOmpEphemera
       mcpSession: undefined,
       extensionPath: undefined,
       ephemeral: true,
-      disableExtensions: true,
     });
     const listed = yield* Effect.scoped(
       Effect.gen(function* () {

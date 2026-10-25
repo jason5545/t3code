@@ -89,6 +89,7 @@ interface NativeComposerEditorProps extends ViewProps {
   readonly autoFocus: boolean;
   readonly autoCorrect: boolean;
   readonly spellCheck: boolean;
+  readonly noPersonalizedLearning: boolean;
   readonly onComposerChange: (event: NativeEditorEvent) => void;
   readonly onComposerSelectionChange?: (event: NativeSelectionEvent) => void;
   readonly onComposerPasteImages?: (event: NativePasteImagesEvent) => void;
@@ -296,6 +297,7 @@ export function ComposerEditor({
         autoFocus={props.autoFocus ?? false}
         autoCorrect={props.autoCorrect ?? true}
         spellCheck={props.spellCheck ?? true}
+        noPersonalizedLearning={props.noPersonalizedLearning ?? false}
         textPasteThresholdBytes={onPasteText ? PASTED_TEXT_ATTACHMENT_THRESHOLD_BYTES : 0}
         maxInputChars={PROVIDER_SEND_TURN_MAX_INPUT_CHARS}
         style={{ flex: 1, minHeight: 0 }}

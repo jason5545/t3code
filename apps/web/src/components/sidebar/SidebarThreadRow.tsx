@@ -20,6 +20,7 @@ import {
 } from "@t3tools/client-runtime/state/models";
 import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
 import {
+  isEphemeralThreadShell,
   AuthOrchestrationOperateScope,
   type EnvironmentMachineKind,
   type ScopedThreadRef,
@@ -110,6 +111,7 @@ import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuShortcut, MenuTrigger } f
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { MiddleTruncate } from "../ui/middle-truncate";
 import { useThreadHasUnsentDraft } from "../../composerDraftStore";
+import { EphemeralThreadBadge } from "../chat/EphemeralDraftToggle";
 
 // The fields thread rows show. Provider status pushes refresh `checkedAt`,
 // status and auth on every provider; leaving those out keeps each
@@ -994,6 +996,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
       </span>
     );
   const accessibleTitle = isRenaming ? null : <span className="sr-only">{thread.title}</span>;
+  const ephemeralBadge = isEphemeralThreadShell(thread) ? <EphemeralThreadBadge /> : null;
 
   const prBadgeShape = supportsMultiplePullRequests
     ? resolveThreadPullRequestBadge(thread.pullRequests)
@@ -1116,6 +1119,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
             </span>
             {draftIndicator}
             {title}
+            {ephemeralBadge}
             {pinIndicator}
             {terminalStatusIcon}
             {isRegeneratingTitle ? (
@@ -1431,6 +1435,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
             </div>
             <div className="mt-1 flex min-w-0">
               {title}
+              {ephemeralBadge}
               {isRegeneratingTitle ? (
                 <span role="status" className="sr-only">
                   Regenerating title
