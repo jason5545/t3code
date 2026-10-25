@@ -97,18 +97,59 @@ export function ompEphemeralOverlay(models: ReadonlyArray<OmpModelEndpoint>): st
   ].join("\n")}\n`;
 }
 
-/**
- * Appended after the user's launch args so none of them can lift a restriction.
- * No `--no-extensions`: the local provider's credentials come from an OMP
- * extension, so without them OMP finds no usable model and exits.
- */
-export function ompEphemeralLaunchArgs(overlayPath: string): ReadonlyArray<string> {
-  return ["--no-title", `--tools=${OMP_EPHEMERAL_TOOLS.join(",")}`, "--config", overlayPath];
+/** The OMP instance's `ephemeralExtensionPaths` setting, one path per line. */
+export function ompEphemeralExtensionPaths(setting: string): ReadonlyArray<string> {
+  return setting
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+/** Drops every extension the user's launch args name; `--hook` loads one too. */
+function withoutExtensionArgs(args: ReadonlyArray<string>): ReadonlyArray<string> {
+  const kept: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) continue;
+    if (arg === "-e" || arg === "--extension" || arg === "--hook") {
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith("-e=") || arg.startsWith("--extension=") || arg.startsWith("--hook=")) {
+      continue;
+    }
+    kept.push(arg);
+  }
+  return kept;
 }
 
 /**
- * No session file and no T3 MCP. The T3 extension still loads: its hook keeps
- * `write` and `edit` inside `root`, the thread's Scratch folder.
+ * Discovery stays off and only the configured extensions load: the local
+ * provider's credentials usually come from one, and nothing else may run.
+ * Explicit `--extension` paths still load under `--no-extensions`.
+ */
+function ompOnlyExtensions(extensionPaths: ReadonlyArray<string>): ReadonlyArray<string> {
+  return ["--no-extensions", ...extensionPaths.flatMap((path) => ["--extension", path])];
+}
+
+/** Appended after the user's launch args so none of them can lift a restriction. */
+export function ompEphemeralLaunchArgs(
+  overlayPath: string,
+  extensionPaths: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  return [
+    "--no-title",
+    `--tools=${OMP_EPHEMERAL_TOOLS.join(",")}`,
+    "--config",
+    overlayPath,
+    ...ompOnlyExtensions(extensionPaths),
+  ];
+}
+
+/**
+ * No session file and no T3 MCP. Besides the configured extensions, the T3
+ * extension loads: its hook keeps `write` and `edit` inside `root`, the
+ * thread's Scratch folder.
  */
 export function buildOmpEphemeralLaunch(input: {
   readonly launchArgs: ReadonlyArray<string>;
@@ -119,7 +160,7 @@ export function buildOmpEphemeralLaunch(input: {
   readonly runtimeMode: Parameters<typeof buildPiRpcLaunch>[0]["runtimeMode"];
 }) {
   const launch = buildPiRpcLaunch({
-    launchArgs: [...input.launchArgs, ...input.restrictions],
+    launchArgs: [...withoutExtensionArgs(input.launchArgs), ...input.restrictions],
     environment: input.environment,
     mcpSession: undefined,
     extensionPath: input.extensionPath,
@@ -132,8 +173,7 @@ export function buildOmpEphemeralLaunch(input: {
 
 /**
  * The overlay names every hosted provider, so a throwaway process lists OMP's
- * models first and is gone before the real one starts. It keeps extensions:
- * without the local provider's credentials it would list no local model.
+ * models first, with the same extensions, and is gone before the real one starts.
  */
 export const prepareOmpEphemeralLaunch = Effect.fn("PiAdapter.prepareOmpEphemeralLaunch")(
   function* (input: {
@@ -142,9 +182,13 @@ export const prepareOmpEphemeralLaunch = Effect.fn("PiAdapter.prepareOmpEphemera
     readonly environment: NodeJS.ProcessEnv;
     readonly cwd: string;
     readonly overlayPath: string;
+    readonly extensionPaths: ReadonlyArray<string>;
   }) {
     const discovery = buildPiRpcLaunch({
-      launchArgs: input.launchArgs,
+      launchArgs: [
+        ...withoutExtensionArgs(input.launchArgs),
+        ...ompOnlyExtensions(input.extensionPaths),
+      ],
       environment: input.environment,
       mcpSession: undefined,
       extensionPath: undefined,
@@ -178,13 +222,16 @@ export const prepareOmpEphemeralLaunch = Effect.fn("PiAdapter.prepareOmpEphemera
     if (!models.some(isLocalEndpoint)) {
       return yield* new PiRpcError({
         operation: "launch",
-        detail: "OMP lists no model served from this machine",
+        detail:
+          input.extensionPaths.length === 0
+            ? "OMP lists no model served from this machine. If an OMP extension provides your local model, add its path to this OMP instance's Ephemeral extensions setting (ephemeralExtensionPaths)"
+            : "OMP lists no model served from this machine with the extensions in this OMP instance's Ephemeral extensions setting (ephemeralExtensionPaths)",
       });
     }
     const fileSystem = yield* FileSystem.FileSystem;
     yield* fileSystem
       .writeFileString(input.overlayPath, ompEphemeralOverlay(models))
       .pipe(Effect.mapError((cause) => new PiRpcError({ operation: "launch", cause })));
-    return ompEphemeralLaunchArgs(input.overlayPath);
+    return ompEphemeralLaunchArgs(input.overlayPath, input.extensionPaths);
   },
 );

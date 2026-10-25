@@ -36,9 +36,18 @@ export const PiSettings = makeProviderSettingsSchema(
       Schema.withDecodingDefault(Effect.succeed([])),
       Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
     ),
+    // Fork patch 11: ephemeral OMP sessions load these and no other extension.
+    ephemeralExtensionPaths: Schema.optionalKey(TrimmedString).pipe(
+      Schema.annotateKey({
+        title: "Ephemeral extensions",
+        description:
+          "OMP only. Extension files an ephemeral thread loads, one path per line. Every other extension stays off, so list the one that provides your local model.",
+        providerSettingsForm: { control: "textarea", clearWhenEmpty: "omit" },
+      }),
+    ),
   },
   {
-    order: ["binaryPath", "launchArgs"],
+    order: ["binaryPath", "launchArgs", "ephemeralExtensionPaths"],
   },
 );
 export type PiSettings = typeof PiSettings.Type;

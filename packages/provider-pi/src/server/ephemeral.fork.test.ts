@@ -4,6 +4,7 @@ import {
   buildOmpEphemeralLaunch,
   OMP_EPHEMERAL_TOOLS,
   OMP_FOREIGN_CONFIG_SOURCES,
+  ompEphemeralExtensionPaths,
   ompEphemeralLaunchArgs,
   ompEphemeralOverlay,
   ompToolsBeyondAllowlist,
@@ -16,7 +17,7 @@ describe("ephemeral OMP launch", () => {
     const overlayPath = "/cache/omp-ephemeral-session.yml";
     const launch = buildOmpEphemeralLaunch({
       launchArgs: ["--thinking", "high"],
-      restrictions: ompEphemeralLaunchArgs(overlayPath),
+      restrictions: ompEphemeralLaunchArgs(overlayPath, []),
       environment: {
         PATH: "/usr/bin",
         [T3_MCP_URL_ENV]: "http://127.0.0.1:3773/mcp",
@@ -42,6 +43,43 @@ describe("ephemeral OMP launch", () => {
     assert.isUndefined(launch.env[T3_MCP_URL_ENV]);
     assert.isUndefined(launch.env[T3_MCP_BEARER_ENV]);
     assert.equal(launch.env[T3_PI_EPHEMERAL_ROOT_ENV], "/scratch/2026-10-25-thread");
+  });
+
+  it("loads only the configured extensions and the T3 hook, with discovery off", () => {
+    const configured = ompEphemeralExtensionPaths(
+      "  /home/me/.omp/agent/extensions/local-models.ts \n\n/opt/omp/other-local.ts\r\n",
+    );
+    const launch = buildOmpEphemeralLaunch({
+      launchArgs: [
+        "-e",
+        "/home/me/.omp/agent/extensions/lint.ts",
+        "--extension=/home/me/extra.ts",
+        "--hook",
+        "/home/me/hook.ts",
+        "--hook=/home/me/other-hook.ts",
+        "--thinking",
+        "high",
+      ],
+      restrictions: ompEphemeralLaunchArgs("/cache/overlay.yml", configured),
+      environment: { PATH: "/usr/bin" },
+      extensionPath: "/cache/pi-t3-mcp-extension.ts",
+      root: "/scratch/2026-10-25-thread",
+      runtimeMode: "full-access",
+    });
+
+    assert.include(launch.args, "--no-extensions");
+    const loaded = launch.args.flatMap((arg, index) =>
+      arg === "--extension" || arg === "-e" ? [launch.args[index + 1]] : [],
+    );
+    assert.deepEqual(loaded, [
+      "/home/me/.omp/agent/extensions/local-models.ts",
+      "/opt/omp/other-local.ts",
+      "/cache/pi-t3-mcp-extension.ts",
+    ]);
+    assert.isFalse(
+      launch.args.some((arg) => /^(-e|--extension|--hook)=/u.test(arg) || arg === "--hook"),
+    );
+    assert.include(launch.args, "high");
   });
 
   it("allows nothing that runs code, reaches the network or spawns subagents", () => {

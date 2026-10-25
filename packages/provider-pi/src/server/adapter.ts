@@ -77,6 +77,7 @@ import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
 import { isOmpBinary, ompTodoSteps, type OmpTodoStep } from "./rpcDialect.ts";
 import {
   buildOmpEphemeralLaunch,
+  ompEphemeralExtensionPaths,
   ompToolsBeyondAllowlist,
   prepareOmpEphemeralLaunch,
 } from "./ephemeral.ts";
@@ -514,6 +515,9 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             overlayPath: `${host.paths.providerStatusCacheDir}/omp-ephemeral-${String(
               input.providerSessionId,
             ).replace(/[^\w.-]/gu, "_")}.yml`,
+            extensionPaths: ompEphemeralExtensionPaths(
+              options.settings.ephemeralExtensionPaths ?? "",
+            ),
           }).pipe(
             Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
             Effect.provideService(FileSystem.FileSystem, fileSystem),

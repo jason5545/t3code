@@ -7142,5 +7142,7 @@
   "Delete this ephemeral thread? Its conversation is erased at once and cannot be recovered.": "要刪除這個無痕對話嗎？對話會立即清除，無法復原。",
   "Nothing of this ephemeral thread was kept.": "這個無痕對話沒有留下任何紀錄。",
   "Back to threads": "回到對話列表",
-  "This ephemeral thread is erased at once and cannot be recovered.": "這個無痕對話會立即清除，無法復原。"
+  "This ephemeral thread is erased at once and cannot be recovered.": "這個無痕對話會立即清除，無法復原。",
+  "Ephemeral threads stay on local models": "無痕對話只能用本機模型",
+  "An ephemeral thread runs only on a model served from this machine.": "無痕對話只能使用這台機器上提供的模型。"
 }
