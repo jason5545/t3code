@@ -17,6 +17,7 @@ import {
 } from "@t3tools/shared/t3McpToolPresentation";
 import {
   localizedT3McpToolTitle,
+  localizedThoughtGroupSummary,
   localizedWorkLogSummaryJoin,
 } from "@t3tools/shared/t3McpToolText";
 import { classifyMarkdownImageSource } from "@t3tools/client-runtime/markdown-images";
@@ -536,7 +537,9 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
   const toolEntries = entries.filter((entry) => entry.itemType !== "reasoning");
   if (entries.length > 0 && toolEntries.length === 0) {
     return {
-      summary: entries.length === 1 ? "Thought" : `Thought (×${entries.length})`,
+      summary:
+        localizedThoughtGroupSummary(entries.length) ??
+        (entries.length === 1 ? "Thought" : `Thought (×${entries.length})`),
       hasFailure: false,
     };
   }

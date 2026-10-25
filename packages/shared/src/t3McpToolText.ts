@@ -345,3 +345,9 @@ export function localizedT3ToolSummary(label: string): string | null {
 export function localizedWorkLogSummaryJoin(labels: ReadonlyArray<string>): string | null {
   return usesChineseDurations() ? labels.join("、") : null;
 }
+
+/** A group of reasoning entries only, `Thought (×3)` in English. */
+export function localizedThoughtGroupSummary(count: number): string | null {
+  if (!usesChineseDurations()) return null;
+  return count === 1 ? "已思考" : `已思考（×${count}）`;
+}

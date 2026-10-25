@@ -9,7 +9,7 @@ import { LOCALIZED_T3_MCP_TOOL_IDS, localizedT3McpToolTitle } from "@t3tools/sha
 import { describe, expect, it } from "vite-plus/test";
 
 import { summarizeT3ToolCalls, type T3ToolSummaryCall } from "./t3ToolSummary.ts";
-import { resolveWorkEntryToolPresentation } from "./work-log/presentation.ts";
+import { resolveWorkEntryToolPresentation, summarizeToolGroup } from "./work-log/presentation.ts";
 
 function inChinese<A>(run: () => A): A {
   setChineseDurations(true);
@@ -132,5 +132,19 @@ describe("T3 tool text in zh-TW", () => {
     expect(resolveT3McpToolPresentation("mcp__t3-code__delegate_task")?.displayName).toBe(
       "Delegate a child task",
     );
+  });
+
+  it("summarizes a group of thoughts", () => {
+    const thoughts = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        id: `thought-${index}`,
+        createdAt: "2026-10-25T00:00:00.000Z",
+        label: "Reasoning",
+        tone: "thinking" as const,
+        itemType: "reasoning" as const,
+      }));
+    expect(inChinese(() => summarizeToolGroup(thoughts(1)).summary)).toBe("已思考");
+    expect(inChinese(() => summarizeToolGroup(thoughts(3)).summary)).toBe("已思考（×3）");
+    expect(summarizeToolGroup(thoughts(3)).summary).toBe("Thought (×3)");
   });
 });

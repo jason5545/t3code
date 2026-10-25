@@ -113,6 +113,7 @@
     "apps/web/src/components/sidebar/updateEverythingRun.tsx",
     "apps/web/src/components/chat/ChatHeader.tsx",
     "apps/web/src/components/chat/MessagesTimeline.logic.ts",
+    "apps/web/src/components/chat/TimelineWorkEntryRow.tsx",
     "apps/web/src/components/RightPanelTabs.tsx"
   ]
 }

@@ -66,3 +66,10 @@ export function compactSendModeText(keepFullHistory: boolean): string {
   if (useChinese) return keepFullHistory ? "完整" : "壓縮";
   return keepFullHistory ? "Full" : "Compact";
 }
+
+/** An empty thought's placeholder, which reaches `remarkThoughtPreview` as a plugin option. */
+export function thoughtPreviewFallbackText(english: string): string {
+  if (!useChinese) return english;
+  if (english === "Thinking") return "思考中";
+  return english === "Thought" ? "已思考" : english;
+}

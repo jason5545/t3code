@@ -3,6 +3,7 @@ import { resolveWorkEntryToolPresentation } from "@t3tools/client-runtime/work-l
 import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
 import { toolGroupAction } from "./MessagesTimeline.logic";
 import { formatWorkspaceRelativePath } from "../../filePathDisplay";
+import { thoughtPreviewFallbackText } from "../../locale/assembledText";
 import { type TimelineWorkEntry, type TimelineRow } from "./timelineRowContext";
 import { type WorkEntryIconName } from "./TimelineToolActivityIcon";
 
@@ -231,6 +232,6 @@ export function remarkThoughtPreview(fallback: string) {
     if (last?.type === "text") last.value = last.value.trimEnd();
     tree.children = children.some((child) => child.type !== "text" || child.value)
       ? children
-      : [{ type: "text", value: fallback }];
+      : [{ type: "text", value: thoughtPreviewFallbackText(fallback) }];
   };
 }
