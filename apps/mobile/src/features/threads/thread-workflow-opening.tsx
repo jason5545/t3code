@@ -7,7 +7,9 @@ import {
   workflowOpeningParentThreadId,
   type RuntimeSubagent,
 } from "@t3tools/client-runtime/state/subagentRuntime";
-import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import type { EnvironmentThread } from "@t3tools/client-runtime/state/shell";
+import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
+import { Atom } from "effect/reactivity";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 
@@ -21,9 +23,17 @@ import { WorkLogBlock } from "./work-log-layout";
 // A script longer than this many lines shows its head until opened.
 const FOLDED_SCRIPT_LINES = 10;
 
-/** The workflow opening for a thread, or null; the parent's detail loads only for a workflow. */
-export function useWorkflowOpening(environmentId: EnvironmentId, threadId: ThreadId) {
-  const threadAtom = environmentThreadDetails.threadAtom(scopeThreadRef(environmentId, threadId));
+const EMPTY_THREAD_ATOM = Atom.make<EnvironmentThread | null>(null).pipe(
+  Atom.withLabel("mobile-workflow-opening:empty"),
+);
+
+/**
+ * The workflow opening for a thread, or null; the parent's detail loads only for a workflow.
+ * Pass the selection's detail ref: a route id would subscribe before a queued creation
+ * reaches the server, and that early not-found leaves the new thread on "Starting".
+ */
+export function useWorkflowOpening(ref: ScopedThreadRef | null) {
+  const threadAtom = ref === null ? EMPTY_THREAD_ATOM : environmentThreadDetails.threadAtom(ref);
   // Selected as a primitive so an ordinary thread's updates never change the result.
   const parentId = useAtomValue(threadAtom, (thread) =>
     thread === null
@@ -37,7 +47,11 @@ export function useWorkflowOpening(environmentId: EnvironmentId, threadId: Threa
     parentId === null ? null : (thread?.projection ?? null),
   );
   const parentSubagents = useAtomValue(
-    environmentThreadDetails.threadAtom(scopeThreadRef(environmentId, parentId ?? threadId)),
+    ref === null
+      ? EMPTY_THREAD_ATOM
+      : environmentThreadDetails.threadAtom(
+          scopeThreadRef(ref.environmentId, parentId ?? ref.threadId),
+        ),
     (parent) => (parentId === null ? null : (parent?.projection.subagents ?? null)),
   );
   return projection === null

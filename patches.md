@@ -95,6 +95,12 @@ Upstream baseline: `51273020db` (merged 2026-10-23).
 - Cost: an agent-opened tab keeps compositing for as long as it exists. An idle page draws no frames; an animated one keeps the GPU busy behind the app.
 - Left alone: `visible` in `preview_status` and `preview_open` reports server stream viewers (`tab.viewers`), which a desktop-hosted tab never has, so it stays false even with the panel open. A collapsed screenshot is 1280 × 800 at 1x, because `MAX_SCREENSHOT_WIDTH` (1280) scales a 2x render down; an open fill panel 480 wide comes back at 960 wide.
 
+## 10. Mobile new threads with images no longer stay on Starting
+
+- On a slow link (phone in Taiwan, agent-fr in France, about 250ms RTT) a new thread whose first message carried an image stayed on 正在啟動 although the server ran the turn; leaving and reopening the thread showed it (agent-channel issue 34, 2026-10-24). Mobile uploads the images before it sends `launchThread`, so a thread snapshot requested meanwhile got `thread_not_found`, and client-runtime's `threads.ts` keeps a not-found as deleted for the rest of that subscription.
+- Upstream's `useThreadSelection` already holds `selectedThreadDetailRef` at null until the creation is delivered (#23467), but `ThreadFeed` read the workflow opening (#20857) by the route id, so it subscribed during the upload. `useWorkflowOpening` now takes the detail ref, passed in as `ThreadFeed`'s `detailRef`.
+- Drop this section when upstream gates `useWorkflowOpening` itself.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry only the expectation edits the fork's behaviour forces: `ProviderRegistry.test.ts`'s `disabledDefaultSlots` always disables the default OMP slot (it would probe the real `omp`), and `serverSettings.test.ts` expects the OMP default instance.
