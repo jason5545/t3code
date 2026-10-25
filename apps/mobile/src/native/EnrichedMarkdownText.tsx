@@ -22,6 +22,7 @@ import type { SelectableMarkdownTextProps } from "./SelectableMarkdownText.types
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { Menu } from "../components/ui/Menu";
 import { useEnrichedLinkVariants } from "./useEnrichedLinkVariants";
+import { markdownSelectionMenuConfig } from "./markdownSelectionMenu";
 import { useRetryingImageSource } from "./useRetryingImageSource";
 import { copyTextWithHaptic } from "../lib/copyTextWithHaptic";
 import {
@@ -334,6 +335,7 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
           onLinkLongPress={onLinkLongPress}
           linkContextMenuItems={linkContextMenuItems}
           contextMenuItems={props.contextMenuItems}
+          selectionMenuConfig={markdownSelectionMenuConfig()}
           linkPillContent={linkPillContent}
         />
       </View>

@@ -7405,5 +7405,6 @@
   "Compacting before the cache expires…": "快取到期前正在壓縮…",
   "Compacting after being idle…": "閒置後正在壓縮…",
   "Context automatically compacted before cache expiry": "快取到期前已自動壓縮上下文",
-  "Context compacted after being idle": "閒置後已壓縮上下文"
+  "Context compacted after being idle": "閒置後已壓縮上下文",
+  "Copy Image URL": "複製圖片網址"
 }
