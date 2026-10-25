@@ -1,5 +1,6 @@
 import {
   type CustomModelSetting,
+  isLoopbackBaseUrl,
   type ServerProvider,
   type ServerProviderModel,
 } from "@t3tools/contracts";
@@ -114,11 +115,13 @@ function parseDiscoveredModels(
     const slug = `${provider}/${id}`;
     if (seen.has(slug)) continue;
     seen.add(slug);
+    const baseUrl = recordString(model, "baseUrl");
     parsed.push({
       slug,
       name: recordString(model, "name") ?? slug,
       subProvider: provider,
       isCustom: false,
+      ...(baseUrl !== undefined && isLoopbackBaseUrl(baseUrl) ? { local: true } : {}),
       capabilities: thinkingCapabilitiesForPiModel(
         model,
         provider === activeProvider && id === activeModelId

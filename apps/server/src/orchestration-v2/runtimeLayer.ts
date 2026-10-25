@@ -21,6 +21,7 @@ import * as CommandPolicy from "./CommandPolicy.ts";
 import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as ContextHandoffService from "./ContextHandoffService.ts";
 import * as EffectOutbox from "./EffectOutbox.ts";
+import * as EphemeralThreads from "./EphemeralThreads.ts";
 import * as EffectWorker from "./EffectWorker.ts";
 import * as EventSink from "./EventSink.ts";
 import * as EventStore from "./EventStore.ts";
@@ -248,6 +249,11 @@ const layerAgentSessionImporterProvided = AgentSessionImporter.layer.pipe(
   ),
 );
 
+// Fork patch 11: one instance shared by thread management, startup, the shell
+// stream and MCP, so its record of live ephemeral threads is the only one.
+const layerEphemeralThreadsProvided = EphemeralThreads.layer.pipe(
+  Layer.provide(Layer.merge(layerOrchestratorProvided, layerStores)),
+);
 const layerThreadManagementProvided = ThreadManagementService.layerWithLegacyImporter.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -255,6 +261,7 @@ const layerThreadManagementProvided = ThreadManagementService.layerWithLegacyImp
       layerLegacyV1ThreadImporterProvided,
       layerCommandReceiptStoreProvided,
       layerProviderSessionManagerProvided,
+      layerEphemeralThreadsProvided,
     ),
   ),
 );
@@ -350,6 +357,7 @@ export const layer = Layer.mergeAll(
   layerCommandOutputHubProvided,
   layerOrchestratorProvided,
   layerMcpAppRequestsProvided,
+  layerEphemeralThreadsProvided,
   layerThreadManagementProvided,
   layerEffectWorkerProvided,
   layerProviderSessionManagerProvided,

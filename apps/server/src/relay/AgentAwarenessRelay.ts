@@ -11,6 +11,7 @@ import {
   type RelayAgentActivityPublishProofPayload,
   type RelayAgentActivityState,
 } from "@t3tools/contracts/relay";
+import { EPHEMERAL_THREAD_PLACEHOLDER_TEXT } from "@t3tools/contracts";
 import { projectThreadAwarenessV2 } from "@t3tools/shared/agentAwareness";
 import { turnItemUpdateCanEndBackgroundWork } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
@@ -191,6 +192,20 @@ function sanitizeRelayAgentActivityState(
   return detail ? { ...rest, detail } : rest;
 }
 
+/** Fork patch 11: an ephemeral thread's title is its first message, so pushes carry fixed text. */
+function withoutEphemeralText(
+  thread: OrchestrationV2ThreadShell,
+  state: RelayAgentActivityState | null,
+): RelayAgentActivityState | null {
+  if (state === null || thread.ephemeral !== true) return state;
+  const { detail: _detail, ...rest } = state;
+  return {
+    ...rest,
+    threadTitle: EPHEMERAL_THREAD_PLACEHOLDER_TEXT,
+    headline: EPHEMERAL_THREAD_PLACEHOLDER_TEXT,
+  };
+}
+
 function relayEnvironmentClient(token: string) {
   return HttpClient.mapRequest(HttpClientRequest.setHeader("authorization", `Bearer ${token}`));
 }
@@ -314,11 +329,14 @@ function resolveAgentAwarenessRelayPublishSnapshot(input: {
   return {
     projectId: input.thread.value.projectId,
     state: sanitizeRelayAgentActivityState(
-      projectThreadAwarenessV2({
-        environmentId: input.environmentId,
-        project: input.project.value,
-        thread: input.thread.value,
-      }),
+      withoutEphemeralText(
+        input.thread.value,
+        projectThreadAwarenessV2({
+          environmentId: input.environmentId,
+          project: input.project.value,
+          thread: input.thread.value,
+        }),
+      ),
     ),
     reason: "snapshot",
   };

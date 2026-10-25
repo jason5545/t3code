@@ -74,7 +74,8 @@ import {
   resolvePiLaunchArgs,
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
-import { ompTodoSteps, type OmpTodoStep } from "./rpcDialect.ts";
+import { isOmpBinary, ompTodoSteps, type OmpTodoStep } from "./rpcDialect.ts";
+import { buildOmpEphemeralLaunch, prepareOmpEphemeralLaunch } from "./ephemeral.ts";
 
 export const PI_PROVIDER = ProviderDriverKind.make("pi");
 const PI_DRIVER_KIND = PI_PROVIDER;
@@ -452,7 +453,8 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
     ) {
       const scope = yield* Effect.scope;
       const cwd = input.runtimePolicy.cwd ?? host.paths.cwd;
-      const mcpSession = yield* mcpSessions.read(input.threadId);
+      const ephemeral = input.runtimePolicy.ephemeral === true;
+      const mcpSession = ephemeral ? undefined : yield* mcpSessions.read(input.threadId);
       const provideCacheFs = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem>) =>
         effect.pipe(
           Effect.provideService(FileSystem.FileSystem, fileSystem),
@@ -475,15 +477,50 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       if (!resolvedLaunchArgs.ok) {
         return yield* protocolError(resolvedLaunchArgs.message);
       }
-      const launch = buildPiRpcLaunch({
-        launchArgs: resolvedLaunchArgs.args,
-        environment: options.environment,
-        mcpSession,
-        extensionPath,
-        runtimeMode: input.runtimePolicy.runtimeMode,
-      });
+      const binaryPath = options.settings.binaryPath || "pi";
+      if (ephemeral && !isOmpBinary(binaryPath)) {
+        return yield* protocolError("Only OMP runs ephemeral threads");
+      }
+      const ephemeralRestrictions = ephemeral
+        ? yield* prepareOmpEphemeralLaunch({
+            command: binaryPath,
+            launchArgs: resolvedLaunchArgs.args,
+            environment: options.environment,
+            cwd,
+            overlayPath: `${host.paths.providerStatusCacheDir}/omp-ephemeral-${String(
+              input.providerSessionId,
+            ).replace(/[^\w.-]/gu, "_")}.yml`,
+          }).pipe(
+            Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+            Effect.provideService(FileSystem.FileSystem, fileSystem),
+            Effect.mapError(
+              (cause) =>
+                new ProviderAdapter.ProviderAdapterOpenSessionError({
+                  driver: PI_PROVIDER,
+                  providerSessionId: input.providerSessionId,
+                  cause,
+                }),
+            ),
+          )
+        : undefined;
+      const launch =
+        ephemeralRestrictions === undefined
+          ? buildPiRpcLaunch({
+              launchArgs: resolvedLaunchArgs.args,
+              environment: options.environment,
+              mcpSession,
+              extensionPath,
+              runtimeMode: input.runtimePolicy.runtimeMode,
+            })
+          : buildOmpEphemeralLaunch({
+              launchArgs: resolvedLaunchArgs.args,
+              restrictions: ephemeralRestrictions,
+              environment: options.environment,
+              extensionPath,
+              runtimeMode: input.runtimePolicy.runtimeMode,
+            });
       const scopedLaunch = yield* agentScope.wrap({
-        command: options.settings.binaryPath || "pi",
+        command: binaryPath,
         args: launch.args,
         name: "pi",
         threadId: input.threadId,
@@ -2256,6 +2293,16 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
         const existing = threadInput.existingProviderThread;
         const resumeId = existing?.nativeThreadRef?.nativeId;
         const needsNewSession = resumeId == null && registrationAttempted;
+        // An ephemeral conversation has no session file: switch_session would
+        // load an empty one, so only this process's own session can continue.
+        if (ephemeral) {
+          if (resumeId != null && resumeId === lastNativeThreadId && threadState !== null) {
+            return threadState.providerThread;
+          }
+          if (resumeId != null || needsNewSession) {
+            return yield* protocolError("This ephemeral conversation ended with its OMP process");
+          }
+        }
         registrationAttempted = true;
         if (resumeId != null || needsNewSession) {
           lastNativeThreadId = resumeId ?? lastNativeThreadId;
@@ -2304,7 +2351,10 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           baselineThinking = recordString(stateData, "thinkingLevel") ?? null;
         }
         // switch_session accepts a file path, not Pi's display session UUID.
-        const nativeId = recordString(stateData, "sessionFile");
+        // Ephemeral sessions have no file and never switch, so the id names them.
+        const nativeId =
+          recordString(stateData, "sessionFile") ??
+          (ephemeral ? recordString(stateData, "sessionId") : undefined);
         if (nativeId === undefined) {
           return yield* protocolError("get_state returned no persisted sessionFile", stateData);
         }
@@ -2762,6 +2812,23 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               return yield* protocolError(`Pi turn ${interruptInput.providerTurnId} is not active`);
             }
             turn.interrupted = true;
+            // Terminating an ephemeral process discards its conversation, so
+            // Stop aborts first; only an abort that fails ends (and purges) it.
+            const ephemeralAbortFirst =
+              ephemeral &&
+              interruptInput.requestRuntimeRestart === true &&
+              !turn.settleWhenIdle &&
+              turn.activeCompaction === null &&
+              !turn.manualCompactInFlight;
+            if (
+              ephemeralAbortFirst &&
+              (yield* request({ type: "abort" }, 2_000).pipe(
+                Effect.as(true),
+                Effect.orElseSucceed(() => false),
+              ))
+            ) {
+              return;
+            }
             if (
               interruptInput.requestRuntimeRestart === true ||
               turn.settleWhenIdle ||
@@ -2771,7 +2838,11 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               // Pi's generic abort does not cancel manual compaction. Terminate
               // so Stop covers user /compact as well as detached recovery compact.
               stopRequested = true;
-              if (interruptInput.requestRuntimeRestart === true && !turn.settleWhenIdle) {
+              if (
+                interruptInput.requestRuntimeRestart === true &&
+                !turn.settleWhenIdle &&
+                !ephemeralAbortFirst
+              ) {
                 yield* request({ type: "abort" }, 2_000).pipe(Effect.ignore);
               }
               // Terminating fails every later request, so read the stopped

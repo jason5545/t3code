@@ -17,6 +17,11 @@ const layerSetup = Layer.effectDiscard(
     // CLI and server write from separate processes; wait rather than fail with SQLITE_BUSY.
     yield* sql`PRAGMA busy_timeout = 5000;`;
     yield* sql`PRAGMA foreign_keys = ON;`;
+    // Fork patch 11: zero freed pages on every write, not just at purge time.
+    // Streaming rewrites a message many times, and each old version would
+    // otherwise survive in free pages after an ephemeral thread is purged.
+    // It costs about 5% on the streaming write path.
+    yield* sql`PRAGMA secure_delete = ON;`;
     // Only an empty file can switch modes here; an existing database needs the
     // offline VACUUM that `t3 doctor` runs, which rebuilds it with pointer maps.
     const tables = yield* sql<{

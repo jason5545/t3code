@@ -17,6 +17,7 @@ export * from "./terminal.ts";
 export * from "./provider.ts";
 export * from "./providerInstance.ts";
 export * from "./ompProvider.ts";
+export * from "./ephemeralThread.ts";
 export * from "./providerSetup.ts";
 export * from "./providerRuntime.ts";
 export * from "./providerUsageLimits.ts";

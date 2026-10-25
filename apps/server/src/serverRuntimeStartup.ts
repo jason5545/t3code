@@ -17,6 +17,7 @@ import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
@@ -31,6 +32,7 @@ import { flushCompileCache } from "./compileCache.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as EffectWorker from "./orchestration-v2/EffectWorker.ts";
+import * as EphemeralThreads from "./orchestration-v2/EphemeralThreads.ts";
 import * as LegacyV1ThreadImporter from "./orchestration-v2/legacy/LegacyV1ThreadImporter.ts";
 import * as Orchestrator from "./orchestration-v2/Orchestrator.ts";
 import * as ProviderRuntimeRecovery from "./orchestration-v2/ProviderRuntimeRecoveryService.ts";
@@ -454,6 +456,7 @@ const make = Effect.fn("serverRuntimeStartup.make")(function* (options?: Startup
   const keybindings = yield* Keybindings.Keybindings;
   const legacyV1ThreadImporter = yield* LegacyV1ThreadImporter.LegacyV1ThreadImporter;
   const providerRuntimeRecovery = yield* ProviderRuntimeRecovery.ProviderRuntimeRecoveryService;
+  const ephemeralThreads = yield* Effect.serviceOption(EphemeralThreads.EphemeralThreads);
   const orchestrator = yield* Orchestrator.OrchestratorV2;
   const providerSessions = yield* ProviderSessionManager.ProviderSessionManagerV2;
   const agentAwarenessRelay = yield* AgentAwarenessRelay.AgentAwarenessRelay;
@@ -550,7 +553,16 @@ const make = Effect.fn("serverRuntimeStartup.make")(function* (options?: Startup
           ),
         ),
       ),
-      recover: runStartupPhase("orchestration-v2.recovery", providerRuntimeRecovery.recover),
+      // Fork patch 11: an ephemeral thread's process died with the last server,
+      // so purge it before recovery could try to resume it.
+      recover: runStartupPhase(
+        "orchestration-v2.ephemeral-threads.purge",
+        Option.isSome(ephemeralThreads) ? ephemeralThreads.value.purgeAtStartup : Effect.void,
+      ).pipe(
+        Effect.andThen(
+          runStartupPhase("orchestration-v2.recovery", providerRuntimeRecovery.recover),
+        ),
+      ),
       recoverDelegatedTasks: runStartupPhase(
         "orchestration-v2.delegated-tasks.recover",
         orchestrator.recoverDelegatedTasks,

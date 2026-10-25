@@ -112,6 +112,7 @@ import * as EnvironmentTheme from "./environmentTheme.ts";
 import * as Keybindings from "./keybindings.ts";
 import * as ExternalLauncher from "./process/externalLauncher.ts";
 import * as ThreadManagementService from "./orchestration-v2/ThreadManagementService.ts";
+import * as EphemeralThreads from "./orchestration-v2/EphemeralThreads.ts";
 import * as CommandOutputHub from "./orchestration-v2/CommandOutputHub.ts";
 import * as McpAppRequests from "./mcpApps/McpAppRequests.ts";
 import * as ProviderSessionManager from "./orchestration-v2/ProviderSessionManager.ts";
@@ -985,6 +986,7 @@ export const subscribeOrchestrationV2Shell = Effect.fn("ws.orchestrationV2.subsc
     const projects = yield* ProjectStore.ProjectStoreV2;
     const projectService = yield* ProjectService.ProjectService;
     const projectEnrichment = yield* ProjectEnrichmentService.ProjectEnrichmentService;
+    const ephemeralThreads = yield* Effect.serviceOption(EphemeralThreads.EphemeralThreads);
     let subagentThreadIds = new Set<string>();
     const filterSubagentTranscript = (stored: ApplicationStoredEvent) =>
       shouldPublishShellApplicationEvent(stored, subagentThreadIds);
@@ -1163,7 +1165,12 @@ export const subscribeOrchestrationV2Shell = Effect.fn("ws.orchestrationV2.subsc
       }
 
       const highWater = yield* applicationEvents.latestApplicationSequence;
-      if (!(yield* canReplayPersistedRange(input.afterSequence, highWater, SHELL_RESUME_MAX_GAP))) {
+      if (
+        !(yield* canReplayPersistedRange(input.afterSequence, highWater, SHELL_RESUME_MAX_GAP)) ||
+        // Fork patch 11: a purge deleted the events, its deletion included.
+        (Option.isSome(ephemeralThreads) &&
+          (yield* ephemeralThreads.value.replayCrossesPurge(input.afterSequence)))
+      ) {
         const loaded = yield* loadSnapshot();
         return composeShellStreamWithEnrichment({
           initial: initialSnapshotItems(loaded),
@@ -2023,6 +2030,7 @@ export const layerWsRpc = (
                               : { context: input.initialMessage.context }),
                           },
                         }),
+                    ...(input.ephemeral === true ? { ephemeral: true } : {}),
                     createdBy: "user",
                     creationSource: input.creationSource ?? "web",
                   }).pipe(Effect.provide(intakeContext)),

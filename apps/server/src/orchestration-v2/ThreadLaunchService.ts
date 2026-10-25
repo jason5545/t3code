@@ -4,6 +4,7 @@ import * as TerminalManager from "../terminal/Manager.ts";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import {
   CommandId,
+  ephemeralThreadTitle,
   type ChatAttachment,
   type MessageId,
   type ModelSelection,
@@ -96,6 +97,8 @@ export interface ThreadLaunchInput {
   };
   readonly createdBy: OrchestrationV2Actor;
   readonly creationSource: OrchestrationV2CreationSource;
+  /** Fork patch 11: thread management refuses it outside Scratch, OMP and a local model. */
+  readonly ephemeral?: boolean;
 }
 
 type PreparationInput = Pick<
@@ -808,7 +811,28 @@ const make = Effect.gen(function* () {
   });
 
   const launch: ThreadLaunchService["Service"]["launch"] = Effect.fn("ThreadLaunchService.launch")(
-    function* (request) {
+    function* (launchRequest) {
+      // Fork patch 11: an ephemeral thread is titled from its first line, so no
+      // model titles it, and its Scratch folder name carries none of its words.
+      if (
+        launchRequest.ephemeral === true &&
+        (launchRequest.initialMessage === undefined ||
+          launchRequest.reuseExistingThread === true ||
+          launchRequest.importedNativeThread !== undefined)
+      ) {
+        return yield* mapError(
+          launchRequest,
+          "create-thread",
+        )("An ephemeral thread starts as a new thread with its first message.");
+      }
+      const request: ThreadLaunchInput =
+        launchRequest.ephemeral === true && launchRequest.initialMessage !== undefined
+          ? {
+              ...launchRequest,
+              title: ephemeralThreadTitle(launchRequest.initialMessage.text),
+              generateTitle: false,
+            }
+          : launchRequest;
       // Scratch has no Git repository. Normalize before folder allocation so
       // durable preparation and retries use the thread's own Scratch folder.
       const input: ThreadLaunchInput =
@@ -888,7 +912,8 @@ const make = Effect.gen(function* () {
                   .folderForThread({
                     projectId: input.projectId,
                     threadId: candidateThreadId,
-                    text: input.initialMessage?.text ?? input.title,
+                    text:
+                      input.ephemeral === true ? "" : (input.initialMessage?.text ?? input.title),
                   })
                   .pipe(Effect.mapError(mapError(input, "provision-worktree", candidateThreadId))),
                 {
@@ -922,6 +947,7 @@ const make = Effect.gen(function* () {
                 ...(input.importedNativeThread === undefined
                   ? {}
                   : { importedNativeThread: input.importedNativeThread }),
+                ...(input.ephemeral === true ? { ephemeral: true } : {}),
                 createdBy: input.createdBy,
                 creationSource: input.creationSource,
               });

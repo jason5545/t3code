@@ -2,6 +2,7 @@ import { AgentScope } from "@t3tools/shared/AgentScope";
 import * as KeyedLock from "@t3tools/shared/KeyedLock";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import {
+  EPHEMERAL_THREAD_IDLE_MS,
   isOrchestrationV2WorkActive,
   ModelSelection,
   OrchestrationV2DomainEvent,
@@ -47,6 +48,7 @@ import * as ServerSettings from "../serverSettings.ts";
 import * as McpSessionRegistry from "../mcp/McpSessionRegistry.ts";
 import * as EventSink from "./EventSink.ts";
 import * as CommandOutputHub from "./CommandOutputHub.ts";
+import * as EphemeralThreadSignals from "./EphemeralThreadSignals.ts";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ProviderEventIngestor from "./ProviderEventIngestor.ts";
 import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
@@ -198,6 +200,11 @@ interface LiveSessionEntry {
    */
   readonly mcpCredentialIdByThread: ReadonlyMap<ThreadId, string>;
   readonly supportsMultipleProviderThreads: boolean;
+  /**
+   * Fork patch 11: releasing an ephemeral session discards its conversation, so it
+   * idles for the purge window instead of the usual one and never gets T3 MCP.
+   */
+  readonly ephemeral: boolean;
   readonly runtime: ProviderAdapter.ProviderAdapterV2SessionRuntime;
   readonly exposedRuntime: ProviderAdapter.ProviderAdapterV2SessionRuntime;
   readonly eventSubscribers: Ref.Ref<
@@ -315,6 +322,9 @@ export const layerWithOptions = (
       const fileSystem = yield* FileSystem.FileSystem;
       const mcpSessionRegistry = yield* McpSessionRegistry.McpSessionRegistry;
       const mcpSessions = yield* McpProviderSessions.McpProviderSessions;
+      const ephemeralSignals = yield* Effect.serviceOption(
+        EphemeralThreadSignals.EphemeralThreadSignals,
+      );
       /**
        * When present, an unreadable settings file withholds browser access
        * rather than granting it — an explicit "off" silently becoming "on"
@@ -435,8 +445,9 @@ export const layerWithOptions = (
       const prepareMcpSession = (
         threadId: ThreadId,
         providerInstanceId: ProviderInstanceId,
+        ephemeral: boolean,
       ): Effect.Effect<PreparedMcpCredential> =>
-        options.configureMcp === false
+        options.configureMcp === false || ephemeral
           ? mcpSessions
               .clear(threadId)
               .pipe(Effect.as<PreparedMcpCredential>({ mcpCredentialId: undefined, issued: false }))
@@ -1045,6 +1056,14 @@ export const layerWithOptions = (
                     yield* retryReleaseRecords(records);
                     return yield* recorded;
                   }
+                  // Startup purges every ephemeral thread, so shutdown need not.
+                  if (
+                    entry.ephemeral &&
+                    input.reason !== "server_shutdown" &&
+                    Option.isSome(ephemeralSignals)
+                  ) {
+                    yield* ephemeralSignals.value.sessionEnded(entry.attachedThreadIds);
+                  }
                   if (Option.isSome(closeExit) && Exit.isFailure(closeExit.value)) {
                     return yield* Effect.failCause(closeExit.value.cause);
                   }
@@ -1218,7 +1237,9 @@ export const layerWithOptions = (
 
         yield* cancelIdleFiber(entry.idleFiber);
         const generation = entry.idleGeneration + 1;
-        const idleFiber = yield* Effect.sleep(Duration.millis(idleTimeoutMs)).pipe(
+        const idleFiber = yield* Effect.sleep(
+          Duration.millis(entry.ephemeral ? EPHEMERAL_THREAD_IDLE_MS : idleTimeoutMs),
+        ).pipe(
           Effect.andThen(releaseIfStillIdle({ providerSessionId, generation })),
           Effect.forkIn(layerScope),
         );
@@ -1373,7 +1394,12 @@ export const layerWithOptions = (
               Effect.uninterruptible,
             );
             if (attached !== undefined) {
-              const prepared = yield* prepareMcpSession(input.threadId, input.providerInstanceId);
+              const prepared = yield* prepareMcpSession(
+                input.threadId,
+                input.providerInstanceId,
+                (yield* Ref.get(sessions)).get(sessionKey(input.providerSessionId))?.ephemeral ===
+                  true,
+              );
               preparedForCleanup = prepared;
               if (prepared.mcpCredentialId !== undefined) {
                 const mcpCredentialId = prepared.mcpCredentialId;
@@ -1567,7 +1593,9 @@ export const layerWithOptions = (
           if (tracked === undefined) return;
           const [threadId, pending] = tracked;
           const generation = pending.generation + 1;
-          const fiber = yield* Effect.sleep(Duration.millis(idleTimeoutMs)).pipe(
+          const fiber = yield* Effect.sleep(
+            Duration.millis(entry.ephemeral ? EPHEMERAL_THREAD_IDLE_MS : idleTimeoutMs),
+          ).pipe(
             Effect.andThen(unloadIdleThread({ providerSessionId, threadId, generation })),
             Effect.forkIn(layerScope),
           );
@@ -2151,6 +2179,7 @@ export const layerWithOptions = (
               const prepared = yield* prepareMcpSession(
                 input.threadId,
                 input.modelSelection.instanceId,
+                input.runtimePolicy.ephemeral === true,
               );
               const mcpCredentialId = prepared.mcpCredentialId;
               let reservationDropped = mcpCredentialId === undefined;
@@ -2230,6 +2259,7 @@ export const layerWithOptions = (
                 supportsMultipleProviderThreads:
                   runtime.providerSession.capabilities.sessions
                     .supportsMultipleProviderThreadsPerSession,
+                ephemeral: input.runtimePolicy.ephemeral === true,
                 runtime,
                 exposedRuntime,
                 eventSubscribers,

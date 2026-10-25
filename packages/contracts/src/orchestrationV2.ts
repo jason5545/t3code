@@ -437,6 +437,8 @@ export const OrchestrationV2AppThread = Schema.Struct({
     ),
   ),
   deletedAt: Schema.NullOr(Schema.DateTimeUtc),
+  /** Fork patch 11: set at creation, never changed; the thread is purged when it ends. */
+  ephemeral: Schema.optional(Schema.Boolean),
 });
 export type OrchestrationV2AppThread = typeof OrchestrationV2AppThread.Type;
 
@@ -1886,6 +1888,8 @@ export const OrchestrationV2ThreadShell = Schema.Struct({
     ),
   ),
   deletedAt: Schema.NullOr(Schema.DateTimeUtc),
+  /** Fork patch 11: clients never cache this thread and mark it as ephemeral. */
+  ephemeral: Schema.optional(Schema.Boolean),
 });
 export type OrchestrationV2ThreadShell = typeof OrchestrationV2ThreadShell.Type;
 
@@ -2605,6 +2609,8 @@ export const OrchestrationV2Command = Schema.Union([
         metadata: Schema.optional(OrchestrationV2ProviderThreadNativeMetadata),
       }),
     ),
+    /** Fork patch 11: only thread launch sets this, after checking Scratch, OMP and a local model. */
+    ephemeral: Schema.optional(Schema.Boolean),
   }),
   Schema.Struct({
     type: Schema.Literal("thread.archive"),
@@ -3195,6 +3201,8 @@ export const OrchestrationV2ThreadLaunchInput = Schema.Struct({
       attachments: Schema.Array(ChatAttachment),
     }),
   ),
+  /** Fork patch 11: Scratch, an OMP instance and a local model only; needs an initial message. */
+  ephemeral: Schema.optional(Schema.Boolean),
 });
 export type OrchestrationV2ThreadLaunchInput = typeof OrchestrationV2ThreadLaunchInput.Type;
 

@@ -65,6 +65,8 @@ import * as ProviderInstanceRegistryHydration from "./provider/ProviderInstanceR
 import * as ProjectSettingsOverrideSweep from "./provider/ProjectSettingsOverrideSweep.ts";
 import * as TerminalManager from "./terminal/Manager.ts";
 import * as McpHttpServer from "./mcp/McpHttpServer.ts";
+import * as HideEphemeralThreads from "./mcp/hideEphemeralThreads.ts";
+import * as EphemeralThreadSignals from "./orchestration-v2/EphemeralThreadSignals.ts";
 import * as McpSessionRegistry from "./mcp/McpSessionRegistry.ts";
 import * as PreviewAutomationBroker from "./mcp/PreviewAutomationBroker.ts";
 import * as DeviceService from "./device/DeviceService.ts";
@@ -619,6 +621,9 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
   ),
   Layer.provideMerge(ProviderRegistry.layer),
   Layer.provideMerge(ProviderInstanceRegistryHydration.layer),
+  // Fork patch 11: below the orchestration layers so the session manager and
+  // the ephemeral purge share one queue.
+  Layer.provideMerge(EphemeralThreadSignals.layer),
   Layer.provideMerge(
     Layer.mergeAll(
       AntigravityInstallation.AntigravityInstallation.layer,
@@ -717,6 +722,8 @@ const layerMakeRoutes = Layer.mergeAll(
   McpHttpServer.layer.pipe(
     Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),
     Layer.provide(McpOAuth.layerMcpClientAuthenticator),
+    // Fork patch 11: every MCP tool sees threads through this view.
+    Layer.provide(HideEphemeralThreads.layer),
   ),
 ).pipe(
   Layer.provide(

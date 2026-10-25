@@ -2494,6 +2494,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       snoozedAt: null,
       lastVisitedAt: null,
       deletedAt: null,
+      ...(command.ephemeral === true ? { ephemeral: true } : {}),
     };
 
     yield* emitEvent({
@@ -3579,7 +3580,12 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       payload: updatedThread,
     });
 
-    if (command.type === "thread.metadata.update" && command.regenerateTitle === true) {
+    // Fork patch 11: an ephemeral thread's text never reaches the title model.
+    if (
+      command.type === "thread.metadata.update" &&
+      command.regenerateTitle === true &&
+      updatedThread.ephemeral !== true
+    ) {
       yield* Ref.update(effects, (existing) => [
         ...existing,
         pendingThreadTitleGenerationEffect(command.commandId, command.threadId, {
@@ -5004,7 +5010,9 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
     const userMessages = projection.messages.filter((message) => message.role === "user");
     const onlyMaintenanceHistory =
       userMessages.length > 0 && userMessages.every(isNativeMaintenanceCommand);
+    // Fork patch 11: launch titles an ephemeral thread from its first line.
     if (
+      projection.thread.ephemeral !== true &&
       !isNativeMaintenanceCommand(command) &&
       ((command.titleSeed !== undefined &&
         (yield* projectionStore

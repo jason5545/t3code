@@ -93,6 +93,8 @@ export const make = Effect.gen(function* () {
         WHERE threads.deleted_at IS NULL
           AND threads.archived_at IS NULL
           AND projects.deleted_at IS NULL
+          -- Fork patch 11: agents search here too, and must not find ephemeral threads.
+          AND json_extract(threads.payload_json, '$.ephemeral') IS NOT 1
           AND messages.streaming = 0
           AND messages.role IN ('user', 'assistant')
           AND json_extract(messages.payload_json, '$.text') LIKE ${pattern} ESCAPE '!'
