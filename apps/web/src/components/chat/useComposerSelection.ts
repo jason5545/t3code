@@ -5,6 +5,7 @@ import type { ComposerThreadTarget, DraftSessionState } from "../../composerDraf
 import { useStableCallback } from "../../hooks/useStableCallback";
 import {
   type EnvironmentId,
+  isEphemeralThreadShell,
   type ModelSelection,
   ProviderInstanceId,
   type ServerProvider,
@@ -136,6 +137,7 @@ export function useComposerSelection(input: ComposerSelectionInput) {
           supportsProviderSwitchingViaHandoff,
           currentModelSelection,
           currentProviderInstanceId: runtimeProviderInstanceId,
+          ephemeral: isEphemeralThreadShell(activeThread),
         }
       : null,
   );
@@ -197,6 +199,7 @@ export function useComposerSelection(input: ComposerSelectionInput) {
       currentModelSelection: activeThread.modelSelection,
       currentProviderInstanceId: activeRuntime?.providerInstanceId ?? null,
       nextModelSelection,
+      ephemeral: isEphemeralThreadShell(activeThread),
     });
     if (modelChangeBlockReason) {
       toastManager.add({

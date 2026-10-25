@@ -725,15 +725,31 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
     });
   };
 
-  const lockedProviderInstanceId = props.canSwitchProvider
-    ? undefined
-    : currentModelSelection.instanceId;
-  const modelOptions = buildModelOptions(
+  // Fork patch 11: an ephemeral thread keeps its OMP instance, local models and runtime mode.
+  const ephemeralThread = isEphemeralThreadShell(props.selectedThread);
+  const lockedProviderInstanceId =
+    props.canSwitchProvider && !ephemeralThread ? undefined : currentModelSelection.instanceId;
+  const providerModelOptions = buildModelOptions(
     props.serverConfig,
     currentModelSelection,
     lockedProviderInstanceId,
     props.selectedThread.projectId,
   );
+  const localModelSlugs = new Set(
+    props.serverConfig?.providers
+      .find((provider) => provider.instanceId === currentModelSelection.instanceId)
+      ?.models.filter((model) => model.local === true)
+      .map((model) => model.slug),
+  );
+  const modelOptions = ephemeralThread
+    ? providerModelOptions
+        .filter(
+          (option) =>
+            option.selection.instanceId === currentModelSelection.instanceId &&
+            localModelSlugs.has(option.selection.model),
+        )
+        .map((option) => ({ ...option, supportedRuntimeModes: [currentRuntimeMode] }))
+    : providerModelOptions;
   const threadProviderGroups = groupByProvider(modelOptions);
   const currentModelOption =
     modelOptions.find(

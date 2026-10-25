@@ -4,6 +4,8 @@
  */
 import { T3_CODE_ORCHESTRATION_INSTRUCTIONS } from "@t3tools/provider-core/server/orchestrationInstructions";
 
+import { EPHEMERAL_WRITE_GUARD_SOURCE, T3_PI_EPHEMERAL_ROOT_ENV } from "./ephemeralWriteGuard.ts";
+
 export const PI_T3_MCP_EXTENSION_FILENAME = "pi-t3-mcp-extension.ts";
 
 export const T3_MCP_URL_ENV = "T3_MCP_URL";
@@ -27,11 +29,12 @@ const URL_ENV = ${JSON.stringify(T3_MCP_URL_ENV)};
 const TOKEN_ENV = ${JSON.stringify(T3_MCP_BEARER_ENV)};
 const RUNTIME_MODE_ENV = ${JSON.stringify(T3_PI_RUNTIME_MODE_ENV)};
 const EXTENSION_PATH_ENV = ${JSON.stringify(T3_PI_MCP_EXTENSION_PATH_ENV)};
+const EPHEMERAL_ROOT_ENV = ${JSON.stringify(T3_PI_EPHEMERAL_ROOT_ENV)};
 const ORCHESTRATION_INSTRUCTIONS = ${JSON.stringify(T3_CODE_ORCHESTRATION_INSTRUCTIONS.trim())};
 const PROTOCOL = "2025-06-18";
 const READ_ONLY_TOOLS = new Set(["read", "grep", "find", "ls"]);
 const FILE_CHANGE_TOOLS = new Set(${JSON.stringify(PI_FILE_CHANGE_TOOLS)});
-
+${EPHEMERAL_WRITE_GUARD_SOURCE}
 type RuntimeMode = "approval-required" | "auto-accept-edits" | "auto" | "full-access";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -323,6 +326,13 @@ export default async function t3McpExtension(pi: ExtensionAPI) {
   };
 
   pi.on("tool_call", async (event, ctx) => {
+    // Fork patch 11: ephemeral writes are judged by path in every runtime mode, without a prompt.
+    const ephemeralRoot = env(EPHEMERAL_ROOT_ENV);
+    if (ephemeralRoot !== undefined) {
+      const refusal = await ephemeralWriteRefusal(NodeFSP, NodePath, ephemeralRoot, ctx.cwd ?? ephemeralRoot, event.toolName, event.input);
+      if (refusal !== undefined) return { block: true, reason: refusal };
+      if (FILE_CHANGE_TOOLS.has(event.toolName)) return;
+    }
     const mode = runtimeMode();
     if (mode === "full-access") return;
     if ((event.toolName === "tool_search" ? hasBuiltinToolSearch() : READ_ONLY_TOOLS.has(event.toolName)) || isReadOnlyMcpTool(event.toolName)) {

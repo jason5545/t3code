@@ -197,6 +197,22 @@ const PiProviderCapabilitiesV2 = {
   },
 } satisfies OrchestrationV2ProviderCapabilities;
 
+/**
+ * Fork patch 11: the server refuses forking, rewinding and handing off an
+ * ephemeral thread, so its session says so and clients hide those actions.
+ */
+const PiEphemeralCapabilitiesV2 = {
+  ...PiProviderCapabilitiesV2,
+  sessions: { ...PiProviderCapabilitiesV2.sessions, supportsProviderSwitchingViaHandoff: false },
+  threads: {
+    ...PiProviderCapabilitiesV2.threads,
+    canRollbackThread: false,
+    canForkThread: false,
+    canForkFromTurn: false,
+  },
+  context: { ...PiProviderCapabilitiesV2.context, supportsFullThreadHandoff: false },
+} satisfies OrchestrationV2ProviderCapabilities;
+
 export interface PiAdapterV2Options {
   readonly instanceId: ProviderInstanceId;
   readonly settings: PiSettings;
@@ -485,6 +501,10 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       if (ephemeral && !isOmpBinary(binaryPath)) {
         return yield* protocolError("Only OMP runs ephemeral threads");
       }
+      // The write guard keeps an ephemeral thread inside its own folder, never the server's.
+      if (ephemeral && typeof input.runtimePolicy.cwd !== "string") {
+        return yield* protocolError("An ephemeral OMP session needs its Scratch folder");
+      }
       const ephemeralRestrictions = ephemeral
         ? yield* prepareOmpEphemeralLaunch({
             command: binaryPath,
@@ -521,6 +541,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               restrictions: ephemeralRestrictions,
               environment: options.environment,
               extensionPath,
+              root: cwd,
               runtimeMode: input.runtimePolicy.runtimeMode,
             });
       const scopedLaunch = yield* agentScope.wrap({
@@ -588,7 +609,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
         status: "ready",
         cwd,
         model: input.modelSelection.model,
-        capabilities: PiProviderCapabilitiesV2,
+        capabilities: ephemeral ? PiEphemeralCapabilitiesV2 : PiProviderCapabilitiesV2,
         createdAt: now,
         updatedAt: now,
         lastError: null,

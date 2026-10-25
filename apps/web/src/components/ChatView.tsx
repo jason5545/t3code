@@ -1270,6 +1270,7 @@ export default function ChatView(props: ChatViewProps) {
     activeProviderStatus;
   const supportsConversationRollback =
     canOperateThread &&
+    !isEphemeralThreadShell(serverThreadShell) &&
     conversationProviderStatus !== null &&
     conversationProviderStatus.supportsConversationRollback !== false;
   const phase = derivePhase(activeRuntime);

@@ -996,10 +996,14 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   const resolvedCompactDisabledReason =
     compactDisabledReason ?? (noProviderAvailable ? "Compacting is unavailable right now" : null);
   const supportedRuntimeModes = selectedProviderEntry?.snapshot.supportedRuntimeModes;
-  const compatibleRuntimeModeOptions =
+  const providerRuntimeModeOptions =
     supportedRuntimeModes && supportedRuntimeModes.length > 0
       ? runtimeModeOptions.filter((option) => supportedRuntimeModes.includes(option.mode))
       : runtimeModeOptions;
+  // Fork patch 11: an ephemeral thread keeps the runtime mode it started with.
+  const compatibleRuntimeModeOptions = isEphemeralThreadShell(props.activeThreadShell)
+    ? providerRuntimeModeOptions.filter((option) => option.mode === runtimeMode)
+    : providerRuntimeModeOptions;
   const compatibleRuntimeMode = compatibleRuntimeModeOptions.some(
     (option) => option.mode === runtimeMode,
   )

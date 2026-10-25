@@ -8,6 +8,7 @@ import {
   ompEphemeralOverlay,
   ompToolsBeyondAllowlist,
 } from "./ephemeral.ts";
+import { T3_PI_EPHEMERAL_ROOT_ENV } from "./ephemeralWriteGuard.ts";
 import { T3_MCP_BEARER_ENV, T3_MCP_URL_ENV } from "./mcpExtensionSource.ts";
 
 describe("ephemeral OMP launch", () => {
@@ -22,6 +23,7 @@ describe("ephemeral OMP launch", () => {
         [T3_MCP_BEARER_ENV]: "Bearer inherited",
       },
       extensionPath: "/cache/pi-t3-mcp-extension.ts",
+      root: "/scratch/2026-10-25-thread",
       runtimeMode: "approval-required",
     });
 
@@ -39,6 +41,7 @@ describe("ephemeral OMP launch", () => {
     assert.isFalse(launch.hasT3Mcp);
     assert.isUndefined(launch.env[T3_MCP_URL_ENV]);
     assert.isUndefined(launch.env[T3_MCP_BEARER_ENV]);
+    assert.equal(launch.env[T3_PI_EPHEMERAL_ROOT_ENV], "/scratch/2026-10-25-thread");
   });
 
   it("allows nothing that runs code, reaches the network or spawns subagents", () => {

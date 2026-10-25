@@ -143,6 +143,7 @@ export function useThreadActionMenu(input: {
         isRunning: !threadRuntimeCanArchive(thread.runtime),
         supports,
         snoozePresets,
+        ephemeral: isEphemeralThreadShell(thread),
       });
       const clicked = await settlePromise(() => api.contextMenu.show(items, position));
       if (clicked._tag === "Failure" || clicked.value === null) return;

@@ -10,6 +10,7 @@ import * as FileSystem from "effect/FileSystem";
 import * as Stream from "effect/Stream";
 
 import { buildPiRpcLaunch } from "./mcpInjection.ts";
+import { T3_PI_EPHEMERAL_ROOT_ENV } from "./ephemeralWriteGuard.ts";
 import { makePiRpcConnection, PiRpcError, piRecordField, piRecordString } from "./rpc.ts";
 
 /**
@@ -91,6 +92,8 @@ export function ompEphemeralOverlay(models: ReadonlyArray<OmpModelEndpoint>): st
     "github:\n  enabled: false",
     "browser:\n  enabled: false",
     "images:\n  urls:\n    enabled: false",
+    // The write guard judges replace-mode edits only; see ephemeralWriteGuard.ts.
+    'edit:\n  mode: "replace"',
   ].join("\n")}\n`;
 }
 
@@ -103,15 +106,19 @@ export function ompEphemeralLaunchArgs(overlayPath: string): ReadonlyArray<strin
   return ["--no-title", `--tools=${OMP_EPHEMERAL_TOOLS.join(",")}`, "--config", overlayPath];
 }
 
-/** No session file and no T3 MCP; the T3 extension still loads for its approval hook. */
+/**
+ * No session file and no T3 MCP. The T3 extension still loads: its hook keeps
+ * `write` and `edit` inside `root`, the thread's Scratch folder.
+ */
 export function buildOmpEphemeralLaunch(input: {
   readonly launchArgs: ReadonlyArray<string>;
   readonly restrictions: ReadonlyArray<string>;
   readonly environment: NodeJS.ProcessEnv;
-  readonly extensionPath: string | undefined;
+  readonly extensionPath: string;
+  readonly root: string;
   readonly runtimeMode: Parameters<typeof buildPiRpcLaunch>[0]["runtimeMode"];
 }) {
-  return buildPiRpcLaunch({
+  const launch = buildPiRpcLaunch({
     launchArgs: [...input.launchArgs, ...input.restrictions],
     environment: input.environment,
     mcpSession: undefined,
@@ -119,6 +126,8 @@ export function buildOmpEphemeralLaunch(input: {
     ...(input.runtimeMode === undefined ? {} : { runtimeMode: input.runtimeMode }),
     ephemeral: true,
   });
+  const env: NodeJS.ProcessEnv = { ...launch.env, [T3_PI_EPHEMERAL_ROOT_ENV]: input.root };
+  return { ...launch, env };
 }
 
 /**

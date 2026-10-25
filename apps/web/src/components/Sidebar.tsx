@@ -1989,7 +1989,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         return thread ? [thread] : [];
       });
       const settlingThreads = selectedThreads.filter(
-        (thread) => thread.settledOverride !== "settled",
+        (thread) => thread.settledOverride !== "settled" && !isEphemeralThreadShell(thread),
       );
       const canSnoozeSelection = selectedThreads.every(
         (thread) =>
@@ -1999,7 +1999,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       const titleRegenerationThreads = selectedThreads.filter(
         (thread) =>
           serverConfigs.get(thread.environmentId)?.environment.capabilities
-            .threadTitleRegeneration === true,
+            .threadTitleRegeneration === true && !isEphemeralThreadShell(thread),
       );
       const regeneratableTitleThreads = titleRegenerationThreads.filter(
         (thread) => thread.titleRegeneration == null,
@@ -2351,6 +2351,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                 titleRegeneration: supportsTitleRegeneration,
               },
               snoozePresets,
+              ephemeral: isEphemeralThreadShell(thread),
             }),
             position,
           ),

@@ -17,6 +17,7 @@ import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
   type EnvironmentId,
+  isEphemeralThreadShell,
   type ScopedThreadRef,
   type ThreadId,
   ProviderInteractionMode,
@@ -163,7 +164,10 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     reportFailure: false,
   });
 
-  const supportsSettlement = serverConfig?.environment.capabilities.threadSettlement === true;
+  // Fork patch 11: the server refuses settling an ephemeral thread.
+  const supportsSettlement =
+    serverConfig?.environment.capabilities.threadSettlement === true &&
+    !isEphemeralThreadShell(activeThreadShell);
   const supportsSnooze = serverConfig?.environment.capabilities.threadSnooze === true;
   const supportsPinning = serverConfig?.environment.capabilities.threadPinning === true;
   const activeThreadPinned = supportsPinning && activeThreadShell?.pinnedAt != null;

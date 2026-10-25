@@ -86,6 +86,8 @@ export interface ThreadActionMenuState {
     readonly titleRegeneration: boolean;
   };
   readonly snoozePresets: ReadonlyArray<SnoozePreset>;
+  /** Fork patch 11: the server refuses settling, title regeneration and archiving it. */
+  readonly ephemeral?: boolean;
 }
 
 /** Local navigation, read markers, and copying remain available to read-only clients. */
@@ -121,7 +123,7 @@ export function buildThreadActionMenuItems(
             : { id: "pin" as const, label: "Pin thread", icon: "pin" },
         ]
       : []),
-    ...(state.supports.settlement
+    ...(state.supports.settlement && state.ephemeral !== true
       ? [
           state.isSettled
             ? { id: "unsettle" as const, label: "Un-settle thread", icon: "circle-check" }
@@ -148,7 +150,7 @@ export function buildThreadActionMenuItems(
         ]
       : []),
     { id: "rename", label: "Rename thread", icon: "pencil", separatorBefore: true },
-    ...(state.supports.titleRegeneration
+    ...(state.supports.titleRegeneration && state.ephemeral !== true
       ? [
           {
             id: "regenerate-title" as const,
@@ -205,18 +207,23 @@ export function buildThreadActionMenuItems(
       ],
     },
     { id: "project-settings", label: "Project settings", icon: "settings" },
-    {
-      id: "archive",
-      label: "Archive thread",
-      icon: "archive",
-      disabled: state.isRunning,
-      separatorBefore: true,
-    },
+    ...(state.ephemeral === true
+      ? []
+      : [
+          {
+            id: "archive" as const,
+            label: "Archive thread",
+            icon: "archive",
+            disabled: state.isRunning,
+            separatorBefore: true,
+          },
+        ]),
     {
       id: "delete",
       label: "Delete",
       destructive: true,
       icon: "trash",
+      ...(state.ephemeral === true ? { separatorBefore: true } : {}),
     },
   ];
   return state.canOperate

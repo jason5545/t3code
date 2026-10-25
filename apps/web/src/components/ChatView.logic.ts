@@ -1018,13 +1018,33 @@ export function deriveLockedProvider(input: {
 }
 
 export function getStartedThreadModelChangeBlockReason(input: {
-  providers: ReadonlyArray<Pick<ServerProvider, "instanceId" | "requiresNewThreadForModelChange">>;
+  providers: ReadonlyArray<
+    Pick<ServerProvider, "instanceId" | "requiresNewThreadForModelChange"> & {
+      readonly models?: ServerProvider["models"];
+    }
+  >;
   hasStartedSession: boolean;
   supportsProviderSwitchingViaHandoff?: boolean;
   currentModelSelection: ModelSelection;
   currentProviderInstanceId?: ModelSelection["instanceId"] | null | undefined;
   nextModelSelection: ModelSelection;
+  /** Fork patch 11: an ephemeral thread stays on its OMP instance's local models. */
+  ephemeral?: boolean;
 }): { title: string; description: string } | null {
+  if (
+    input.ephemeral === true &&
+    (input.nextModelSelection.instanceId !== input.currentModelSelection.instanceId ||
+      input.providers
+        .find((snapshot) => snapshot.instanceId === input.nextModelSelection.instanceId)
+        ?.models?.some(
+          (model) => model.slug === input.nextModelSelection.model && model.local === true,
+        ) !== true)
+  ) {
+    return {
+      title: "Ephemeral threads stay on local models",
+      description: "An ephemeral thread runs only on a model served from this machine.",
+    };
+  }
   if (!input.hasStartedSession) {
     return null;
   }

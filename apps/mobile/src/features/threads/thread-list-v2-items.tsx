@@ -25,7 +25,11 @@ import {
   formatWorkingDurationLabel,
   resolveThreadWorkingStartedAt,
 } from "@t3tools/client-runtime/state/models";
-import { AuthOrchestrationOperateScope, type EnvironmentMachineKind } from "@t3tools/contracts";
+import {
+  AuthOrchestrationOperateScope,
+  type EnvironmentMachineKind,
+  isEphemeralThreadShell,
+} from "@t3tools/contracts";
 import { canSnooze, resolveSnoozePresets } from "@t3tools/client-runtime/state/thread-settled";
 import type { MenuAction } from "@react-native-menu/menu";
 import { memo, useCallback, useEffect, useMemo, useState, type ComponentProps } from "react";
@@ -656,6 +660,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   );
 
   const handleDelete = useCallback(() => onDeleteThread(thread), [onDeleteThread, thread]);
+  // Fork patch 11: the server refuses settling, archiving and title regeneration here.
+  const ephemeralRow = isEphemeralThreadShell(thread);
   const handleRename = useCallback(() => onRenameThread(thread), [onRenameThread, thread]);
   const canOperateThread = useEnvironmentScope(thread.environmentId, AuthOrchestrationOperateScope);
   const handleRegenerateTitle = useCallback(
@@ -920,6 +926,15 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     ],
   );
   const primaryAction = useMemo(() => {
+    if (ephemeralRow) {
+      return {
+        accessibilityLabel: `Delete ${thread.title}`,
+        destructive: true,
+        icon: "trash" as const,
+        label: "Delete",
+        onPress: handleDelete,
+      };
+    }
     if (swipeActions.primary === "archive") {
       return {
         accessibilityLabel: `Archive ${thread.title}`,
@@ -950,6 +965,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
           onPress: handleSettle,
         };
   }, [
+    ephemeralRow,
+    handleDelete,
     handleArchive,
     handleSettle,
     handleUnsettle,
@@ -1391,15 +1408,17 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                   ]
                 : []),
               { id: "copy-thread-id", title: "Copy thread ID", image: "doc.on.doc" },
-              ...(snoozedRow
-                ? snoozedMenuActions
-                : !props.settlementSupported
-                  ? legacyMenuActions
-                  : canUnsettle
-                    ? slimMenuActions
-                    : swipeActions.secondary === "snooze"
-                      ? snoozableCardMenuActions
-                      : cardMenuActions),
+              ...(ephemeralRow
+                ? [...arrangementMenuItems, titleMenuItems[0]!, LEGACY_MENU_ACTIONS[1]!]
+                : snoozedRow
+                  ? snoozedMenuActions
+                  : !props.settlementSupported
+                    ? legacyMenuActions
+                    : canUnsettle
+                      ? slimMenuActions
+                      : swipeActions.secondary === "snooze"
+                        ? snoozableCardMenuActions
+                        : cardMenuActions),
             ]}
             onPressAction={handleMenuAction}
             shouldOpenOnLongPress
