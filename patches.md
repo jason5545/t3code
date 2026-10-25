@@ -121,6 +121,12 @@ Upstream baseline: `b3d382e100` (merged 2026-10-25).
 - Cost: in headless Chromium, a scrolled 1280 × 800 text page at 2x came back equally sharp (Laplacian variance 7809 against the clip's 8056), and its PNG grew from about 186 KB to 240 KB.
 - Upstream PR #21162 makes the same change for every tab. When upstream lands it, take upstream's code and drop this section.
 
+## 13. Mobile assistant citations
+
+- Upstream mobile only displayed citations. Selecting text in an assistant response now offers Cite (引用) in the native selection menu, through enriched-markdown's `contextMenuItems`; it appends the same `[Assistant quote](t3-citation://…)` link web's Cite inserts to the end of the draft and focuses the composer, which draws it as a chip (`citation` in `composerChipPresentation.ts`, with lucide's `quote` icon added to `sync-context-chip-icons.mjs`). The fork code is `apps/mobile/src/lib/assistantCitationQuote.ts`; upstream files keep hooks in `ThreadFeed`'s `AssistantMarkdownContent`, `ThreadDetailScreen`, `composerContextEditorTokens` and both `T3ComposerEditor` files. There is no comment editor on mobile.
+- The menu reports only the selected text and its offsets within one rendered block, so a mobile citation has block-relative offsets and an empty prefix and suffix: web finds the source when the quote occurs once in the response and otherwise shows the saved quote without jumping.
+- Upstream's new orchestrator (`de34391427`, #2829) dropped the `expandAssistantCitationsForProvider` call the old `ProviderService` made, so every provider received the raw link with its quote percent-encoded (a Chinese quote reads `%E5%BF%AB…`), from web as well. `ProviderTurnStartService` and `ProviderTurnControlService` (steering) expand it again after projecting composer context; the stored message keeps the link. `ProviderTurnStartService.fork.test.ts` covers sending and steering. Drop that part when upstream restores the expansion, and the rest when upstream mobile creates citations.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.

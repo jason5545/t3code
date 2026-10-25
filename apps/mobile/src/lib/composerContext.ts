@@ -30,6 +30,8 @@ import {
   type ComposerInlineToken,
 } from "@t3tools/shared/composerInlineTokens";
 
+import { assistantCitationEditorTokens } from "./assistantCitationQuote";
+
 const isMessageContext = Schema.is(OrchestrationMessageContext);
 const decodeMessageContext = Schema.decodeUnknownOption(OrchestrationMessageContext);
 
@@ -183,6 +185,7 @@ export function composerContextEditorTokens(
       value: ref.label,
       ...ref,
     })),
+    ...assistantCitationEditorTokens(text),
   ].sort((a, b) => a.start - b.start);
 }
 

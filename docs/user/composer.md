@@ -129,7 +129,8 @@ delete it like other inline context. Copying, reloading, and restoring a
 with its quote, and sending tells the agent which words were quoted and which comment you wrote.
 The quoted text and comment count toward the message limit.
 
-Mobile displays saved quotes and comments, but does not create citations or
+On mobile, select text within one assistant response and choose **Cite** in the selection
+menu; the quote goes to the end of your draft. Mobile does not add comments to citations or
 navigate to their sources.
 
 ## Recall a sent prompt

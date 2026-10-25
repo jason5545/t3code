@@ -75,6 +75,8 @@ export interface SelectableMarkdownTextProps {
   readonly renderImage?: MarkdownImageRenderer;
   readonly resolveImageSource?: MarkdownImageSourceResolver;
   readonly onImagePress?: (href: string) => void;
+  /** Extra actions in the text selection menu. Keep the array stable; native reloads it on change. */
+  readonly contextMenuItems?: import("react-native-enriched-markdown").TextContextMenuItem[];
   readonly marginTop?: number;
   readonly marginBottom?: number;
 }

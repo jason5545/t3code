@@ -147,6 +147,10 @@ import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import { downloadAndShareAttachment } from "../../lib/attachmentDownload";
 import { hasWideMarkdownBlock } from "../../lib/wideMarkdownBlocks";
+import {
+  assistantCitationMenuItems,
+  type AssistantTextSelection,
+} from "../../lib/assistantCitationQuote";
 import { faviconUrlForOrigin } from "@t3tools/shared/favicon";
 import {
   SelectableMarkdownText,
@@ -380,6 +384,11 @@ export interface ThreadFeedProps {
   readonly onEndFollowEnabledChange?: (enabled: boolean) => void;
   readonly skills?: ReadonlyArray<SelectableMarkdownSkill>;
   readonly onUseArtifactTemplate?: (template: CodexArtifactTemplate) => void;
+  /** Must be stable: every assistant message's selection menu is built from it. */
+  readonly onCiteAssistantSelection?: (
+    messageId: MessageId,
+    selection: AssistantTextSelection,
+  ) => void;
 }
 
 async function waitForThreadShell(
@@ -913,8 +922,20 @@ const AssistantMarkdownContent = memo(function AssistantMarkdownContent(props: {
   readonly onUseArtifactTemplate?: ((template: CodexArtifactTemplate) => void) | undefined;
   readonly renderImage: MarkdownImageRenderer;
   readonly skills?: ReadonlyArray<SelectableMarkdownSkill> | undefined;
+  readonly citeMessageId?: MessageId;
+  readonly onCiteAssistantSelection?: ThreadFeedProps["onCiteAssistantSelection"];
 }) {
   const liveMarkdown = useLiveThreadLinkLabels(props.markdown, props.environmentId);
+  const { citeMessageId, onCiteAssistantSelection } = props;
+  const citeMenuItems = useMemo(
+    () =>
+      citeMessageId && onCiteAssistantSelection
+        ? assistantCitationMenuItems((selection) =>
+            onCiteAssistantSelection(citeMessageId, selection),
+          )
+        : undefined,
+    [citeMessageId, onCiteAssistantSelection],
+  );
   const segments = useMemo(() => splitCodexArtifactTemplateMarkdown(liveMarkdown), [liveMarkdown]);
   const threadIcons = useThreadChipIcons(props.environmentId, liveMarkdown);
   const linkHandlers: MarkdownLinkHandlers = {
@@ -944,6 +965,7 @@ const AssistantMarkdownContent = memo(function AssistantMarkdownContent(props: {
         textStyle={props.markdownStyles.nativeTextStyle}
         {...linkHandlers}
         renderImage={props.renderImage}
+        contextMenuItems={citeMenuItems}
       />
     );
   });
@@ -1245,6 +1267,7 @@ function renderFeedEntry(
     ThreadFeedProps,
     | "environmentId"
     | "onUseArtifactTemplate"
+    | "onCiteAssistantSelection"
     | "skills"
     | "dispatchingMessageId"
     | "onEditPendingMessage"
@@ -1775,6 +1798,12 @@ function renderFeedEntry(
               onUseArtifactTemplate={props.onUseArtifactTemplate}
               renderImage={props.renderMarkdownImage}
               skills={props.skills}
+              {...(message.role === "assistant"
+                ? {
+                    citeMessageId: message.id,
+                    onCiteAssistantSelection: props.onCiteAssistantSelection,
+                  }
+                : {})}
             />
           </MarkdownImageAvailableWidthContext>
         ) : null}
@@ -3049,6 +3078,7 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
             dispatchingMessageId: props.dispatchingMessageId,
             onEditPendingMessage: props.onEditPendingMessage,
             onUseArtifactTemplate: props.onUseArtifactTemplate,
+            onCiteAssistantSelection: props.onCiteAssistantSelection,
             threadId: props.threadId,
             copiedRowId,
             expandedWorkRows,

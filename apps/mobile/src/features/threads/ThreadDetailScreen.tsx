@@ -127,6 +127,11 @@ import { collectProviderUsageLimits } from "@t3tools/shared/usageLimits";
 import type { ComposerEditorHandle } from "../../components/ComposerEditor";
 import type { StatusTone } from "../../components/StatusPill";
 import { getComposerDraftSnapshot } from "../../state/use-composer-drafts";
+import {
+  appendAssistantCitation,
+  assistantSelectionCitation,
+  type AssistantTextSelection,
+} from "../../lib/assistantCitationQuote";
 import { RenderErrorBoundary, RenderFailureView } from "../../components/RenderErrorBoundary";
 import {
   ANDROID_READING_MAX_WIDTH,
@@ -1370,6 +1375,42 @@ export const ThreadDetailScreen = function ThreadDetailScreen(props: ThreadDetai
     });
   };
 
+  const handleCiteAssistantSelection = (
+    messageId: MessageId,
+    selection: AssistantTextSelection,
+  ) => {
+    if (props.composerDraftKey === null) return;
+    const citation = assistantSelectionCitation({
+      environmentId: props.environmentId,
+      threadId: props.selectedThread.id,
+      messageId,
+      selection,
+    });
+    if (citation === "too-long") {
+      Dialog.alert("Selection is too long to cite", "Select a shorter passage and try again.");
+      return;
+    }
+    if (citation === null) return;
+    const nextDraft = appendAssistantCitation(
+      getComposerDraftSnapshot(props.composerDraftKey).text,
+      citation,
+    );
+    props.onChangeDraftMessage(nextDraft);
+    requestAnimationFrame(() => {
+      composerEditorRef.current?.focus();
+      composerEditorRef.current?.setSelection({ start: nextDraft.length, end: nextDraft.length });
+    });
+  };
+  const citeAssistantSelectionRef = useRef(handleCiteAssistantSelection);
+  useLayoutEffect(() => {
+    citeAssistantSelectionRef.current = handleCiteAssistantSelection;
+  });
+  const citeAssistantSelection = useCallback(
+    (messageId: MessageId, selection: AssistantTextSelection) =>
+      citeAssistantSelectionRef.current(messageId, selection),
+    [],
+  );
+
   const handleScrollToEnd = () => {
     void Haptics.selectionAsync();
     void scrollMessageToEnd({ animated: !reduceMotion, closeKeyboard: false }).catch(() => {
@@ -1499,6 +1540,9 @@ export const ThreadDetailScreen = function ThreadDetailScreen(props: ThreadDetai
               onEndFollowEnabledChange={handleEndFollowEnabledChange}
               skills={selectedProviderSkills}
               onUseArtifactTemplate={handleUseArtifactTemplate}
+              {...(isProviderSubagent || props.composerDraftKey === null
+                ? {}
+                : { onCiteAssistantSelection: citeAssistantSelection })}
             />
           </RenderErrorBoundary>
         </View>

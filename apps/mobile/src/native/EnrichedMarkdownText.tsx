@@ -333,6 +333,7 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
           onLinkPress={props.onLinkPress ? ({ url }) => props.onLinkPress?.(url) : undefined}
           onLinkLongPress={onLinkLongPress}
           linkContextMenuItems={linkContextMenuItems}
+          contextMenuItems={props.contextMenuItems}
           linkPillContent={linkPillContent}
         />
       </View>
