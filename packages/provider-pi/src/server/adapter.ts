@@ -75,12 +75,7 @@ import {
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
 import { isOmpBinary, ompTodoSteps, type OmpTodoStep } from "./rpcDialect.ts";
-import {
-  buildOmpEphemeralLaunch,
-  ompEphemeralExtensionPaths,
-  ompToolsBeyondAllowlist,
-  prepareOmpEphemeralLaunch,
-} from "./ephemeral.ts";
+import { buildOmpEphemeralLaunch, prepareOmpEphemeralLaunch } from "./ephemeral.ts";
 
 export const PI_PROVIDER = ProviderDriverKind.make("pi");
 const PI_DRIVER_KIND = PI_PROVIDER;
@@ -494,7 +489,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       if (ephemeral && !isOmpBinary(binaryPath)) {
         return yield* protocolError("Only OMP runs ephemeral threads");
       }
-      // The write guard keeps an ephemeral thread inside its own folder, never the server's.
+      // Purging an ephemeral thread removes its Scratch folder, so it never runs in the server's.
       if (ephemeral && typeof input.runtimePolicy.cwd !== "string") {
         return yield* protocolError("An ephemeral OMP session needs its Scratch folder");
       }
@@ -507,9 +502,6 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
             overlayPath: `${host.paths.providerStatusCacheDir}/omp-ephemeral-${String(
               input.providerSessionId,
             ).replace(/[^\w.-]/gu, "_")}.yml`,
-            extensionPaths: ompEphemeralExtensionPaths(
-              options.settings.ephemeralExtensionPaths ?? "",
-            ),
           }).pipe(
             Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
             Effect.provideService(FileSystem.FileSystem, fileSystem),
@@ -537,7 +529,6 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               restrictions: ephemeralRestrictions,
               environment: options.environment,
               extensionPath,
-              root: cwd,
               runtimeMode: input.runtimePolicy.runtimeMode,
             });
       const scopedLaunch = yield* agentScope.wrap({
@@ -574,28 +565,6 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
           Effect.matchEffect({ onFailure: () => stopScope, onSuccess: () => stopScope }),
           Effect.forkIn(scope),
         );
-      }
-      // MCP servers from OMP's own config cannot be switched off without its
-      // models, so an ephemeral process offering anything more is refused.
-      if (ephemeral) {
-        const beyond = ompToolsBeyondAllowlist(
-          yield* connection.request({ type: "get_state" }).pipe(
-            Effect.mapError(
-              (cause) =>
-                new ProviderAdapter.ProviderAdapterOpenSessionError({
-                  driver: PI_PROVIDER,
-                  providerSessionId: input.providerSessionId,
-                  cause,
-                }),
-            ),
-          ),
-        );
-        if (beyond !== undefined && beyond.length > 0) {
-          yield* connection.terminate;
-          return yield* protocolError(
-            `An ephemeral OMP session offered tools beyond its allowlist: ${beyond.join(", ")}`,
-          );
-        }
       }
       const now = yield* DateTime.now;
       let sessionEntity: OrchestrationV2ProviderSession = {

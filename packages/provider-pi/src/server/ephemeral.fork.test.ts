@@ -2,14 +2,9 @@ import { assert, describe, it } from "@effect/vitest";
 
 import {
   buildOmpEphemeralLaunch,
-  OMP_EPHEMERAL_TOOLS,
-  OMP_FOREIGN_CONFIG_SOURCES,
-  ompEphemeralExtensionPaths,
   ompEphemeralLaunchArgs,
   ompEphemeralOverlay,
-  ompToolsBeyondAllowlist,
 } from "./ephemeral.ts";
-import { T3_PI_EPHEMERAL_ROOT_ENV } from "./ephemeralWriteGuard.ts";
 import { T3_MCP_BEARER_ENV, T3_MCP_URL_ENV } from "./mcpExtensionSource.ts";
 
 describe("ephemeral OMP launch", () => {
@@ -17,14 +12,13 @@ describe("ephemeral OMP launch", () => {
     const overlayPath = "/cache/omp-ephemeral-session.yml";
     const launch = buildOmpEphemeralLaunch({
       launchArgs: ["--thinking", "high"],
-      restrictions: ompEphemeralLaunchArgs(overlayPath, []),
+      restrictions: ompEphemeralLaunchArgs(overlayPath),
       environment: {
         PATH: "/usr/bin",
         [T3_MCP_URL_ENV]: "http://127.0.0.1:3773/mcp",
         [T3_MCP_BEARER_ENV]: "Bearer inherited",
       },
       extensionPath: "/cache/pi-t3-mcp-extension.ts",
-      root: "/scratch/2026-10-25-thread",
       runtimeMode: "approval-required",
     });
 
@@ -33,7 +27,6 @@ describe("ephemeral OMP launch", () => {
     const config = launch.args.indexOf("--config");
     assert.isAbove(config, launch.args.indexOf("high"));
     assert.equal(launch.args[config + 1], overlayPath);
-    assert.include(launch.args, "--tools=ask,edit,glob,grep,read,todo,write");
     // The approval hook still loads.
     assert.equal(
       launch.args[launch.args.indexOf("--extension") + 1],
@@ -42,62 +35,26 @@ describe("ephemeral OMP launch", () => {
     assert.isFalse(launch.hasT3Mcp);
     assert.isUndefined(launch.env[T3_MCP_URL_ENV]);
     assert.isUndefined(launch.env[T3_MCP_BEARER_ENV]);
-    assert.equal(launch.env[T3_PI_EPHEMERAL_ROOT_ENV], "/scratch/2026-10-25-thread");
   });
 
-  it("loads only the configured extensions and the T3 hook, with discovery off", () => {
-    const configured = ompEphemeralExtensionPaths(
-      "  /home/me/.omp/agent/extensions/local-models.ts \n\n/opt/omp/other-local.ts\r\n",
-    );
+  it("keeps the tools and extensions of any OMP thread", () => {
     const launch = buildOmpEphemeralLaunch({
-      launchArgs: [
-        "-e",
-        "/home/me/.omp/agent/extensions/lint.ts",
-        "--extension=/home/me/extra.ts",
-        "--hook",
-        "/home/me/hook.ts",
-        "--hook=/home/me/other-hook.ts",
-        "--thinking",
-        "high",
-      ],
-      restrictions: ompEphemeralLaunchArgs("/cache/overlay.yml", configured),
+      launchArgs: ["--extension", "/home/me/.omp/agent/extensions/local-models.ts"],
+      restrictions: ompEphemeralLaunchArgs("/cache/overlay.yml"),
       environment: { PATH: "/usr/bin" },
       extensionPath: "/cache/pi-t3-mcp-extension.ts",
-      root: "/scratch/2026-10-25-thread",
       runtimeMode: "full-access",
     });
 
-    assert.include(launch.args, "--no-extensions");
-    const loaded = launch.args.flatMap((arg, index) =>
-      arg === "--extension" || arg === "-e" ? [launch.args[index + 1]] : [],
-    );
-    assert.deepEqual(loaded, [
-      "/home/me/.omp/agent/extensions/local-models.ts",
-      "/opt/omp/other-local.ts",
-      "/cache/pi-t3-mcp-extension.ts",
-    ]);
+    assert.include(launch.args, "/home/me/.omp/agent/extensions/local-models.ts");
     assert.isFalse(
-      launch.args.some((arg) => /^(-e|--extension|--hook)=/u.test(arg) || arg === "--hook"),
+      launch.args.some(
+        (arg) => arg === "--no-extensions" || arg === "--no-tools" || arg.startsWith("--tools"),
+      ),
     );
-    assert.include(launch.args, "high");
   });
 
-  it("allows nothing that runs code, reaches the network or spawns subagents", () => {
-    for (const tool of ["bash", "eval", "web_search", "task"]) {
-      assert.notInclude(OMP_EPHEMERAL_TOOLS, tool);
-    }
-    const state = (names: ReadonlyArray<string>) => ({
-      dumpTools: names.map((name) => ({ name })),
-    });
-    assert.deepEqual(ompToolsBeyondAllowlist(state(["read", "write", "todo"])), []);
-    assert.deepEqual(ompToolsBeyondAllowlist(state(["read", "mcp__memory__save", "bash"])), [
-      "mcp__memory__save",
-      "bash",
-    ]);
-    assert.isUndefined(ompToolsBeyondAllowlist({ model: null }));
-  });
-
-  it("disables every hosted model provider and foreign config source", () => {
+  it("disables every hosted model provider and OMP's memory, nothing else", () => {
     const overlay = ompEphemeralOverlay([
       { provider: "omlx", baseUrl: "http://127.0.0.1:8000/v1" },
       { provider: "omlx", baseUrl: "http://127.0.0.1:8000/v1" },
@@ -114,14 +71,11 @@ describe("ephemeral OMP launch", () => {
         (match) => match[1],
       );
 
-    assert.deepEqual(list("disabledProviders"), [
-      "opencode-go",
-      "apple",
-      ...OMP_FOREIGN_CONFIG_SOURCES,
-    ]);
-    assert.notInclude(list("disabledProviders"), "native");
+    assert.deepEqual(list("disabledProviders"), ["opencode-go", "apple"]);
     assert.deepEqual(list("enabledModels"), ["omlx/*", "lm-studio/*"]);
     assert.include(overlay, 'memory:\n  backend: "off"');
-    assert.include(overlay, "fetch:\n  enabled: false");
+    for (const setting of ["fetch:", "browser:", "github:", "images:", "edit:"]) {
+      assert.notInclude(overlay, setting);
+    }
   });
 });
