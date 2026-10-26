@@ -98,6 +98,7 @@
     "packages/client-runtime/src/state/gitActions.ts",
     "packages/client-runtime/src/state/server.ts",
     "packages/client-runtime/src/state/shell.ts",
+    "packages/client-runtime/src/state/threadRequests.ts",
     "packages/client-runtime/src/state/threads.ts",
     "packages/client-runtime/src/state/usageAccess.ts",
     "packages/client-runtime/src/state/vcsAction.ts",
