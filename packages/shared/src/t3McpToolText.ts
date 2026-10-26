@@ -1,11 +1,9 @@
 import { usesChineseDurations } from "./durationFormat.ts";
 
 /**
- * zh-TW text for T3 tool calls in the work log. The English titles and summaries are
- * assembled from verb and object parts, counts and plurals in `packages/shared` and
- * `client-runtime`, which the build-time translation pass cannot reach; this follows the
- * clients' startup locale through `setChineseDurations`. The server never sets it, so
- * provider-facing text stays English.
+ * zh-TW text for T3 tool calls in the work log, assembled where the build-time pass cannot
+ * reach. It follows the clients' locale through `setChineseDurations`; the server never sets
+ * it, so provider-facing text stays English.
  */
 
 interface ToolText {

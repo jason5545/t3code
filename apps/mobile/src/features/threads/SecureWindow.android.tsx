@@ -10,6 +10,7 @@ let secureHolders = 0;
 /** Fork patch 11: FLAG_SECURE while an ephemeral thread is on screen. */
 export function SecureWindow(props: { readonly active: boolean }) {
   const { active } = props;
+  // oxlint-disable-next-line t3code/react-effect-budget -- sets the native FLAG_SECURE window flag.
   useEffect(() => {
     if (!active) return;
     secureHolders += 1;

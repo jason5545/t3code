@@ -3,7 +3,7 @@
  * memory, the window title marks one in the foreground without naming it, and
  * a purge (delete, an idle hour, its OMP process gone) is announced and left.
  */
-import { isEphemeralThreadShell } from "@t3tools/contracts";
+import { EPHEMERAL_THREAD_PLACEHOLDER_TEXT, isEphemeralThreadShell } from "@t3tools/contracts";
 import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
@@ -28,6 +28,7 @@ export function useEphemeralForeground(): boolean {
 
 export function EphemeralThreadsWatcher() {
   const router = useRouter();
+  const ephemeralForeground = useEphemeralForeground();
   const shells = useThreadShells();
   const ephemeralKeys = new Set(
     shells
@@ -36,6 +37,7 @@ export function EphemeralThreadsWatcher() {
   );
   const previousKeys = useRef<ReadonlySet<string>>(new Set());
 
+  // oxlint-disable-next-line t3code/react-effect-budget -- mirrors server purges into the draft store and announces them once.
   useEffect(() => {
     setEphemeralThreadKeys(ephemeralKeys);
     const endedKeys = [...previousKeys.current].filter((key) => !ephemeralKeys.has(key));
@@ -47,6 +49,23 @@ export function EphemeralThreadsWatcher() {
       void router.navigate({ to: "/", replace: true });
     }
   }, [ephemeralKeys, router]);
+
+  // oxlint-disable-next-line t3code/react-effect-budget -- voice input reads the window title, which startDocumentTitle rewrites outside React.
+  useEffect(() => {
+    if (!ephemeralForeground) return;
+    const suffix = `（${EPHEMERAL_THREAD_PLACEHOLDER_TEXT}）`;
+    const mark = () => {
+      if (!document.title.endsWith(suffix)) document.title += suffix;
+    };
+    mark();
+    const observer = new MutationObserver(mark);
+    const title = document.querySelector("title");
+    if (title) observer.observe(title, { childList: true, characterData: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      if (document.title.endsWith(suffix)) document.title = document.title.slice(0, -suffix.length);
+    };
+  }, [ephemeralForeground]);
 
   return null;
 }

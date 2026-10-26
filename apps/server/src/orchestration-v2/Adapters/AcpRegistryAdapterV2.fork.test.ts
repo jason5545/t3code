@@ -122,7 +122,7 @@ describe("AcpRegistryAdapterV2 (fork)", () => {
           Layer.mergeAll(
             Layer.mock(AcpRegistryRuntimeCoordinator.AcpRegistryRuntimeCoordinator)({
               withForegroundStartup: (_agentId, effect) => effect,
-              runBackgroundProbe: (_agentId, effect) => effect.pipe(Effect.map(Option.some)),
+              runBackgroundProbe: (_agentId, effect) => Effect.asSome(effect),
               withSessionMutation: (effect) => effect,
               clearAvailableCommands: () => Effect.void,
               publishAvailableCommands: (publishedInstanceId, commands) =>

@@ -44,11 +44,9 @@ function createTitleRelabeler<T extends { readonly title: string }>(
 }
 
 /**
- * The server names every environment's Scratch project "No project" and
- * untitled threads "New thread". Both are stored data, so build-time
- * translation never sees them; clients pass their localized titles here.
- * Clients still send the English draft title as a title seed, and the server
- * compares against it, so only the snapshot clients read is relabeled.
+ * "No project" and "New thread" are stored server titles the build-time pass never sees, so
+ * clients pass localized ones here. The server compares the English draft title it receives
+ * as a title seed, so only the snapshot clients read is relabeled.
  */
 export function createDefaultTitleLocalizer(titles: DefaultTitles) {
   type Snapshot = OrchestrationV2ShellSnapshot;

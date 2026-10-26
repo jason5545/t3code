@@ -21,6 +21,7 @@ export function EphemeralDraftToggle(props: {
   const pressed = useComposerDraftStore(
     (store) => draftId !== null && store.getDraftSession(draftId)?.ephemeral === true,
   );
+  // oxlint-disable-next-line t3code/react-effect-budget -- launch reads the stored draft flag, so clear it when the model loses local support.
   useEffect(() => {
     if (!available && pressed && draftId !== null) setDraftSessionEphemeral(draftId, false);
   }, [available, pressed, draftId]);

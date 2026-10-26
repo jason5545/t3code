@@ -18,6 +18,7 @@ const track = (shells: ReadonlyArray<EnvironmentThreadShell>) =>
 
 /** Fork patch 11: keeps the storage modules' view of ephemeral threads current. */
 export function useEphemeralThreadTracking(): void {
+  // oxlint-disable-next-line t3code/react-effect-budget -- subscribes storage modules outside React to the shell atom.
   useEffect(() => {
     track(appAtomRegistry.get(environmentThreadShells.threadShellsAtom));
     return appAtomRegistry.subscribe(environmentThreadShells.threadShellsAtom, track);
