@@ -40,6 +40,7 @@ import {
 } from "./components/SettingsEnvironmentFilterHeader";
 import { useSettingsEnvironmentFilter } from "./settings-environment-filter";
 import { filterSettingsSections } from "./settings-search";
+import { settingsPageLabel } from "./settingsPageLabels";
 import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
 
 export function SettingsRouteScreen() {
@@ -226,7 +227,7 @@ function useSettingsIndexSections(): SettingsListSection[] {
     icon: SettingsListRow["icon"],
     label: string,
     extra?: Pick<SettingsListRow, "disabled" | "value">,
-  ): SettingsListRow => ({ id: target, icon, label, target, ...extra });
+  ): SettingsListRow => ({ id: target, icon, label: settingsPageLabel(label), target, ...extra });
   const serverPage = (target: SettingsPageTarget, icon: SettingsListRow["icon"], label: string) =>
     page(target, icon, label, { disabled: noServerTargets });
   return [
