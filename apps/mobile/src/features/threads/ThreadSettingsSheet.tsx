@@ -1122,7 +1122,7 @@ function ThreadSettingsChoiceContent(props: {
             rows: selectableChoices(activeDescriptor).map((choice) => ({
               id: choice.id,
               label: localizeProviderOptionLabel(choice.label),
-              description: choice.description,
+              description: localizeProviderOptionLabel(choice.description) ?? undefined,
               selected:
                 choice.id ===
                 (session.promptTraits.ultrathinkPromptControlled &&

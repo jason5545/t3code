@@ -247,6 +247,7 @@ const PROVIDER_OPTION_LABELS: Readonly<Record<string, string>> = {
   Fast: "快速",
   Ultrafast: "超快速",
   Flex: "彈性",
+  "xhigh effort plus multi-agent workflow orchestration": "超高推理程度，加上多代理工作流程協調",
 };
 
 /** The zh-TW text for a known server model option label, or null. */

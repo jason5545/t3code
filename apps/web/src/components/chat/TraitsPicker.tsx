@@ -466,7 +466,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                       </span>
                       {option.description ? (
                         <span className="max-w-56 text-pretty text-muted-foreground/80 text-xs">
-                          {option.description}
+                          {localizeProviderOptionLabel(option.description)}
                         </span>
                       ) : null}
                     </span>
