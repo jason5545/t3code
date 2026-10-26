@@ -159,11 +159,10 @@ const makeMcpAuthMiddleware = Effect.gen(function* () {
       authorization?.startsWith("Bearer ") === true
         ? authorization.slice("Bearer ".length).trim()
         : "";
+    // Fork patch 22: clients are asked without a token too, so an owner's tailnet machine gets in.
     const invocation =
       (yield* registry.resolve(token)) ??
-      (Option.isSome(clients) && token.length > 0
-        ? yield* clients.value.authenticate(request)
-        : undefined);
+      (Option.isSome(clients) ? yield* clients.value.authenticate(request) : undefined);
     if (!invocation) {
       yield* Effect.logWarning("rejected MCP request with an unusable credential", {
         reason: token.length === 0 ? "missing_bearer_token" : "unknown_or_expired_token",
