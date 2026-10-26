@@ -7406,5 +7406,10 @@
   "Compacting after being idle…": "閒置後正在壓縮…",
   "Context automatically compacted before cache expiry": "快取到期前已自動壓縮上下文",
   "Context compacted after being idle": "閒置後已壓縮上下文",
-  "Copy Image URL": "複製圖片網址"
+  "Copy Image URL": "複製圖片網址",
+  "Snoozed, wakes in {0}": "已延後，{0}後喚醒",
+  "Waking...": "正在喚醒…",
+  "Un-settling...": "正在取消結束…",
+  "Dismissing...": "正在關閉…",
+  "Stopping...": "正在停止…"
 }
