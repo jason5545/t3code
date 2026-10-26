@@ -2,6 +2,7 @@ import { Button } from "../../components/ui/Button";
 import { SubagentStatusDot } from "./SubagentStatusDot";
 import { ThreadSubagentGroup } from "./thread-subagent-group";
 import { ProposedPlanCard } from "./ProposedPlanCard";
+import { ReasoningGroupScroll } from "./ReasoningGroupScroll";
 import {
   WorkLogLabel,
   WorkLogBlock,
@@ -542,11 +543,11 @@ export function ThreadWorkLog(props: ThreadWorkLogProps) {
     props.activities.every((row) => row.projectedItem.item.type === "reasoning")
   ) {
     return (
-      <ScrollView nestedScrollEnabled className="ml-7 max-h-96 py-1">
+      <ReasoningGroupScroll continues={props.continuesWorkLog} fadeColor={props.edgeFadeColor}>
         {props.activities.map((row) => (
           <View key={row.id}>{props.renderReasoning(row.workEntry.detail ?? "")}</View>
         ))}
-      </ScrollView>
+      </ReasoningGroupScroll>
     );
   }
 

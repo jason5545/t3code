@@ -129,6 +129,10 @@ Upstream baseline: `b3d382e100` (merged 2026-10-25).
 - The menu reports only the selected text and its offsets within one rendered block, so a mobile citation has block-relative offsets and an empty prefix and suffix: web finds the source when the quote occurs once in the response and otherwise shows the saved quote without jumping.
 - Upstream's new orchestrator (`de34391427`, #2829) dropped the `expandAssistantCitationsForProvider` call the old `ProviderService` made, so every provider received the raw link with its quote percent-encoded (a Chinese quote reads `%E5%BF%AB…`), from web as well. `ProviderTurnStartService` and `ProviderTurnControlService` (steering) expand it again after projecting composer context; the stored message keeps the link. `ProviderTurnStartService.fork.test.ts` covers sending and steering. Drop that part when upstream restores the expansion, and the rest when upstream mobile creates citations.
 
+## 14. Mobile thought groups keep their margin
+
+- An expanded group of thoughts scrolls inside a box capped at `max-h-96`. Upstream rendered it as a bare `ScrollView`, without the `WorkLogBlock` bottom margin the other work log rows get, so a clipped thought ended flush against the next reply and read as overlapping it. `ReasoningGroupScroll.tsx` wraps the box in `WorkLogBlock` and fades its bottom edge while the thought is clipped and not scrolled to the end; `thread-work-log.tsx` only swaps the `ScrollView` for it. Before/after captures were not taken.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
