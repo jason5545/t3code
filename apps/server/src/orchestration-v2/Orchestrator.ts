@@ -3562,7 +3562,9 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
                     ...(existing.endedWatch?.checksAwaitedSince !== undefined && {
                       checksAwaitedSince: existing.endedWatch.checksAwaitedSince,
                     }),
-                    remarksThrough: startedAt,
+                    // A first watch counts remarks since linking, so a review left before the
+                    // watch started still wakes. A renewed watch must not repeat old remarks.
+                    remarksThrough: existing.endedWatch ? startedAt : existing.linkedAt,
                     remarkIds: [],
                     wakes: 0,
                   });
