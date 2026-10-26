@@ -274,6 +274,8 @@ import * as Option from "effect/Option";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { environmentThreadShells, threadEnvironment } from "../../state/threads";
 import { ThreadWorkflowOpening, useWorkflowOpening } from "./thread-workflow-opening";
+import { appendServerQueuedMessages } from "./serverQueuedFeed";
+import { useServerQueuedWorkflow } from "./useServerQueuedWorkflow";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useV2ItemSupport } from "../../state/v2-item-support";
 import {
@@ -1740,7 +1742,11 @@ function renderFeedEntry(
                 </Text>
               ) : null}
               <Text className="font-t3-medium text-xs tabular-nums text-foreground-secondary">
-                {entry.pendingMessage && !entry.acknowledged ? "Pending" : timestampLabel}
+                {entry.serverQueued
+                  ? "Queued"
+                  : entry.pendingMessage && !entry.acknowledged
+                    ? "Pending"
+                    : timestampLabel}
               </Text>
               {props.onEditPendingMessage !== null &&
               entry.pendingMessage &&
@@ -2123,7 +2129,8 @@ function useThreadFeedPresentation(
   expandedWorkGroups: Record<string, boolean>,
 ) {
   const [feedCache] = useState(createThreadFeedCache);
-  return appendPendingThreadMessages(
+  const serverQueue = useServerQueuedWorkflow(props.detailRef);
+  const presented = appendPendingThreadMessages(
     deriveThreadFeedPresentation(
       props.feed,
       props.latestRun,
@@ -2140,6 +2147,7 @@ function useThreadFeedPresentation(
     props.feed,
     props.queuedMessages,
   );
+  return appendServerQueuedMessages(presented, serverQueue);
 }
 
 export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {

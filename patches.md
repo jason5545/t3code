@@ -133,6 +133,10 @@ Upstream baseline: `0b42aa9476` (merged 2026-10-26).
 
 - An expanded group of thoughts scrolls inside a box capped at `max-h-96`. Upstream rendered it as a bare `ScrollView`, without the `WorkLogBlock` bottom margin the other work log rows get, so a clipped thought ended flush against the next reply and read as overlapping it. `ReasoningGroupScroll.tsx` wraps the box in `WorkLogBlock` and fades its bottom edge while the thought is clipped and not scrolled to the end; `thread-work-log.tsx` only swaps the `ScrollView` for it. Before/after captures were not taken.
 
+## 15. Mobile shows server-queued follow-ups in the feed
+
+- A follow-up sent while the active turn cannot take steering (the provider lacks it, or the turn is between steps) falls back to the server queue. Its message has no turn item until its run starts, and the acknowledged copy is dropped once the projection holds the message, so upstream showed it only behind the floating control's queue count and it looked swallowed until the turn ended (agent-hub had nine such mobile messages from 2026-10-18 to 2026-10-24). `serverQueuedFeed.ts` appends each queued run's message after the presented feed, marked 已排入佇列 in place of its time, unless the feed already shows it; `useServerQueuedWorkflow.ts` reads the queue through the feed's `detailRef`. `ThreadFeed`'s presentation hook and its time label, and `PendingThreadFeedEntry`'s `serverQueued` flag, are the upstream hooks. Reordering, steering and removal stay in the queue sheet. `serverQueuedFeed.fork.test.ts` covers it.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.

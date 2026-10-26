@@ -21,6 +21,7 @@ export interface GuestPendingFeedEntry {
 export type PendingThreadFeedEntry = ThreadFeedEntry & {
   readonly pendingMessage?: QueuedThreadMessage;
   readonly acknowledged?: boolean;
+  readonly serverQueued?: boolean;
 };
 
 /** A row of the thread feed's list. */
