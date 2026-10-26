@@ -2,7 +2,7 @@ import { sourceControlClients } from "@t3tools/client-runtime/source-control-cli
 import { ScrollToEndButton, WorkspaceFileDropOverlay } from "./chat/TimelineOverlays";
 import { usePasteToFocusComposer } from "./chat/usePasteToFocusComposer";
 import { announcedRun, isDetailBehindShell } from "./chat/threadActivityAnnouncement";
-import { hasCompactableConversation } from "./compactableConversation";
+import { compactUnavailableReason, hasCompactableConversation } from "./compactableConversation";
 import {
   deriveAvailableRevertTurnCounts,
   deriveThreadPendingBackgroundTasks,
@@ -2471,13 +2471,11 @@ export default function ChatView(props: ChatViewProps) {
     showPlanFollowUpPrompt;
   const compactDisabled = compactThreadUnavailable;
   const compactDisabledReason = compactDisabled
-    ? !canOperateThread
-      ? "This connection cannot change threads."
-      : !activeProject
-        ? "Choose a project before compacting"
-        : !manualCompactionProviderAvailable
-          ? "Compaction is unavailable for this provider"
-          : "Compacting is unavailable right now"
+    ? compactUnavailableReason({
+        canOperateThread,
+        hasProject: activeProject !== null,
+        providerSupportsCompaction: manualCompactionProviderAvailable,
+      })
     : null;
   const resumeCompactionTokens =
     activeContextWindow &&

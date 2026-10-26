@@ -6,6 +6,7 @@ import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { importPastedComposerText, readPastedComposerContext } from "../composerInlineTokenPaste";
+import { COMPACT_UNAVAILABLE_REASON } from "../compactableConversation";
 import {
   questionAttachmentDraftId,
   trackOpenQuestionAttachmentDraft,
@@ -990,7 +991,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         : undefined))
     : undefined;
   const resolvedCompactDisabledReason =
-    compactDisabledReason ?? (noProviderAvailable ? "Compacting is unavailable right now" : null);
+    compactDisabledReason ?? (noProviderAvailable ? COMPACT_UNAVAILABLE_REASON : null);
   const supportedRuntimeModes = selectedProviderEntry?.snapshot.supportedRuntimeModes;
   const providerRuntimeModeOptions =
     supportedRuntimeModes && supportedRuntimeModes.length > 0

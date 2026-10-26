@@ -18,3 +18,17 @@ export function hasCompactableConversation(input: {
     (input.hasMoreHistory && input.latestUserMessageAt !== null)
   );
 }
+
+export const COMPACT_UNAVAILABLE_REASON = "Compacting is unavailable right now";
+
+// Listed in scripts/i18n/displayFiles.json, so these returned strings are translated.
+export function compactUnavailableReason(input: {
+  readonly canOperateThread: boolean;
+  readonly hasProject: boolean;
+  readonly providerSupportsCompaction: boolean;
+}): string {
+  if (!input.canOperateThread) return "This connection cannot change threads.";
+  if (!input.hasProject) return "Choose a project before compacting";
+  if (!input.providerSupportsCompaction) return "Compaction is unavailable for this provider";
+  return COMPACT_UNAVAILABLE_REASON;
+}
