@@ -25,6 +25,7 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   write_pull_request_guides: { phrase: "撰寫審查指南", completed: "已開始撰寫審查指南" },
   read_pull_request_guide: { phrase: "讀取審查指南" },
   orchestrator_capabilities: { phrase: "取得協調能力" },
+  provider_usage: { phrase: "取得供應商用量" },
   delegate_task: { phrase: "委派子任務" },
   task_status: { phrase: "查看委派任務狀態" },
   task_cancel: { phrase: "取消委派任務", completed: "已要求取消委派任務" },
@@ -258,6 +259,7 @@ const COUNTED: ReadonlyArray<readonly [string, string, string, string]> = [
 /** Uncounted objects, followed by `N times` or standing alone. */
 const OBJECTS: Readonly<Record<string, string>> = {
   "orchestration capabilities": "協調能力",
+  "provider usage": "供應商用量",
   "environment preferences": "環境偏好設定",
   "linked pull requests": "已連結的提取請求",
   "thread configuration": "對話設定",
