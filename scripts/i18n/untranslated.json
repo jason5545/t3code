@@ -544,6 +544,15 @@
       "calc(100vh - 18rem)",
       "min({naturalHeight}px, {TIMELINE_MINIMAP_MAX_HEIGHT_CSS})",
       "22rem"
+    ],
+    "apps/mobile/src/features/threads/ThreadDetailScreen.tsx": [
+      "compact",
+      "question",
+      "responded",
+      "settled",
+      "snoozed",
+      "user",
+      "woke"
     ]
   }
 }
