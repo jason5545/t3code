@@ -119,6 +119,11 @@ export const OrchestrationEffectRequestV2 = Schema.Union([
     type: Schema.Literal("delegated-tasks.stop"),
     reason: Schema.optional(Schema.String),
   }),
+  // Fork patch 20: archivedAt is the parent's archive time; unarchive restores children sharing it.
+  Schema.Struct({
+    type: Schema.Literals(["child-threads.archive", "child-threads.unarchive"]),
+    archivedAt: Schema.DateTimeUtcFromString,
+  }),
 ]);
 export type OrchestrationEffectRequestV2 = typeof OrchestrationEffectRequestV2.Type;
 
@@ -133,6 +138,8 @@ export const REPLAY_SAFE_EFFECT_TYPES_AFTER_PROCESS_LOSS = [
   "attachment.cleanup",
   "thread-title.generate",
   "delegated-tasks.stop",
+  "child-threads.archive",
+  "child-threads.unarchive",
 ] as const satisfies ReadonlyArray<OrchestrationEffectRequestV2["type"]>;
 
 export const PROCESS_BOUND_EFFECT_TYPES = [

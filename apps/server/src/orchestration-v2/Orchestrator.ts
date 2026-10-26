@@ -3213,7 +3213,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         case "thread.archive":
           return {
             ...thread,
-            archivedAt: now,
+            archivedAt: command.archivedAt ?? now,
             titleRegeneration: null,
             guestShare: null,
             pullRequests: thread.pullRequests?.map((link) => withPullRequestWatch(link, undefined)),
@@ -3915,6 +3915,26 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           commandId: command.commandId,
           threadId: command.threadId,
           request: { type: "terminal.cleanup" },
+        } satisfies PendingOrchestrationEffectV2,
+      ]);
+    }
+    // Fork patch 20: the threads this one launched or delegated follow it into and out of the archive.
+    const childArchivedAt =
+      command.type === "thread.archive"
+        ? (command.archivedAt ?? now)
+        : command.type === "thread.unarchive"
+          ? thread.archivedAt
+          : null;
+    if (childArchivedAt !== null) {
+      const type =
+        command.type === "thread.archive" ? "child-threads.archive" : "child-threads.unarchive";
+      yield* Ref.update(effects, (existing) => [
+        ...existing,
+        {
+          id: `effect:${command.commandId}:${type}`,
+          commandId: command.commandId,
+          threadId: command.threadId,
+          request: { type, archivedAt: childArchivedAt },
         } satisfies PendingOrchestrationEffectV2,
       ]);
     }

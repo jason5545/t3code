@@ -26,6 +26,7 @@ import * as ProviderTurnStartService from "./ProviderTurnStartService.ts";
 import * as RuntimeRequestService from "./RuntimeRequestService.ts";
 import * as ThreadTitleRegenerationService from "./ThreadTitleRegenerationService.ts";
 import * as ThreadManagementService from "./ThreadManagementService.ts";
+import * as ChildThreadArchive from "./ChildThreadArchive.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import { continueRestartedRun } from "./RestartContinuation.ts";
 
@@ -94,6 +95,8 @@ export const layerExecutor: Layer.Layer<
       yield* ThreadTitleRegenerationService.ThreadTitleRegenerationService;
     const threads = yield* ThreadManagementService.ThreadManagementService;
     const settings = yield* ServerSettings.ServerSettingsService;
+    // Fork patch 20: optional so upstream harnesses that build this executor need no change.
+    const childThreadArchive = yield* Effect.serviceOption(ChildThreadArchive.ChildThreadArchive);
     return OrchestrationEffectExecutorV2.of({
       execute: (effect, options) => {
         const willRetry = options?.willRetry ?? false;
@@ -556,6 +559,29 @@ export const layerExecutor: Layer.Layer<
                     }),
                 ),
               );
+          case "child-threads.archive":
+          case "child-threads.unarchive": {
+            if (Option.isNone(childThreadArchive)) return Effect.void;
+            const input = {
+              threadId: effect.threadId,
+              commandId: effect.commandId,
+              archivedAt: effect.request.archivedAt,
+            };
+            return (
+              effect.request.type === "child-threads.archive"
+                ? childThreadArchive.value.archive(input)
+                : childThreadArchive.value.unarchive(input)
+            ).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new OrchestrationEffectExecutionError({
+                    effectId: effect.id,
+                    effectType: effect.request.type,
+                    cause,
+                  }),
+              ),
+            );
+          }
         }
       },
     });

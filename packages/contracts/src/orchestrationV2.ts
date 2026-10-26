@@ -2774,6 +2774,8 @@ export const OrchestrationV2Command = Schema.Union([
     type: Schema.Literal("thread.archive"),
     commandId: CommandId,
     threadId: ThreadId,
+    /** Fork patch 20: a cascaded archive reuses its parent's time, which unarchive matches. */
+    archivedAt: Schema.optional(Schema.DateTimeUtc),
   }),
   Schema.Struct({
     type: Schema.Literal("thread.guest-share.close"),

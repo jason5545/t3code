@@ -24,6 +24,7 @@ import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as ContextHandoffService from "./ContextHandoffService.ts";
 import * as EffectOutbox from "./EffectOutbox.ts";
 import * as EphemeralThreads from "./EphemeralThreads.ts";
+import * as ChildThreadArchive from "./ChildThreadArchive.ts";
 import * as EffectWorker from "./EffectWorker.ts";
 import * as EventSink from "./EventSink.ts";
 import * as EventStore from "./EventStore.ts";
@@ -315,6 +316,10 @@ const layerThreadTitleRegenerationProvided = ThreadTitleRegenerationService.laye
     Layer.mergeAll(layerThreadManagementProvided, ProjectStore.layer, TextGeneration.layer),
   ),
 );
+// Fork patch 20: the executor reads it as an optional service.
+const layerChildThreadArchiveProvided = ChildThreadArchive.layer.pipe(
+  Layer.provide(Layer.merge(layerThreadManagementProvided, layerStores)),
+);
 const layerEffectExecutorProvided = EffectWorker.layerExecutor.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -326,6 +331,7 @@ const layerEffectExecutorProvided = EffectWorker.layerExecutor.pipe(
       layerRuntimeRequestServiceProvided,
       layerThreadTitleRegenerationProvided,
       layerThreadManagementProvided,
+      layerChildThreadArchiveProvided,
     ),
   ),
 );
