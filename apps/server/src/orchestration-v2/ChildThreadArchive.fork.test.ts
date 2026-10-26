@@ -89,7 +89,12 @@ it.effect(
           ...(launchedByThreadId === undefined ? {} : { launchedByThreadId }),
         });
       // Runs the cascade effects a command queued, then those of the commands they dispatched.
-      const runCascades = (commandId: CommandId): Effect.Effect<void, unknown> =>
+      const runCascades = (
+        commandId: CommandId,
+      ): Effect.Effect<
+        void,
+        ChildThreadArchive.ChildThreadArchiveError | EffectOutbox.EffectOutboxError
+      > =>
         Effect.gen(function* () {
           for (const effect of yield* outbox.listByCommandId(commandId)) {
             const request = effect.request;

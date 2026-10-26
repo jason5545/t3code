@@ -1,9 +1,7 @@
 /**
- * Fork patch 20: archiving a thread archives the threads it launched through MCP
- * (`launchedByThreadId`) and its subagents; unarchiving it restores the ones archived
- * with it. Children take the parent's archive time, which is how unarchive tells them
- * from children archived on their own. Children that are still working stay out.
- * Each child's own archive queues the next level, so the cascade covers the subtree.
+ * Fork patch 20: archive carries the threads this one launched (`launchedByThreadId`) and its
+ * subagents, unless still working; children take the parent's archive time, so unarchive can
+ * restore exactly those. Each child's own archive queues the next level.
  */
 import { CommandId, type OrchestrationV2RunStatus, ThreadId } from "@t3tools/contracts";
 import * as Context from "effect/Context";
@@ -69,53 +67,52 @@ const make = Effect.gen(function* () {
       ORDER BY thread_id
     `.pipe(Effect.mapError((cause) => new ChildThreadArchiveError({ threadId, cause })));
 
-  const cascade = <E>(
+  const cascade = Effect.fn("ChildThreadArchive.cascade")(function* <E>(
     input: CascadeInput,
     operation: "archive" | "unarchive",
     child: (row: {
       readonly threadId: ThreadId;
       readonly archivedAt: string | null;
     }) => Effect.Effect<boolean, E>,
-  ) =>
-    Effect.gen(function* () {
-      const failures: Array<unknown> = [];
-      for (const row of yield* childThreads(input.threadId)) {
-        const threadId = ThreadId.make(row.thread_id);
-        yield* child({ threadId, archivedAt: row.archived_at }).pipe(
-          Effect.flatMap((applies) =>
-            applies
-              ? threads.dispatch(
-                  operation === "archive"
-                    ? {
-                        type: "thread.archive",
-                        commandId: CommandId.make(`${input.commandId}:archive-child:${threadId}`),
-                        threadId,
-                        archivedAt: input.archivedAt,
-                      }
-                    : {
-                        type: "thread.unarchive",
-                        commandId: CommandId.make(`${input.commandId}:unarchive-child:${threadId}`),
-                        threadId,
-                      },
-                )
-              : Effect.void,
-          ),
-          Effect.catch((cause) =>
-            Effect.logWarning(`Unable to ${operation} a child thread`, {
-              parentThreadId: input.threadId,
-              threadId,
-              cause,
-            }).pipe(Effect.andThen(Effect.sync(() => failures.push(cause)))),
-          ),
-        );
-      }
-      if (failures.length > 0) {
-        return yield* new ChildThreadArchiveError({
-          threadId: input.threadId,
-          cause: failures[0],
-        });
-      }
-    });
+  ) {
+    const failures: Array<unknown> = [];
+    for (const row of yield* childThreads(input.threadId)) {
+      const threadId = ThreadId.make(row.thread_id);
+      yield* child({ threadId, archivedAt: row.archived_at }).pipe(
+        Effect.flatMap((applies) =>
+          applies
+            ? threads.dispatch(
+                operation === "archive"
+                  ? {
+                      type: "thread.archive",
+                      commandId: CommandId.make(`${input.commandId}:archive-child:${threadId}`),
+                      threadId,
+                      archivedAt: input.archivedAt,
+                    }
+                  : {
+                      type: "thread.unarchive",
+                      commandId: CommandId.make(`${input.commandId}:unarchive-child:${threadId}`),
+                      threadId,
+                    },
+              )
+            : Effect.void,
+        ),
+        Effect.catch((cause) =>
+          Effect.logWarning(`Unable to ${operation} a child thread`, {
+            parentThreadId: input.threadId,
+            threadId,
+            cause,
+          }).pipe(Effect.andThen(Effect.sync(() => failures.push(cause)))),
+        ),
+      );
+    }
+    if (failures.length > 0) {
+      return yield* new ChildThreadArchiveError({
+        threadId: input.threadId,
+        cause: failures[0],
+      });
+    }
+  });
 
   const archive = Effect.fn("ChildThreadArchive.archive")(function* (input: CascadeInput) {
     yield* cascade(input, "archive", (row) =>
