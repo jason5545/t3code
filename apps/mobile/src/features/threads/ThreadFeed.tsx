@@ -1804,6 +1804,11 @@ function renderFeedEntry(
         )}
         {...(enterAnimated ? { entering: FadeIn.duration(220) } : {})}
       >
+        {message.summarized ? (
+          <Text className="mb-1 font-t3-medium text-2xs text-foreground-muted opacity-60">
+            Summary from the provider
+          </Text>
+        ) : null}
         {renderedText.trim().length > 0 ? (
           <MarkdownImageAvailableWidthContext value={props.markdownContentWidth}>
             <AssistantMarkdownContent

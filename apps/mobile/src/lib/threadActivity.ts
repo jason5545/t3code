@@ -146,6 +146,7 @@ export interface ThreadFeedMessage {
   readonly scheduledTaskId?: ScheduledTaskId;
   readonly senderThreadId?: ThreadId;
   readonly idleCompaction?: import("@t3tools/contracts").OrchestrationV2IdleCompaction;
+  readonly summarized?: boolean;
   readonly visibility: OrchestrationV2ProjectedTurnItem["visibility"];
   readonly sourceThreadId: ThreadId;
   readonly createdAt: string;
@@ -2240,6 +2241,9 @@ export function buildThreadFeed(
           attachments: item.attachments ?? [],
           runId: item.runId,
           streaming: item.type === "assistant_message" && item.streaming,
+          ...(item.type === "assistant_message" && item.summarized === true
+            ? { summarized: true }
+            : {}),
           ...(item.type === "user_message"
             ? {
                 inputIntent: item.inputIntent,

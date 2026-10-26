@@ -442,6 +442,8 @@ export const OrchestratorMcpThreadTimelineItem = Schema.Struct({
   text: Schema.NullOr(Schema.String),
   textTruncated: Schema.Boolean,
   nextTextOffset: Schema.optional(Schema.NullOr(NonNegativeInt)),
+  /** The text is the provider's summary of an agent update, not the agent's own words. */
+  summarized: Schema.optional(Schema.Boolean),
   updatedAt: IsoDateTime,
 });
 export type OrchestratorMcpThreadTimelineItem = typeof OrchestratorMcpThreadTimelineItem.Type;

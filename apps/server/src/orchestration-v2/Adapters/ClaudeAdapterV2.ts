@@ -3521,6 +3521,7 @@ function buildAssistantArtifacts(input: {
   readonly providerTurnId: OrchestrationV2ProviderTurn["id"];
   readonly nativeItemId: string;
   readonly text: string;
+  readonly summarized?: boolean;
   readonly ordinal: number;
   readonly startedAt: DateTime.Utc;
   readonly completedAt: DateTime.Utc;
@@ -3598,6 +3599,7 @@ function buildAssistantArtifacts(input: {
       messageId,
       text: input.text,
       streaming: false,
+      ...(input.summarized === true ? { summarized: true } : {}),
     },
   };
 }
@@ -7244,6 +7246,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           readonly context: ActiveClaudeTurnContext;
           readonly nativeItemId: string;
           readonly text: string;
+          readonly summarized?: boolean;
         }) {
           if (input.context.assistant.emittedNativeItemIds.has(input.nativeItemId)) {
             return;
@@ -7257,6 +7260,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
             providerTurnId: input.context.providerTurnId,
             nativeItemId: input.nativeItemId,
             text: input.text,
+            ...(input.summarized === true ? { summarized: true } : {}),
             ordinal,
             startedAt: now,
             completedAt: now,
@@ -7999,6 +8003,7 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
                     context,
                     nativeItemId: update.itemId,
                     text: update.text,
+                    summarized: true,
                   });
                 }
                 continue;

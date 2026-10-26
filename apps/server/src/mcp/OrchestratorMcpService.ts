@@ -1048,6 +1048,9 @@ function timelineItem(input: {
     text: text === null ? null : text.slice(offset, end),
     textTruncated,
     nextTextOffset: textTruncated ? end : null,
+    ...(input.row.item.type === "assistant_message" && input.row.item.summarized === true
+      ? { summarized: true }
+      : {}),
     updatedAt: DateTime.formatIso(input.row.item.updatedAt),
   };
 }
