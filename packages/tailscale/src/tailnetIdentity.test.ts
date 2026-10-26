@@ -146,54 +146,59 @@ describe("tailscale identities", () => {
     }),
   );
 
-  it.effect("lists peers with their account, tags and MagicDNS name", () =>
-    Effect.gen(function* () {
-      const status = JSON.parse(hostStatusJson);
-      status.Peer = {
-        "nodekey:a": {
-          ID: "nnzhCheWFo11CNTRL",
-          HostName: "MacBook Pro-810a",
-          DNSName: "macbook-pro-810a.tail.ts.net.",
-          TailscaleIPs: ["100.89.162.36", "fd7a:115c:a1e0::6701:a290"],
-          Online: true,
-          Tags: null,
-          UserID: 7596696651576590,
-          OS: "macOS",
-        },
-        "nodekey:b": {
-          ID: "nGVJU6Tgfa11CNTRL",
-          HostName: "lisky-box",
-          DNSName: "lisky-box.tail.ts.net.",
-          TailscaleIPs: ["100.97.155.23"],
-          Online: false,
-          Tags: ["tag:lisky"],
-          UserID: 3750524227998267,
-          OS: "linux",
-        },
-      };
-      assert.deepStrictEqual(yield* parseTailscalePeers(JSON.stringify(status)), [
-        {
-          stableNodeId: "nnzhCheWFo11CNTRL",
-          nodeName: "macbook-pro-810a",
-          dnsName: "macbook-pro-810a.tail.ts.net",
-          addresses: ["100.89.162.36", "fd7a:115c:a1e0::6701:a290"],
-          online: true,
-          tags: [],
-          os: "macOS",
-          loginName: "owner@example.com",
-        },
-        {
-          stableNodeId: "nGVJU6Tgfa11CNTRL",
-          nodeName: "lisky-box",
-          dnsName: "lisky-box.tail.ts.net",
-          addresses: ["100.97.155.23"],
-          online: false,
-          tags: ["tag:lisky"],
-          os: "linux",
-          loginName: "tagged-devices",
-        },
-      ]);
-    }),
+  it.effect(
+    "lists peers with their account, tags, MagicDNS name and when an offline one was last seen",
+    () =>
+      Effect.gen(function* () {
+        const status = JSON.parse(hostStatusJson);
+        status.Peer = {
+          "nodekey:a": {
+            ID: "nnzhCheWFo11CNTRL",
+            HostName: "MacBook Pro-810a",
+            DNSName: "macbook-pro-810a.tail.ts.net.",
+            TailscaleIPs: ["100.89.162.36", "fd7a:115c:a1e0::6701:a290"],
+            Online: true,
+            LastSeen: "0001-01-01T00:00:00Z",
+            Tags: null,
+            UserID: 7596696651576590,
+            OS: "macOS",
+          },
+          "nodekey:b": {
+            ID: "nGVJU6Tgfa11CNTRL",
+            HostName: "lisky-box",
+            DNSName: "lisky-box.tail.ts.net.",
+            TailscaleIPs: ["100.97.155.23"],
+            Online: false,
+            LastSeen: "2026-10-26T18:13:05Z",
+            Tags: ["tag:lisky"],
+            UserID: 3750524227998267,
+            OS: "linux",
+          },
+        };
+        assert.deepStrictEqual(yield* parseTailscalePeers(JSON.stringify(status)), [
+          {
+            stableNodeId: "nnzhCheWFo11CNTRL",
+            nodeName: "macbook-pro-810a",
+            dnsName: "macbook-pro-810a.tail.ts.net",
+            addresses: ["100.89.162.36", "fd7a:115c:a1e0::6701:a290"],
+            online: true,
+            tags: [],
+            os: "macOS",
+            loginName: "owner@example.com",
+          },
+          {
+            stableNodeId: "nGVJU6Tgfa11CNTRL",
+            nodeName: "lisky-box",
+            dnsName: "lisky-box.tail.ts.net",
+            addresses: ["100.97.155.23"],
+            online: false,
+            tags: ["tag:lisky"],
+            os: "linux",
+            loginName: "tagged-devices",
+            lastSeen: "2026-10-26T18:13:05Z",
+          },
+        ]);
+      }),
   );
 
   it.effect("recognizes both tailnet address ranges", () =>

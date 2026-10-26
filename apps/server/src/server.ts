@@ -742,6 +742,8 @@ const layerMakeRoutes = Layer.mergeAll(
     Layer.provide(McpOAuth.layerMcpClientAuthenticator),
     // Fork patch 11: every MCP tool sees threads through this view.
     Layer.provide(HideEphemeralThreads.layer),
+    // Fork patch 22: the authenticator and the environment tools read it as optional.
+    Layer.provide(TailscalePairing.layer),
   ),
 ).pipe(
   Layer.provide(

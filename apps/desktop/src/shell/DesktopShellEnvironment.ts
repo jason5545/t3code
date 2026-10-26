@@ -96,6 +96,7 @@ const LOGIN_SHELL_ENV_NAMES = [
   "NODE_EXTRA_CA_CERTS",
   "T3CODE_TELEMETRY_ENABLED",
   "T3CODE_CONTEXT_HANDOFF_TOKEN_CAP",
+  "T3CODE_TAILSCALE_MCP_OWNER_ACCESS",
   "__MISE_DIFF",
 ] as const;
 const WINDOWS_PROFILE_ENV_NAMES = ["PATH", "FNM_DIR", "FNM_MULTISHELL_PATH"] as const;
@@ -452,6 +453,7 @@ const installPosixEnvironment = Effect.fn("desktop.shellEnvironment.installPosix
       "NODE_EXTRA_CA_CERTS",
       "T3CODE_TELEMETRY_ENABLED",
       "T3CODE_CONTEXT_HANDOFF_TOKEN_CAP",
+      "T3CODE_TAILSCALE_MCP_OWNER_ACCESS",
     ] as const) {
       if (!config.env[name] && shellEnvironment[name]) {
         config.env[name] = shellEnvironment[name];

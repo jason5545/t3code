@@ -86,7 +86,7 @@ function installFromLoginShell(env: NodeJS.ProcessEnv, shellOutput: string) {
 }
 
 describe("DesktopShellEnvironment (fork)", () => {
-  it.effect("hydrates the provider handoff budget from the login shell", () =>
+  it.effect("hydrates the provider handoff budget and owner MCP access from the login shell", () =>
     Effect.gen(function* () {
       const env: NodeJS.ProcessEnv = { SHELL: "/bin/zsh", PATH: "/usr/bin" };
 
@@ -95,10 +95,12 @@ describe("DesktopShellEnvironment (fork)", () => {
         envOutput({
           PATH: "/opt/homebrew/bin:/usr/bin",
           T3CODE_CONTEXT_HANDOFF_TOKEN_CAP: "48000",
+          T3CODE_TAILSCALE_MCP_OWNER_ACCESS: "full-access",
         }),
       );
 
       assert.equal(env.T3CODE_CONTEXT_HANDOFF_TOKEN_CAP, "48000");
+      assert.equal(env.T3CODE_TAILSCALE_MCP_OWNER_ACCESS, "full-access");
     }),
   );
 

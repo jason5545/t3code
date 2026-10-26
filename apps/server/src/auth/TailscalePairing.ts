@@ -39,11 +39,9 @@ import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import { MCP_CLIENT_SUBJECT } from "./mcpClientSubject.ts";
 
 /**
- * Fork patch 7: a device on the owner's tailnet pairs without a code. The
- * tailnet identity only stands in for the pairing code; every later request
- * still needs the session it pays for, and the browser origin check still
- * applies, because a web page can reach tailnet addresses and a standard
- * session can run a terminal.
+ * Fork patch 7: a device on the owner's tailnet pairs without a code. Later
+ * requests still need the session it pays for, and the origin check still
+ * applies: a web page can reach tailnet addresses and a session runs terminals.
  */
 const TailscalePairingEnabled = Config.Boolean("T3CODE_TAILSCALE_PAIRING").pipe(
   Config.withDefault(false),
@@ -87,6 +85,15 @@ const parseMcpTagAccess = (value: string) => {
 };
 
 const TailscaleMcpTags = Config.String("T3CODE_TAILSCALE_MCP_TAGS").pipe(Config.withDefault(""));
+
+/**
+ * Fork patch 22: an access level, such as `full-access`, lets the owner's own
+ * untagged machines call `/mcp` without a token, the trust device pairing
+ * already gives them. Unset, they sign in like any other MCP client.
+ */
+const TailscaleMcpOwnerAccess = Config.String("T3CODE_TAILSCALE_MCP_OWNER_ACCESS").pipe(
+  Config.withDefault(""),
+);
 
 const isLoopbackRedirect = (redirectUri: string) => {
   try {
@@ -226,6 +233,15 @@ const serverUrls = (peer: TailscaleStatusPeer, ports: ReadonlyArray<number>) => 
     ...(peer.dnsName === null ? [] : [`https://${peer.dnsName}/`]),
   ];
 };
+
+/** One of the owner's other machines, as tailscaled last heard from it. */
+export interface TailnetMachine {
+  readonly name: string;
+  readonly os: string | null;
+  readonly online: boolean;
+  /** When an offline machine was last seen; null while online or never seen. */
+  readonly lastSeen: string | null;
+}
 
 export interface TailscalePairingRequest {
   /** The TCP peer of the connection itself, never a forwarded header. */
@@ -459,6 +475,19 @@ export class TailscalePairing extends Context.Service<
      * client connected here can add them without typing an address.
      */
     readonly discoverServers: () => Effect.Effect<ReadonlyArray<TailnetServer>>;
+    /**
+     * The access a token-less MCP request from one of the owner's untagged
+     * machines gets, as the subject its session records; none answers 401.
+     */
+    readonly mcpOwnerClient: (request: TailscalePairingRequest) => Effect.Effect<
+      Option.Option<{
+        readonly access: AuthMcpClientAccess;
+        readonly subject: string;
+        readonly nodeName: string;
+      }>
+    >;
+    /** The owner's other computers, without probing them; none without tailscaled. */
+    readonly ownerMachines: () => Effect.Effect<Option.Option<ReadonlyArray<TailnetMachine>>>;
   }
 >()("t3/auth/TailscalePairing") {}
 
@@ -489,7 +518,7 @@ export const approveMcpSignIn = <A>(
       ),
   });
 
-/** @public Service construction is part of the canonical Effect module API. */
+/** @public */
 export const make = Effect.gen(function* () {
   const enabled = yield* TailscalePairingEnabled;
   const lookup = yield* TailscaleNodeLookup;
@@ -502,6 +531,13 @@ export const make = Effect.gen(function* () {
   if (mcpTags.skipped.length > 0) {
     yield* Effect.logWarning("Ignored unreadable T3CODE_TAILSCALE_MCP_TAGS entries.", {
       entries: mcpTags.skipped,
+    });
+  }
+  const ownerAccessSetting = (yield* TailscaleMcpOwnerAccess).trim();
+  const ownerMcpAccess = isMcpClientAccess(ownerAccessSetting) ? ownerAccessSetting : undefined;
+  if (ownerAccessSetting !== "" && ownerMcpAccess === undefined) {
+    yield* Effect.logWarning("Ignored an unreadable T3CODE_TAILSCALE_MCP_OWNER_ACCESS.", {
+      value: ownerAccessSetting,
     });
   }
 
@@ -518,12 +554,9 @@ export const make = Effect.gen(function* () {
     );
 
   /**
-   * The tailnet address the request came from. Tailscale Serve reaches the
-   * server from this machine itself, so a local peer is trusted only for
-   * the headers Serve rewrites: it replaces any `X-Forwarded-For` and
-   * `Tailscale-User-*` a client sends, and omits the user for tagged nodes,
-   * funnel and local traffic. Asking tailscaled about a local peer would
-   * name this machine, whose owner always matches.
+   * The tailnet address the request came from. Serve connects from this machine and
+   * replaces any `X-Forwarded-For` and `Tailscale-User-*` a client sends, so a local
+   * peer is trusted only for those; whois on it would name this host's own owner.
    */
   const resolveSource = (
     request: TailscalePairingRequest,
@@ -696,7 +729,64 @@ export const make = Effect.gen(function* () {
     return [...byEnvironment.values()];
   });
 
-  return TailscalePairing.of({ issueCredential, mcpAutoApproval, discoverServers });
+  const mcpOwnerClient: TailscalePairing["Service"]["mcpOwnerClient"] = Effect.fn(
+    "TailscalePairing.mcpOwnerClient",
+  )(function* (request) {
+    if (ownerMcpAccess === undefined) return Option.none();
+    const host = yield* Effect.option(lookup.host);
+    if (Option.isNone(host) || host.value.ownerLoginName === null) return Option.none();
+    const source = resolveSource(request, host.value, { requireServedUser: false });
+    if (source === null) return Option.none();
+    const peer = yield* Effect.option(lookup.whois(source.address));
+    if (
+      Option.isNone(peer) ||
+      peer.value.tags.length > 0 ||
+      peer.value.loginName !== host.value.ownerLoginName ||
+      (source.servedLogin !== undefined && source.servedLogin !== peer.value.loginName)
+    ) {
+      return Option.none();
+    }
+    const subject = tailscaleMcpSubject(peer.value.stableNodeId);
+    // An unreadable revocation state must not let anything in.
+    if (yield* blocks.isNodeBlocked(subject).pipe(Effect.orElseSucceed(() => true))) {
+      return Option.none();
+    }
+    return Option.some({ access: ownerMcpAccess, subject, nodeName: peer.value.nodeName });
+  });
+
+  const ownerMachines: TailscalePairing["Service"]["ownerMachines"] = Effect.fn(
+    "TailscalePairing.ownerMachines",
+  )(function* () {
+    const host = yield* Effect.option(lookup.host);
+    const peers = yield* Effect.option(lookup.peers);
+    if (Option.isNone(host) || Option.isNone(peers) || host.value.ownerLoginName === null) {
+      return Option.none();
+    }
+    const owner = host.value.ownerLoginName;
+    return Option.some(
+      peers.value
+        .filter(
+          (peer) =>
+            peer.loginName === owner &&
+            peer.tags.length === 0 &&
+            !CLIENT_ONLY_OS.has(peer.os ?? ""),
+        )
+        .map((peer) => ({
+          name: peer.nodeName,
+          os: peer.os,
+          online: peer.online,
+          lastSeen: peer.online ? null : (peer.lastSeen ?? null),
+        })),
+    );
+  });
+
+  return TailscalePairing.of({
+    issueCredential,
+    mcpAutoApproval,
+    discoverServers,
+    mcpOwnerClient,
+    ownerMachines,
+  });
 });
 
 export const layer = Layer.effect(TailscalePairing, make).pipe(

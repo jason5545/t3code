@@ -1,11 +1,15 @@
 import { OrchestratorMcpFailure, type ServerSettings } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as TailscalePairing from "../../../auth/TailscalePairing.ts";
 import * as Environment from "../../../environment/ServerEnvironment.ts";
 import * as ThreadCommandExecutor from "../../../orchestration-v2/ThreadCommandExecutor.ts";
+import * as ThreadManagementService from "../../../orchestration-v2/ThreadManagementService.ts";
 import * as Settings from "../../../serverSettings.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import { readCaller, unavailable } from "../../threadAccess.ts";
+import { machineState } from "./machineState.ts";
 import { EnvironmentToolkit } from "./tools.ts";
 
 export function preferences(settings: ServerSettings) {
@@ -40,35 +44,51 @@ const access = Effect.gen(function* () {
     });
   return { ...context, descriptor, settings: yield* Settings.ServerSettingsService };
 });
-export const layer = McpToolAccess.toLayer(EnvironmentToolkit, {
-  t3_environment_read: McpToolAccess.reads(() =>
-    Effect.gen(function* () {
-      const { descriptor, settings } = yield* access;
-      const current = yield* settings.getSettings.pipe(Effect.mapError(unavailable));
-      return {
-        environmentId: descriptor.environmentId,
-        label: descriptor.label,
-        serverVersion: descriptor.serverVersion,
-        platform: descriptor.platform,
-        preferences: preferences(current),
-      };
-    }),
-  ),
-  t3_environment_preferences_update: McpToolAccess.writesEnvironment((patch, check) =>
-    Effect.gen(function* () {
-      const scope = yield* McpInvocationContext.McpInvocationContext;
-      const executor = yield* ThreadCommandExecutor.ThreadCommandExecutor;
-      const update = Effect.gen(function* () {
-        // The turn may have ended, or the thread's modes changed, while this waited for the lock.
-        yield* check;
-        const { settings } = yield* access;
-        return preferences(
-          yield* settings.updateSettings(patch).pipe(Effect.mapError(unavailable)),
-        );
-      });
-      return yield* scope.thread === undefined
-        ? update
-        : executor.withLock(scope.thread.threadId, update);
-    }),
-  ),
-});
+export const layer = McpToolAccess.toLayer(
+  EnvironmentToolkit,
+  Effect.gen(function* () {
+    // Fork patch 22: absent where the server was built without Tailscale pairing.
+    const tailscale = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
+    return {
+      t3_environment_read: McpToolAccess.reads(() =>
+        Effect.gen(function* () {
+          const { descriptor, settings } = yield* access;
+          const current = yield* settings.getSettings.pipe(Effect.mapError(unavailable));
+          const threads = yield* ThreadManagementService.ThreadManagementService;
+          const shells = yield* threads
+            .getShellSnapshot({ location: "active" })
+            .pipe(Effect.mapError(unavailable));
+          const machines = Option.isSome(tailscale)
+            ? yield* tailscale.value.ownerMachines()
+            : Option.none();
+          return {
+            environmentId: descriptor.environmentId,
+            label: descriptor.label,
+            serverVersion: descriptor.serverVersion,
+            platform: descriptor.platform,
+            preferences: preferences(current),
+            machine: machineState(shells.threads),
+            tailnet: Option.getOrNull(machines),
+          };
+        }),
+      ),
+      t3_environment_preferences_update: McpToolAccess.writesEnvironment((patch, check) =>
+        Effect.gen(function* () {
+          const scope = yield* McpInvocationContext.McpInvocationContext;
+          const executor = yield* ThreadCommandExecutor.ThreadCommandExecutor;
+          const update = Effect.gen(function* () {
+            // The turn may have ended, or the thread's modes changed, while this waited for the lock.
+            yield* check;
+            const { settings } = yield* access;
+            return preferences(
+              yield* settings.updateSettings(patch).pipe(Effect.mapError(unavailable)),
+            );
+          });
+          return yield* scope.thread === undefined
+            ? update
+            : executor.withLock(scope.thread.threadId, update);
+        }),
+      ),
+    };
+  }),
+);

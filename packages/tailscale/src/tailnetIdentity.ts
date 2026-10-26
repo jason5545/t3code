@@ -150,6 +150,8 @@ export interface TailscaleStatusPeer {
   readonly tags: readonly string[];
   readonly os: string | null;
   readonly loginName: string | null;
+  /** When tailscaled last heard from an offline peer; absent while it is online. */
+  readonly lastSeen?: string;
 }
 
 const stringArray = (value: unknown): readonly string[] =>
@@ -173,6 +175,8 @@ export const parseTailscalePeers = (
         if (stableNodeId === null) return [];
         const dnsName = nonEmptyString(peer.DNSName)?.replace(/\.$/u, "") ?? null;
         const owner = profiles.find((profile) => profile.ID === peer.UserID);
+        // Online peers report Go's zero time.
+        const lastSeen = nonEmptyString(peer.LastSeen);
         return [
           {
             stableNodeId,
@@ -183,6 +187,7 @@ export const parseTailscalePeers = (
             tags: stringArray(peer.Tags),
             os: nonEmptyString(peer.OS),
             loginName: nonEmptyString(owner?.LoginName),
+            ...(lastSeen !== null && !lastSeen.startsWith("0001-") && { lastSeen }),
           },
         ];
       });

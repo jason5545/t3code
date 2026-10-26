@@ -18,6 +18,7 @@ import { encodeOAuthScope } from "@t3tools/shared/oauthScope";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -556,15 +557,64 @@ const make = Effect.gen(function* () {
 
 export const layer = Layer.effect(McpOAuth, make);
 
+// Fork patch 22: short, so the rows an owner machine leaves in Connections expire soon.
+const OWNER_MACHINE_SESSION_TTL = Duration.days(1);
+
 export const layerMcpClientAuthenticator = Layer.effect(
   McpHttpServer.McpClientAuthenticator,
   Effect.gen(function* () {
     const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
     const environment = yield* ServerEnvironment.ServerEnvironment;
     const environmentId = yield* environment.getEnvironmentId;
+    const tailscale = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
+    const ownerSessions = yield* Ref.make<
+      ReadonlyMap<string, EnvironmentAuth.McpClientSession & { readonly expiresAtMs: number }>
+    >(new Map());
+
+    // One session per machine, reused until it is about to expire; revoking it blocks the machine.
+    const ownerMachineClient = Effect.fn("McpOAuth.ownerMachineClient")(function* (
+      request: HttpServerRequest.HttpServerRequest,
+      missing: EnvironmentAuth.ServerAuthMissingCredentialError,
+    ) {
+      if (Option.isNone(tailscale)) return yield* missing;
+      const owner = yield* tailscale.value.mcpOwnerClient(
+        TailscalePairing.pairingRequestOf(request),
+      );
+      if (Option.isNone(owner)) return yield* missing;
+      const { access, subject, nodeName } = owner.value;
+      const now = yield* Clock.currentTimeMillis;
+      const cached = (yield* Ref.get(ownerSessions)).get(subject);
+      if (
+        cached !== undefined &&
+        cached.access === access &&
+        cached.expiresAtMs - now > Duration.toMillis(Duration.hours(1))
+      ) {
+        return cached satisfies EnvironmentAuth.McpClientSession;
+      }
+      const label = `${nodeName} (Tailscale)`;
+      const issued = yield* environmentAuth.issueMcpClientSession({
+        label,
+        access,
+        subject,
+        ttl: OWNER_MACHINE_SESSION_TTL,
+        client: deriveAuthClientMetadata({ request }),
+      });
+      const session = {
+        sessionId: issued.sessionId,
+        label,
+        access,
+        expiresAtMs: issued.expiresAt.epochMilliseconds,
+      };
+      yield* Ref.update(ownerSessions, (current) => new Map(current).set(subject, session));
+      return session satisfies EnvironmentAuth.McpClientSession;
+    });
+
     return McpHttpServer.McpClientAuthenticator.of({
       authenticate: (request) =>
         environmentAuth.authenticateMcpClient(request).pipe(
+          Effect.catchTags({
+            ServerAuthMissingCredentialError: (missing) => ownerMachineClient(request, missing),
+          }),
           Effect.flatMap((client) =>
             Clock.currentTimeMillis.pipe(
               Effect.map((issuedAt): McpInvocationContext.McpInvocationScope => ({

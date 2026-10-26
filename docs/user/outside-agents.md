@@ -117,6 +117,25 @@ to an https address, and machines with other tags, still use the approval page.
 Revoking such an agent sends its machine's next sign-in to the approval page
 until you run `t3 auth tailscale unblock` on the host.
 
+## Agents on your own machines
+
+When you run T3 Code on several of your own computers in one tailnet, the
+agents on each can use the others' tools with no sign-in at all. Start each host
+with the most another of your machines may do:
+
+```bash
+T3CODE_TAILSCALE_MCP_OWNER_ACCESS=full-access t3 serve --host <tailnet-ip>
+```
+
+Then give the agents the plain tailnet address, `http://<tailnet-ip>:3773/mcp`,
+with no authentication. Only untagged machines you own are let in this way. Each
+shows up in Settings → Connections as `<machine> (Tailscale)`; revoking it blocks
+that machine until you run `t3 auth tailscale unblock` on the host.
+
+`t3_environment_read` lists your other computers and whether each is online, so
+an agent can skip one that is asleep instead of waiting on it, and shows the
+threads running on its own host and the pull requests they watch.
+
 ## Scripts on the host
 
 On the machine that runs the environment, `t3 thread` uses the same tools
