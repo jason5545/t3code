@@ -14,7 +14,7 @@ import { resolveThreadRouteRef } from "../threadRoutes";
 import { stackedThreadToast, toastManager } from "./ui/toast";
 
 /** True while the route shows an ephemeral thread, or a new-thread draft set to launch one. */
-export function useEphemeralForeground(): boolean {
+function useEphemeralForeground(): boolean {
   const params = useRouterState({ select: (state) => state.matches.at(-1)?.params });
   const threadRef = resolveThreadRouteRef(params ?? {});
   const shell = useThreadShell(threadRef);

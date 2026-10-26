@@ -552,7 +552,11 @@
       "settled",
       "snoozed",
       "user",
-      "woke"
-    ]
+      "woke",
+      "fresh",
+      "collapsed",
+      "expanded"
+    ],
+    "apps/web/src/components/DiffPanel.tsx": ["vs"]
   }
 }

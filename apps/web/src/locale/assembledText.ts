@@ -30,17 +30,25 @@ const UNDO_ACTIONS = {
   Discarded: "已捨棄",
 } as const;
 
-/** The sidebar's undo notice before its Undo button, such as "Settled 2 threads, ". */
+/** The sidebar's undo notice before its Undo button, such as "Settled 2 threads". */
 export function threadUndoNoticeText(notice: {
   readonly action: keyof typeof UNDO_ACTIONS;
   readonly count: number;
 }): string {
   if (useChinese) {
     const noun = notice.action === "Discarded" ? "份草稿" : "個對話";
-    return `${UNDO_ACTIONS[notice.action]} ${notice.count} ${noun}，`;
+    return `${UNDO_ACTIONS[notice.action]} ${notice.count} ${noun}`;
   }
   const noun = `${notice.action === "Discarded" ? "draft" : "thread"}${notice.count === 1 ? "" : "s"}`;
-  return `${notice.action} ${notice.count} ${noun}, `;
+  return `${notice.action} ${notice.count} ${noun}`;
+}
+
+export const threadUndoNoticeSeparator = useChinese ? "，" : ", ";
+
+/** The undo notice's button, such as "⌘Z to undo". */
+export function threadUndoLabelText(shortcut: string | null): string {
+  if (useChinese) return shortcut ? `按 ${shortcut} 復原` : "復原";
+  return shortcut ? `${shortcut} to undo` : "Undo";
 }
 
 /** The sidebar's confirmation before deleting selected threads. */
@@ -81,4 +89,21 @@ export function thoughtPreviewFallbackText(english: string): string {
   if (!useChinese) return english;
   if (english === "Thinking") return "思考中";
   return english === "Thought" ? "已思考" : english;
+}
+
+const FILE_NAVIGATION = {
+  sheet: "個工作表",
+  page: "頁",
+  slide: "張投影片",
+  chapter: "章",
+} as const;
+
+/** The office viewer's paging buttons, such as "Previous slide". */
+export function fileNavigationLabel(
+  direction: "previous" | "next",
+  navigation: keyof typeof FILE_NAVIGATION,
+): string {
+  if (useChinese)
+    return `${direction === "previous" ? "上一" : "下一"}${FILE_NAVIGATION[navigation]}`;
+  return `${direction === "previous" ? "Previous" : "Next"} ${navigation}`;
 }

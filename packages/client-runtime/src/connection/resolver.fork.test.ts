@@ -96,7 +96,7 @@ const makeDependencies = (options: {
     ),
     Layer.succeed(
       ClientCapabilities.PrimaryEnvironmentAuth,
-      ClientCapabilities.PrimaryEnvironmentAuth.of({ bearerToken: Effect.succeed(Option.none()) }),
+      ClientCapabilities.PrimaryEnvironmentAuth.of({ bearerToken: Effect.succeedNone }),
     ),
     Layer.succeed(
       ClientCapabilities.ClientPresentation,

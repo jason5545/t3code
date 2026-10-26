@@ -15,7 +15,6 @@ import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
@@ -130,15 +129,15 @@ describe("AcpRegistryAdapterV2 (fork)", () => {
                   instanceId: publishedInstanceId,
                   commands,
                 }).pipe(Effect.asVoid),
-              getAvailableCommands: () => Effect.succeed(Option.none()),
+              getAvailableCommands: () => Effect.succeedNone,
               watchAvailableCommands: () => Effect.never,
               clearLiveConfiguration: () => Effect.void,
               publishLiveConfiguration: () => Effect.void,
-              getLiveConfiguration: () => Effect.succeed(Option.none()),
+              getLiveConfiguration: () => Effect.succeedNone,
               watchLiveConfiguration: () => Effect.never,
               requestUrlAuthentication: () => Effect.succeed(false),
               acceptUrlAuthentication: () => Effect.succeed(false),
-              getUrlAuthAction: () => Effect.succeed(Option.none()),
+              getUrlAuthAction: () => Effect.succeedNone,
               watchUrlAuthAction: () => Effect.never,
             }),
             Layer.mock(AcpRegistrySupport.AcpRegistryCatalog)({

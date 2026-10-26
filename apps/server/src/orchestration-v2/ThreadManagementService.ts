@@ -1202,7 +1202,7 @@ const make = Effect.gen(function* () {
         ),
       );
     }
-    if (failures[0] !== undefined) return yield* Effect.fail(failures[0]);
+    if (failures[0] !== undefined) return yield* failures[0];
   });
 
   return ThreadManagementService.of({

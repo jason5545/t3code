@@ -33,7 +33,6 @@ import { hasCloudPublicConfig } from "../cloud/publicConfig";
 import { CloudEnvironmentRows } from "./CloudEnvironmentRows";
 import { TailnetServerSection } from "./TailnetServerSection";
 import { splitEnvironmentSections } from "./environmentSections";
-import { openSettings } from "../settings/settings-navigation";
 import { leaveSettingsPage } from "../settings/settings-navigation";
 import { workspaceHasColumns } from "../workspace/workspace-selection-store";
 

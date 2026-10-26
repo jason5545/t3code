@@ -209,11 +209,6 @@ function agoParts(amount: number, unit: DurationUnit): RelativeTimeParts {
   return useChinese ? { value: `${value}前`, suffix: "" } : { value, suffix: "ago" };
 }
 
-function leftParts(amount: number, unit: DurationUnit): RelativeTimeParts {
-  const value = duration(amount, unit);
-  return useChinese ? { value: `${value}後`, suffix: "" } : { value, suffix: "left" };
-}
-
 type RelativeTimeParts = { value: string; suffix: string | null };
 export type RelativeTimeState =
   | { status: "missing" }
@@ -303,28 +298,6 @@ export function formatElapsedDurationLabel(isoDate: string, nowMs: number = Date
 
   const days = Math.floor(hours / 24);
   return duration(days, "d");
-}
-
-function formatRelativeTimeUntil(isoDate: string): RelativeTimeParts | null {
-  const date = parseTimestampDate(isoDate);
-  if (!date) return null;
-  const diffMs = date.getTime() - Date.now();
-  if (diffMs <= 0) return { value: useChinese ? "已過期" : "Expired", suffix: null };
-  const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 5) return { value: useChinese ? "即將到期" : "Soon", suffix: null };
-  if (seconds < 60) return leftParts(seconds, "s");
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return leftParts(minutes, "m");
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return leftParts(hours, "h");
-  const days = Math.floor(hours / 24);
-  return leftParts(days, "d");
-}
-
-export function formatRelativeTimeUntilLabel(isoDate: string): string {
-  const relative = formatRelativeTimeUntil(isoDate);
-  if (!relative) return "";
-  return relative.suffix ? `${relative.value} ${relative.suffix}` : relative.value;
 }
 
 /** Pass nowMs to match a parent-driven render tick. */

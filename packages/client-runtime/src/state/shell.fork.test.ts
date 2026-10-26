@@ -87,14 +87,14 @@ describe("ephemeral threads in the shell cache (fork patch 11)", () => {
         retryNow: Effect.void,
       } satisfies EnvironmentSupervisor.EnvironmentSupervisor["Service"]);
       const cache = Persistence.EnvironmentCacheStore.of({
-        loadShell: () => Effect.succeed(Option.none()),
+        loadShell: () => Effect.succeedNone,
         saveShell: (_environmentId, value) => Deferred.succeed(saved, value).pipe(Effect.asVoid),
-        loadThread: () => Effect.succeed(Option.none()),
+        loadThread: () => Effect.succeedNone,
         saveThread: () => Effect.void,
         removeThread: () => Effect.void,
-        loadServerConfig: () => Effect.succeed(Option.none()),
+        loadServerConfig: () => Effect.succeedNone,
         saveServerConfig: () => Effect.void,
-        loadVcsRefs: () => Effect.succeed(Option.none()),
+        loadVcsRefs: () => Effect.succeedNone,
         saveVcsRefs: () => Effect.void,
         removeVcsRefs: () => Effect.void,
         clearVcsRefs: () => Effect.void,
@@ -105,7 +105,7 @@ describe("ephemeral threads in the shell cache (fork patch 11)", () => {
         Effect.provideService(Persistence.EnvironmentCacheStore, cache),
         Effect.provideService(
           ShellSnapshotLoader.ShellSnapshotLoader,
-          ShellSnapshotLoader.ShellSnapshotLoader.of({ load: () => Effect.succeed(Option.none()) }),
+          ShellSnapshotLoader.ShellSnapshotLoader.of({ load: () => Effect.succeedNone }),
         ),
       );
 

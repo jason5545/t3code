@@ -8,7 +8,6 @@ const {
   formatElapsedDurationLabel,
   formatRelativeTime,
   formatRelativeTimeLabel,
-  formatRelativeTimeUntilLabel,
 } = await import("./timestampFormat");
 
 describe("relative time in zh-TW", () => {
@@ -49,11 +48,5 @@ describe("relative time in zh-TW", () => {
     expect(formatElapsedDurationLabel("2026-04-07T12:00:00.000Z")).toBe("剛剛");
     expect(formatElapsedDurationLabel("2026-04-07T11:59:30.000Z")).toBe("30 秒");
     expect(formatElapsedDurationLabel("2026-04-07T11:57:00.000Z")).toBe("3 分鐘");
-  });
-
-  it("reads future instants as 後, 即將到期 and 已過期", () => {
-    expect(formatRelativeTimeUntilLabel("2026-04-07T12:05:00.000Z")).toBe("5 分鐘後");
-    expect(formatRelativeTimeUntilLabel("2026-04-07T12:00:02.000Z")).toBe("即將到期");
-    expect(formatRelativeTimeUntilLabel("2026-04-07T11:59:00.000Z")).toBe("已過期");
   });
 });
