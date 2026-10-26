@@ -241,6 +241,8 @@ export interface TailnetMachine {
   readonly online: boolean;
   /** When an offline machine was last seen; null while online or never seen. */
   readonly lastSeen: string | null;
+  /** Its tailnet IPv4, where its T3 server listens. */
+  readonly address: string | null;
 }
 
 export interface TailscalePairingRequest {
@@ -776,6 +778,7 @@ export const make = Effect.gen(function* () {
           os: peer.os,
           online: peer.online,
           lastSeen: peer.online ? null : (peer.lastSeen ?? null),
+          address: peer.addresses.find(isTailscaleIpv4Address) ?? null,
         })),
     );
   });

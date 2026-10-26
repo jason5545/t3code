@@ -337,6 +337,9 @@ export function summarizeT3ToolCalls(
     case "environment-update":
       label = phrase("Updated", "update", `environment preferences ${times}`);
       break;
+    case "machine-call":
+      label = phrase("Called", "call", `other machines ${times}`);
+      break;
     case "attachment-prepare":
       label = phrase(
         "Prepared",

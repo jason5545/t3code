@@ -91,6 +91,7 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   t3_preview_close: { phrase: "關閉預覽分頁" },
   t3_environment_read: { phrase: "讀取環境偏好設定" },
   t3_environment_preferences_update: { phrase: "更新環境偏好設定" },
+  t3_machine_call: { phrase: "呼叫其他機器的工具" },
   t3_thread_launch: { phrase: "啟動專案對話" },
   t3_project_list: { phrase: "列出專案" },
   t3_project_read: { phrase: "讀取專案" },
@@ -190,6 +191,7 @@ const DONE: ReadonlyArray<readonly [english: string, chinese: string]> = [
   ["Used", "使用了{o}"],
   ["Previewed", "預覽了{o}"],
   ["Rendered", "轉譯了{o}"],
+  ["Called", "呼叫了{o}"],
 ];
 
 /** `Tried to …` summaries by the English infinitive. */
@@ -229,6 +231,7 @@ const TRIED: ReadonlyArray<readonly [english: string, chinese: string]> = [
   ["stop", "停止{o}"],
   ["set", "設定{o}"],
   ["use", "使用{o}"],
+  ["call", "呼叫{o}"],
 ];
 
 /** Counted nouns: singular, plural, measure word, noun. */
@@ -261,6 +264,7 @@ const OBJECTS: Readonly<Record<string, string>> = {
   "orchestration capabilities": "協調能力",
   "provider usage": "供應商用量",
   "environment preferences": "環境偏好設定",
+  "other machines": "其他機器",
   "linked pull requests": "已連結的提取請求",
   "thread configuration": "對話設定",
   "workspace branches": "工作區分支",

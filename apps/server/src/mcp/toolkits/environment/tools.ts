@@ -13,6 +13,7 @@ import * as ThreadCommandExecutor from "../../../orchestration-v2/ThreadCommandE
 import * as ThreadManagementService from "../../../orchestration-v2/ThreadManagementService.ts";
 import * as Settings from "../../../serverSettings.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
+import { MachineCallParameters, MachineCallResult } from "./machineRelay.ts";
 import { MachineState, TailnetMachines } from "./machineState.ts";
 
 const PreferenceFields = {
@@ -41,7 +42,7 @@ const shared = {
 const EnvironmentReadTool = Tool.make("t3_environment_read", {
   ...shared,
   description:
-    "Read this server's identity, preferences, the threads running here and the PRs they watch, and the owner's other tailnet machines with whether each is online. Check a machine is online here before calling its T3 tools. Providers and models: `orchestrator_capabilities`.",
+    "Read this server's identity, preferences, the threads running here and the PRs they watch, and the owner's other tailnet machines with whether each is online. Providers and models: `orchestrator_capabilities`.",
   success: Schema.Struct({
     environmentId: ExecutionEnvironmentDescriptor.fields.environmentId,
     label: Schema.String,
@@ -68,4 +69,15 @@ const EnvironmentPreferencesTool = Tool.make("t3_environment_preferences_update"
   }),
   success: Schema.Struct(PreferenceFields),
 }).annotate(Tool.Destructive, true);
-export const EnvironmentToolkit = Toolkit.make(EnvironmentReadTool, EnvironmentPreferencesTool);
+const MachineCallTool = Tool.make("t3_machine_call", {
+  ...shared,
+  description:
+    "Call a T3 tool on another of the owner's machines (`tailnet` names in `t3_environment_read`). An offline machine answers at once with when it was last seen. That machine sees an outside client, not your thread: pass projectId or threadId. Calls end after 2 minutes. Full-access caller only.",
+  parameters: MachineCallParameters,
+  success: MachineCallResult,
+}).annotate(Tool.Destructive, true);
+export const EnvironmentToolkit = Toolkit.make(
+  EnvironmentReadTool,
+  EnvironmentPreferencesTool,
+  MachineCallTool,
+);

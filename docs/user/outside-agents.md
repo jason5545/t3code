@@ -132,9 +132,13 @@ with no authentication. Only untagged machines you own are let in this way. Each
 shows up in Settings → Connections as `<machine> (Tailscale)`; revoking it blocks
 that machine until you run `t3 auth tailscale unblock` on the host.
 
-`t3_environment_read` lists your other computers and whether each is online, so
-an agent can skip one that is asleep instead of waiting on it, and shows the
-threads running on its own host and the pull requests they watch.
+Agents inside T3 Code need no setup for this: `t3_machine_call` runs any T3
+tool on another of your computers through their own host, with every provider.
+A computer that is asleep answers at once with when it was last seen, instead of
+the agent waiting out a timeout. Only full-access threads and clients can use
+it. `t3_environment_read` lists your other computers and whether each is
+online, and shows the threads running on its own host and the pull requests
+they watch.
 
 ## Scripts on the host
 

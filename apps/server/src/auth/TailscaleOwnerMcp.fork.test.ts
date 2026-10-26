@@ -70,8 +70,13 @@ const layerLookup = Layer.succeed(
         : Effect.succeed(peer);
     },
     peers: Effect.succeed([
-      statusPeer("macbook-pro", { os: "macOS", online: false, lastSeen: "2026-10-26T18:13:05Z" }),
-      statusPeer("agent-fr"),
+      statusPeer("macbook-pro", {
+        os: "macOS",
+        online: false,
+        lastSeen: "2026-10-26T18:13:05Z",
+        addresses: [MAC],
+      }),
+      statusPeer("agent-fr", { addresses: ["fd7a:115c:a1e0::1", "100.112.49.26"] }),
       statusPeer("poco-f8-ultra", { os: "android" }),
       statusPeer("lisky-box", { tags: ["tag:lisky"], loginName: "tagged-devices" }),
       statusPeer("friend-laptop", { loginName: "friend@example.com" }),
@@ -161,13 +166,21 @@ it.layer(NodeServices.layer)("MCP calls from the owner's own tailnet machines", 
     }).pipe(Effect.provide(layerTest("auto"))),
   );
 
-  it.effect("lists the owner's other computers and when an offline one was last seen", () =>
-    Effect.gen(function* () {
-      const pairing = yield* TailscalePairing.TailscalePairing;
-      expect(Option.getOrThrow(yield* pairing.ownerMachines())).toEqual([
-        { name: "macbook-pro", os: "macOS", online: false, lastSeen: "2026-10-26T18:13:05Z" },
-        { name: "agent-fr", os: "linux", online: true, lastSeen: null },
-      ]);
-    }).pipe(Effect.provide(layerTest(undefined))),
+  it.effect(
+    "lists the owner's other computers, their tailnet IPv4 and when an offline one was last seen",
+    () =>
+      Effect.gen(function* () {
+        const pairing = yield* TailscalePairing.TailscalePairing;
+        expect(Option.getOrThrow(yield* pairing.ownerMachines())).toEqual([
+          {
+            name: "macbook-pro",
+            os: "macOS",
+            online: false,
+            lastSeen: "2026-10-26T18:13:05Z",
+            address: MAC,
+          },
+          { name: "agent-fr", os: "linux", online: true, lastSeen: null, address: "100.112.49.26" },
+        ]);
+      }).pipe(Effect.provide(layerTest(undefined))),
   );
 });

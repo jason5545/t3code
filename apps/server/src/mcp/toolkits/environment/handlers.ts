@@ -9,6 +9,7 @@ import * as Settings from "../../../serverSettings.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import { readCaller, unavailable } from "../../threadAccess.ts";
+import * as MachineRelay from "./machineRelay.ts";
 import { machineState } from "./machineState.ts";
 import { EnvironmentToolkit } from "./tools.ts";
 
@@ -49,6 +50,7 @@ export const layer = McpToolAccess.toLayer(
   Effect.gen(function* () {
     // Fork patch 22: absent where the server was built without Tailscale pairing.
     const tailscale = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
+    const relay = yield* Effect.serviceOption(MachineRelay.MachineRelay);
     return {
       t3_environment_read: McpToolAccess.reads(() =>
         Effect.gen(function* () {
@@ -68,7 +70,11 @@ export const layer = McpToolAccess.toLayer(
             platform: descriptor.platform,
             preferences: preferences(current),
             machine: machineState(shells.threads),
-            tailnet: Option.getOrNull(machines),
+            tailnet: Option.match(machines, {
+              onNone: () => null,
+              onSome: (found) =>
+                found.map(({ name, os, online, lastSeen }) => ({ name, os, online, lastSeen })),
+            }),
           };
         }),
       ),
@@ -88,6 +94,16 @@ export const layer = McpToolAccess.toLayer(
             ? update
             : executor.withLock(scope.thread.threadId, update);
         }),
+      ),
+      t3_machine_call: McpToolAccess.writesEnvironment((params) =>
+        Option.isSome(relay)
+          ? relay.value.call(params)
+          : Effect.fail(
+              new OrchestratorMcpFailure({
+                code: "provider_unavailable",
+                message: "This server cannot reach other machines.",
+              }),
+            ),
       ),
     };
   }),

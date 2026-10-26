@@ -68,6 +68,7 @@ import * as ProjectSettingsOverrideSweep from "./provider/ProjectSettingsOverrid
 import * as TerminalManager from "./terminal/Manager.ts";
 import * as McpHttpServer from "./mcp/McpHttpServer.ts";
 import * as HideEphemeralThreads from "./mcp/hideEphemeralThreads.ts";
+import * as MachineRelay from "./mcp/toolkits/environment/machineRelay.ts";
 import * as EphemeralThreadSignals from "./orchestration-v2/EphemeralThreadSignals.ts";
 import * as McpSessionRegistry from "./mcp/McpSessionRegistry.ts";
 import * as PreviewAutomationBroker from "./mcp/PreviewAutomationBroker.ts";
@@ -742,7 +743,8 @@ const layerMakeRoutes = Layer.mergeAll(
     Layer.provide(McpOAuth.layerMcpClientAuthenticator),
     // Fork patch 11: every MCP tool sees threads through this view.
     Layer.provide(HideEphemeralThreads.layer),
-    // Fork patch 22: the authenticator and the environment tools read it as optional.
+    // Fork patch 22: the authenticator and the environment tools read these as optional.
+    Layer.provide(MachineRelay.layer),
     Layer.provide(TailscalePairing.layer),
   ),
 ).pipe(
