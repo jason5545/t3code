@@ -233,6 +233,7 @@ import {
   type SidebarProviderEntry,
   type SidebarSweepAction,
 } from "./sidebar/SidebarThreadRow";
+import { nestLaunchedThreads } from "./sidebar/launchedThreadNesting";
 import { SidebarDraftBlock } from "./sidebar/SidebarDraftBlock";
 import { ephemeralDeleteConfirmation } from "./ephemeralThreadText";
 import { deleteThreadsConfirmation } from "../locale/assembledText";
@@ -419,6 +420,7 @@ function useSidebarThreads(input: {
   }
   const settledVisibleCount =
     settledTail.scopeKey === projectScopeKey ? settledTail.count : SETTLED_TAIL_INITIAL_COUNT;
+  const [expandedLaunchers, setExpandedLaunchers] = useState<ReadonlySet<string>>(() => new Set());
 
   const partition = partitionSidebarThreads({
     threads,
@@ -439,10 +441,16 @@ function useSidebarThreads(input: {
   });
   const listedSettledThreads = settledThreads.filter(olderSettledShelf.isListed);
   useOlderSettledShelfGrowth(olderSettledShelf, listedSettledThreads);
+  // Fork patch 20: settled threads an agent launched fold under their settled launcher.
+  const settledNesting = nestLaunchedThreads(listedSettledThreads, {
+    expandedKeys: expandedLaunchers,
+    keepVisibleKey: routeRowThreadKey,
+  });
+  const foldedSettledCount = listedSettledThreads.length - settledNesting.threads.length;
   const settledCount =
     settledThreads.length + olderSettledShelf.unloadedCount(partition.visibleThreads);
   const visibleSettledThreads = (() => {
-    const visible = listedSettledThreads.slice(0, settledVisibleCount);
+    const visible = settledNesting.threads.slice(0, settledVisibleCount);
     if (
       routeRowThreadKey !== null &&
       !visible.some((thread) => threadShellKey(thread) === routeRowThreadKey)
@@ -452,7 +460,9 @@ function useSidebarThreads(input: {
       );
       if (routeThread !== undefined) visible.push(routeThread);
     }
-    return visible.length === settledThreads.length ? settledThreads : visible;
+    return visible.length === settledThreads.length && settledNesting.rowByKey.size === 0
+      ? settledThreads
+      : visible;
   })();
   const renderedSettledThreads = settledShelfExpanded
     ? visibleSettledThreads
@@ -494,7 +504,17 @@ function useSidebarThreads(input: {
     settledVisibleCount,
     settledCount,
     olderSettledShelf,
-    hiddenSettledCount: Math.max(0, settledCount - visibleSettledThreads.length),
+    hiddenSettledCount: Math.max(
+      0,
+      settledCount - foldedSettledCount - visibleSettledThreads.length,
+    ),
+    settledLaunchRows: settledNesting.rowByKey,
+    toggleLaunchedThreads: (threadKey: string) =>
+      setExpandedLaunchers((current) => {
+        const next = new Set(current);
+        if (!next.delete(threadKey)) next.add(threadKey);
+        return next;
+      }),
     showMoreSettled: () =>
       setSettledTail((current) => ({
         scopeKey: current.scopeKey,
@@ -1127,6 +1147,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     workingShelfExpanded,
     toggleWorkingShelf,
     renderedSettledThreads,
+    settledLaunchRows,
+    toggleLaunchedThreads,
     visibleSnoozedThreads,
     visibleWorkingThreads,
     orderedThreadKeys,
@@ -1463,6 +1485,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       attemptSettle(scopeThreadRef(thread.environmentId, thread.id), { coSettlingKeys });
     }
   };
+  const toggleLaunchedThreadRow = (threadRef: ScopedThreadRef) =>
+    toggleLaunchedThreads(scopedThreadKey(threadRef));
   const attemptUnsettle = (threadRef: ScopedThreadRef) => {
     void (async () => {
       const result = await unsettleThread(threadRef);
@@ -2986,6 +3010,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                         const isCard =
                           section === "active" || section === "pinned" || section === "working";
                         const rowVariant = isCard ? "card" : "slim";
+                        const launchRow =
+                          section === "settled" ? settledLaunchRows.get(threadKey) : undefined;
                         return (
                           <SortableThreadRow
                             key={threadKey}
@@ -3086,6 +3112,10 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             onUnpin={attemptUnpin}
                             onAcknowledgeWoke={acknowledgeWoke}
                             onFileDropThreads={handleThreadFileDrop}
+                            nestDepth={launchRow?.depth}
+                            launchedCount={launchRow?.launchedCount}
+                            launchedExpanded={launchRow?.expanded}
+                            onToggleLaunchedThreads={toggleLaunchedThreadRow}
                           />
                         );
                       };

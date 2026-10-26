@@ -73,6 +73,7 @@ import { formatRelativeTimeLabel, parseTimestampDate } from "../../timestampForm
 import type { SidebarThreadSummary } from "../../types";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { cn } from "~/lib/utils";
+import { SidebarLaunchedThreadsToggle } from "./SidebarLaunchedThreadsToggle";
 import { textDirection } from "~/textDirection";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import {
@@ -567,7 +568,14 @@ type SidebarThreadRowProps = {
   onUnpin: (threadRef: ScopedThreadRef) => void;
   onAcknowledgeWoke: (threadRef: ScopedThreadRef, visitedAt: string) => void;
   onFileDropThreads?: ((threadRef: ScopedThreadRef, files: File[]) => void) | undefined;
+  // Fork patch 20: nesting of launched threads in the Settled shelf.
+  nestDepth?: number | undefined;
+  launchedCount?: number | undefined;
+  launchedExpanded?: boolean | undefined;
+  onToggleLaunchedThreads?: ((threadRef: ScopedThreadRef) => void) | undefined;
 };
+
+const NEST_INDENT_CLASSES = ["", "pl-7", "pl-11", "pl-15"] as const;
 
 // Mounted only while renaming, so each rename starts uncommitted.
 function ThreadRenameInput(props: {
@@ -1128,7 +1136,13 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                 aria-current={accessibility.current}
                 data-testid="sidebar-row-slim"
                 aria-busy={isRegeneratingTitle || undefined}
-                className={cn(rowSurfaceClassName, "flex h-9 items-center gap-2.5 px-2.5")}
+                className={cn(
+                  rowSurfaceClassName,
+                  "flex h-9 items-center gap-2.5 px-2.5",
+                  NEST_INDENT_CLASSES[
+                    Math.min(props.nestDepth ?? 0, NEST_INDENT_CLASSES.length - 1)
+                  ],
+                )}
                 onClick={handleClick}
                 onDoubleClick={handleDoubleClick}
                 onKeyDown={handleKeyDown}
@@ -1148,6 +1162,13 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
             </span>
             {draftIndicator}
             {title}
+            {(props.launchedCount ?? 0) > 0 && props.onToggleLaunchedThreads !== undefined ? (
+              <SidebarLaunchedThreadsToggle
+                count={props.launchedCount ?? 0}
+                expanded={props.launchedExpanded ?? false}
+                onToggle={() => props.onToggleLaunchedThreads?.(threadRef)}
+              />
+            ) : null}
             {ephemeralBadge}
             {pinIndicator}
             {terminalStatusIcon}
