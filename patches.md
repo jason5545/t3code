@@ -149,6 +149,10 @@ Upstream baseline: `85f17ea246` (merged 2026-10-26).
 
 - The desktop app copies only the names in `LOGIN_SHELL_ENV_NAMES` and its hydration list (`apps/desktop/src/shell/DesktopShellEnvironment.ts`) from the login shell into the server's environment, so a `T3CODE_CONTEXT_HANDOFF_TOKEN_CAP` exported in the shell profile never reached the Mac server. The name sits after `T3CODE_TELEMETRY_ENABLED` in both lists; an inherited value still wins. `DesktopShellEnvironment.fork.test.ts` covers it. Drop this section if upstream forwards the variable.
 
+## 18. Web compaction counts unloaded history
+
+- Web enabled manual compaction only when the loaded page held a user message. The first page of an agent-started thread, or of a turn over 500 rows or 1 MB, is the last 77 rows and often holds none, so the context meter said "Compacting is unavailable right now" while a typed `/compact` still worked, because the server checks the full history (`hasConversation`). On 2026-10-26 three of the 25 most recent Claude threads hit this. `compactableConversation.ts` also counts history beyond the page when the thread has a user message, as mobile's `ThreadDetailScreen.tsx` already did; `ChatView.tsx` calls it. `compactableConversation.fork.test.ts` covers it. Drop this section when upstream web counts unloaded history.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
