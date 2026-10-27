@@ -22,6 +22,7 @@ import {
   type ServerAuthSessionMethod,
   type AuthWebSocketTicketResult,
   type AuthWebSocketTicketUse,
+  type EnvironmentAuthInvalidReason,
   DpopFailureReason,
   type DpopFailureReason as DpopFailureReasonType,
 } from "@t3tools/contracts";
@@ -400,10 +401,24 @@ export const ServerAuthCredentialError = Schema.Union([
 ]);
 export type ServerAuthCredentialError = typeof ServerAuthCredentialError.Type;
 export const isServerAuthCredentialError = Schema.is(ServerAuthCredentialError);
+// Fork patch 6: a session that ran out or was signed out says so.
+const isExpiredSessionError = Schema.is(
+  Schema.Union([SessionStore.SessionTokenExpiredError, SessionStore.WebSocketSessionExpiredError]),
+);
+const isRevokedSessionError = Schema.is(
+  Schema.Union([SessionStore.SessionTokenRevokedError, SessionStore.WebSocketSessionRevokedError]),
+);
+
 export const serverAuthCredentialReason = (
   error: ServerAuthCredentialError,
-): "missing_credential" | "invalid_credential" =>
-  error._tag === "ServerAuthMissingCredentialError" ? "missing_credential" : "invalid_credential";
+): EnvironmentAuthInvalidReason =>
+  error._tag === "ServerAuthMissingCredentialError"
+    ? "missing_credential"
+    : isExpiredSessionError(error.cause)
+      ? "session_expired"
+      : isRevokedSessionError(error.cause)
+        ? "session_revoked"
+        : "invalid_credential";
 
 export const serverAuthDpopFailureReason = (
   error: ServerAuthCredentialError,

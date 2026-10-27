@@ -28,6 +28,7 @@ import * as ConnectionCredentialStore from "./credentialStore.ts";
 import {
   credentialMissingError,
   environmentMismatchError,
+  isSignedOutRefusal,
   mapRemoteEnvironmentError,
   profileMissingError,
 } from "./errors.ts";
@@ -168,7 +169,8 @@ const makeBearerBroker = Effect.fn("clientRuntime.connection.broker.makeBearer")
         connectionMethod: "direct",
       });
     // Fork patch 7: a missing or rejected credential first tries pairing over
-    // Tailscale, and the original failure stands when the host refuses.
+    // Tailscale, and the original failure stands when the host refuses, unless
+    // it refuses because this device was signed out (patch 6).
     const pairAgain = (failure: ConnectionAttemptError) =>
       pairRemoteBearerOverTailscale({
         httpBaseUrl: profile.httpBaseUrl,
@@ -181,7 +183,9 @@ const makeBearerBroker = Effect.fn("clientRuntime.connection.broker.makeBearer")
             new BearerConnectionCredential({ token: access.access_token }),
           ),
         ),
-        Effect.mapError(() => failure),
+        Effect.mapError((error) =>
+          isSignedOutRefusal(error) ? mapRemoteEnvironmentError(error) : failure,
+        ),
         Effect.flatMap((access) => authorize(access.access_token)),
       );
     const authorized = yield* credentials.get(credentialId).pipe(

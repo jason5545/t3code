@@ -3,6 +3,7 @@ import { AuthStandardClientScopes } from "@t3tools/contracts";
 import type { TailscalePeerIdentity, TailscaleStatusPeer } from "@t3tools/tailscale";
 import { expect, it } from "@effect/vitest";
 import * as ConfigProvider from "effect/ConfigProvider";
+import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -393,4 +394,115 @@ it.layer(NodeServices.layer)("Tailscale pairing", (it) => {
       expect(asked).toEqual([]);
     }).pipe(Effect.provide(layerTest({ enabled: false, asked })));
   });
+});
+
+const DAY = Duration.toMillis(Duration.days(1));
+
+/** Renews a session as a connection from `request` would; the stored expiry afterwards. */
+const renewFrom = (
+  request: TailscalePairing.TailscalePairingRequest,
+  session: { readonly sessionId: SessionStore.VerifiedSession["sessionId"] },
+) =>
+  Effect.gen(function* () {
+    const pairing = yield* TailscalePairing.TailscalePairing;
+    const sessions = yield* SessionStore.SessionStore;
+    const expiresAt = yield* sessions.renewIfDue(session.sessionId, (stored) =>
+      pairing.renewalSubject(request, stored),
+    );
+    return Option.getOrThrow(expiresAt).epochMilliseconds;
+  });
+
+/** A device paired with a typed or scanned code, as a native client. */
+const pairWithCode = Effect.gen(function* () {
+  const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
+  const sessions = yield* SessionStore.SessionStore;
+  const issued = yield* environmentAuth.issuePairingCredential();
+  const access = yield* environmentAuth.exchangeBootstrapCredentialForAccessToken(
+    issued.credential,
+    undefined,
+    { deviceType: "mobile", label: "Phone" },
+  );
+  return yield* sessions.verify(access.access_token);
+});
+
+it.layer(NodeServices.layer)("Tailscale session renewal", (it) => {
+  it.effect("renews a device's session only from that device", () => {
+    const asked: string[] = [];
+    return Effect.gen(function* () {
+      const mac = yield* pairBearer(direct(MAC));
+      const deadline = mac.expiresAt!.epochMilliseconds;
+      yield* TestClock.adjust(Duration.days(2));
+
+      // Another device, the LAN and an address tailscaled does not know leave it alone.
+      expect(yield* renewFrom(direct(PHONE), mac)).toBe(deadline);
+      asked.length = 0;
+      expect(yield* renewFrom(direct("192.168.1.20"), mac)).toBe(deadline);
+      expect(asked).toEqual([]);
+      expect(yield* renewFrom(direct("100.70.0.77"), mac)).toBe(deadline);
+
+      const now = (yield* DateTime.now).epochMilliseconds;
+      expect(yield* renewFrom(viaServe(MAC, OWNER), mac)).toBe(now + 30 * DAY);
+    }).pipe(Effect.provide(layerTest({ asked })));
+  });
+
+  it.effect("binds a code-paired session to the owner's device it renews from", () =>
+    Effect.gen(function* () {
+      const sessions = yield* SessionStore.SessionStore;
+      const phone = yield* pairWithCode;
+      expect(phone.subject).toBe("one-time-token");
+      yield* TestClock.adjust(Duration.days(2));
+
+      const now = (yield* DateTime.now).epochMilliseconds;
+      expect(yield* renewFrom(direct(PHONE), phone)).toBe(now + 30 * DAY);
+      expect((yield* sessions.verify(phone.token)).subject).toBe("tailscale:nPhoneStable");
+      // Later renewals come only from the phone.
+      yield* TestClock.adjust(Duration.days(2));
+      expect(yield* renewFrom(direct(MAC), phone)).toBe(now + 30 * DAY);
+
+      // Signing it out now blocks the phone's pairing without a code.
+      yield* tick;
+      yield* sessions.revoke(phone.sessionId);
+      expect(yield* refusal(direct(PHONE))).toBe("revoked");
+    }).pipe(Effect.provide(layerTest())),
+  );
+
+  it.effect("leaves code-paired sessions from other, local or blocked nodes alone", () =>
+    Effect.gen(function* () {
+      const sessions = yield* SessionStore.SessionStore;
+      const blockedPhone = yield* pairBearer(direct(PHONE));
+      yield* tick;
+      yield* sessions.revoke(blockedPhone.sessionId);
+      yield* tick;
+      const device = yield* pairWithCode;
+      const cliIssued = yield* sessions.issue({ subject: "cli-issued-session" });
+      yield* TestClock.adjust(Duration.days(2));
+
+      for (const request of [
+        direct(TAGGED_BOT),
+        direct(FRIEND),
+        direct(HOST_ADDRESS),
+        direct("127.0.0.1"),
+        viaServe(MAC, "friend@example.com"),
+        direct(PHONE),
+      ]) {
+        expect(yield* renewFrom(request, device)).toBe(device.expiresAt!.epochMilliseconds);
+      }
+      expect((yield* sessions.verify(device.token)).subject).toBe("one-time-token");
+      expect(yield* renewFrom(direct(MAC), cliIssued)).toBe(cliIssued.expiresAt.epochMilliseconds);
+    }).pipe(Effect.provide(layerTest())),
+  );
+
+  it.effect("binds nothing while pairing is off, and a device's session still renews", () =>
+    Effect.gen(function* () {
+      const sessions = yield* SessionStore.SessionStore;
+      const device = yield* pairWithCode;
+      const mac = yield* sessions.issue({ subject: "tailscale:nMacStable" });
+      yield* TestClock.adjust(Duration.days(2));
+
+      expect(yield* renewFrom(direct(MAC), device)).toBe(device.expiresAt!.epochMilliseconds);
+      expect((yield* sessions.verify(device.token)).subject).toBe("one-time-token");
+      const now = (yield* DateTime.now).epochMilliseconds;
+      expect(yield* renewFrom(direct(MAC), mac)).toBe(now + 30 * DAY);
+    }).pipe(Effect.provide(layerTest({ enabled: false }))),
+  );
 });

@@ -36,7 +36,7 @@ function catalogEntry(
 const makeDependencies = (options: {
   readonly credentialMap: Map<string, ConnectionCredential>;
   readonly authorizeBearer: RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization["Service"]["authorizeBearer"];
-  readonly tailscalePairing: "issue" | "refuse";
+  readonly tailscalePairing: "issue" | "refuse" | "revoked";
 }) => {
   const profiles = new Map<string, ConnectionProfile>();
   const credentials = options.credentialMap;
@@ -55,7 +55,10 @@ const makeDependencies = (options: {
                 {
                   _tag: "EnvironmentOperationForbiddenError",
                   code: "operation_forbidden",
-                  reason: "tailscale_pairing_refused",
+                  reason:
+                    options.tailscalePairing === "revoked"
+                      ? "tailscale_pairing_revoked"
+                      : "tailscale_pairing_refused",
                   traceId: "trace-tailscale-test",
                 },
                 { status: 403 },
@@ -188,6 +191,26 @@ describe("a saved bearer environment whose credential is rejected", () => {
       expect(credentialMap.get("saved-1")).toEqual(
         new BearerConnectionCredential({ token: "expired-bearer" }),
       );
+    }),
+  );
+
+  it.effect("says the device was signed out when its node may no longer pair", () =>
+    Effect.gen(function* () {
+      const credentialMap = new Map<string, ConnectionCredential>([
+        ["saved-1", new BearerConnectionCredential({ token: "expired-bearer" })],
+      ]);
+      const broker = yield* ConnectionResolver.ConnectionResolver.pipe(
+        Effect.provide(
+          makeDependencies({ credentialMap, authorizeBearer, tailscalePairing: "revoked" }),
+        ),
+      );
+      const error = yield* Effect.flip(broker.prepare(catalogEntry(target, Option.some(profile))));
+      expect(error).toMatchObject({
+        _tag: "ConnectionBlockedError",
+        reason: "authentication",
+        detail: "This device was signed out.",
+        traceId: "trace-tailscale-test",
+      });
     }),
   );
 });

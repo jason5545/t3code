@@ -18,6 +18,19 @@ function isIpLiteral(host: string): boolean {
   }
 }
 
+// Fork patch 7: a tailnet machine name alone, such as `my-mac`, which MagicDNS
+// resolves on the phone, reaches T3 Code on its default port over plain HTTP.
+const DEFAULT_SERVER_PORT = "3773";
+
+function isMachineName(host: string): boolean {
+  try {
+    const hostname = new URL(`http://${host}`).hostname;
+    return !hostname.includes(".") && !hostname.includes(":") && !hostname.startsWith("[");
+  } catch {
+    return false;
+  }
+}
+
 export class PairingQrPayloadEmptyError extends Schema.TaggedError<PairingQrPayloadEmptyError>()(
   "PairingQrPayloadEmptyError",
   {},
@@ -33,7 +46,11 @@ export function buildPairingUrl(host: string, code: string): string {
   if (!h) return "";
 
   try {
-    const url = new URL(h.includes("://") ? h : `${isIpLiteral(h) ? "http" : "https"}://${h}`);
+    const machineName = !h.includes("://") && isMachineName(h);
+    const url = new URL(
+      h.includes("://") ? h : `${isIpLiteral(h) || machineName ? "http" : "https"}://${h}`,
+    );
+    if (machineName && url.port === "") url.port = DEFAULT_SERVER_PORT;
     // Fork patch 7: an address alone asks the backend to pair over Tailscale.
     if (c) url.hash = new URLSearchParams([["token", c]]).toString();
     return url.toString();

@@ -1,5 +1,11 @@
-import type { ClientConnectionMethod, EnvironmentId } from "@t3tools/contracts";
+import {
+  type ClientConnectionMethod,
+  type EnvironmentAuthInvalidReason,
+  type EnvironmentId,
+  EnvironmentOperationForbiddenError,
+} from "@t3tools/contracts";
 import type { RelayProtectedError } from "@t3tools/contracts/relay";
+import * as Schema from "effect/Schema";
 import type { ManagedRelayClientError } from "../relay/managedRelay.ts";
 import { dpopFailureMessage, relayProtectedErrorMessage } from "../relay/errorPresentation.ts";
 import type { RemoteEnvironmentAuthError } from "../authorization/remote.ts";
@@ -9,6 +15,7 @@ import {
   type ConnectionAttemptError,
   ConnectionTransientError,
 } from "./model.ts";
+import { SESSION_EXPIRED_DETAIL, SIGNED_OUT_DETAIL } from "./sessionEndedText.ts";
 
 export function profileMissingError(connectionId: string): ConnectionBlockedError {
   return new ConnectionBlockedError({
@@ -178,6 +185,20 @@ export function mapManagedRelayError(error: ManagedRelayClientError): Connection
   }
 }
 
+/** Fork patch 6: a session that ran out or was signed out says so. */
+const credentialRejectedDetail = (reason: EnvironmentAuthInvalidReason) =>
+  reason === "session_expired"
+    ? SESSION_EXPIRED_DETAIL
+    : reason === "session_revoked"
+      ? SIGNED_OUT_DETAIL
+      : "The environment credential is invalid.";
+
+const isOperationForbidden = Schema.is(EnvironmentOperationForbiddenError);
+
+/** Fork patch 6: the environment will not pair this device over Tailscale because it was signed out. */
+export const isSignedOutRefusal = (error: unknown): error is EnvironmentOperationForbiddenError =>
+  isOperationForbidden(error) && error.reason === "tailscale_pairing_revoked";
+
 export function mapRemoteEnvironmentError(
   error: RemoteEnvironmentAuthError,
   connectionMethod: ClientConnectionMethod = "direct",
@@ -191,13 +212,22 @@ export function mapRemoteEnvironmentError(
     case "EnvironmentAuthInvalidError":
       return new ConnectionBlockedError({
         reason: "authentication",
-        detail: "The environment credential is invalid.",
+        detail: credentialRejectedDetail(error.reason),
         traceId: error.traceId,
         hop: "server",
         via,
       });
     case "EnvironmentScopeRequiredError":
     case "EnvironmentOperationForbiddenError":
+      if (isSignedOutRefusal(error)) {
+        return new ConnectionBlockedError({
+          reason: "authentication",
+          detail: SIGNED_OUT_DETAIL,
+          traceId: error.traceId,
+          hop: "server",
+          via,
+        });
+      }
       return new ConnectionBlockedError({
         reason: "permission",
         detail: "The environment credential does not grant the required access.",

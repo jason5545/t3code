@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import {
+  isRejectedCredentialReason,
   ORCHESTRATION_PROTOCOL_HEADER,
   ORCHESTRATION_PROTOCOL_VERSION_TEXT,
 } from "@t3tools/contracts";
@@ -188,7 +189,8 @@ const executeEnvironmentRequest = Effect.fnUntraced(function* <
           authorization?._tag === "Dpop" &&
           rejectedAccessToken === undefined &&
           result.failure._tag === "EnvironmentAuthInvalidError" &&
-          result.failure.reason === "invalid_credential"
+          // Fork patch 6: an expired session is a refused credential too.
+          isRejectedCredentialReason(result.failure.reason)
         ) {
           rejectedAccessToken = authorization.accessToken;
           continue;

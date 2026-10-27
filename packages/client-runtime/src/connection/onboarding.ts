@@ -24,7 +24,7 @@ import {
   SshConnectionRegistration,
 } from "./catalog.ts";
 import * as ConnectionCredentialStore from "./credentialStore.ts";
-import { mapRemoteEnvironmentError } from "./errors.ts";
+import { isSignedOutRefusal, mapRemoteEnvironmentError } from "./errors.ts";
 import {
   BearerConnectionTarget,
   ConnectionBlockedError,
@@ -133,7 +133,12 @@ export const preparePairingRegistration = Effect.fn(
     : yield* pairRemoteBearerOverTailscale({
         httpBaseUrl: target.httpBaseUrl,
         clientMetadata: presentation.metadata,
-      }).pipe(Effect.mapError(() => resolved.failure));
+      }).pipe(
+        // Fork patch 6: a signed-out device hears so instead of being asked for a code.
+        Effect.mapError((error) =>
+          isSignedOutRefusal(error) ? mapRemoteEnvironmentError(error) : resolved.failure,
+        ),
+      );
   const connectionId = bearerConnectionId(descriptor.environmentId, target.httpBaseUrl);
 
   return new BearerConnectionRegistration({

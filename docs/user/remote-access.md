@@ -64,13 +64,19 @@ created in Settings can only be copied from the client that created them while
 its Connections page stays open. If you leave or reload that page, create
 another link to share.
 
-A paired device stays signed in while it keeps connecting. Connecting, or
-keeping a connection open, renews its sign-in for 30 days at most once a day, so
-a device that connects at least once every 29 days never has to pair again.
-Sessions issued with a shorter `--ttl` and
-[outside agent](./outside-agents.md) sign-ins keep the lifetime they were given.
-Revoking a device's session in **Settings → Connections** still ends its access
-at once.
+A device paired over [Tailscale](#pair-over-tailscale-without-a-code) stays
+signed in while it keeps connecting from that device. Connecting over the
+tailnet, or keeping such a connection open, renews its sign-in for 30 days at
+most once a day, so a device that connects at least once every 29 days never
+has to pair again. Its sign-in does not renew from another machine, so a copied
+credential stops working when its 30 days run out. A device paired with a code
+becomes a Tailscale device the first time it connects over the tailnet to a host
+with Tailscale pairing on. Any other sign-in, such as one used only over the
+LAN, runs out 30 days after it was paired or last renewed; the app then pairs
+again over Tailscale when it can, or asks for a new code. Sessions issued with a
+shorter `--ttl` and [outside agent](./outside-agents.md) sign-ins keep the
+lifetime they were given. Revoking a device's session in
+**Settings → Connections** still ends its access at once.
 
 ### Reach one machine several ways
 
@@ -160,12 +166,15 @@ If that port is already in use, choose another with
 
 ### Pair over Tailscale without a code
 
-A command-line host on a tailnet can pair your own devices without a code. Turn
-it on when starting the server:
+A host on a tailnet can pair your own devices without a code. Turn it on when
+starting the server:
 
 ```bash
 T3CODE_TAILSCALE_PAIRING=true t3 serve --host <tailnet-ip>
 ```
+
+The desktop app reads `T3CODE_TAILSCALE_PAIRING` from your login shell profile
+when it starts, with **Network access** on in **Settings → Connections**.
 
 Then enter only the host's address in **Add environment** and leave the code
 empty, or open the address in a browser. A device pairs this way when Tailscale
@@ -183,16 +192,17 @@ headers on connections from its own machine, which is how Tailscale Serve
 reaches it.
 
 The host also tells signed-in clients which of your other computers run T3
-Code, so **Add environment** lists them under **On your tailnet**. It looks at
+Code, so **Add environment** lists them under **On your tailnet**, and the
+mobile environment list offers them under **Add from your tailnet**. It looks at
 your online, untagged computers on port 3773 and at their Tailscale HTTPS name.
-A phone with no environment yet can look for itself: choose **Find servers with
-the Tailscale API** and enter an OAuth client created in the Tailscale admin
-console with the `devices:core:read` scope. The secret stays in the phone's
-keychain.
+On a phone with no environment yet, enter the computer's Tailscale machine
+name, such as `my-mac`, as the address: the app reaches it on port 3773.
 
 Revoking a session in **Settings → Connections** also stops its device from
 pairing over Tailscale, including the other apps on that machine, until you
-lift the block on the host. A session that simply expires does not block it.
+lift the block on the host. This includes a session paired with a code that has
+since become a Tailscale device. A session that simply expires does not block
+it.
 
 ```bash
 t3 auth tailscale blocked

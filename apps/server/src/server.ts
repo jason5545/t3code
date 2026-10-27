@@ -736,7 +736,8 @@ const layerMakeRoutes = Layer.mergeAll(
     DeviceHubProxy.layer,
     ServerBrowserStream.routeLayer,
     ServerHttp.layerStaticAndDevRoute,
-    Ws.layer,
+    // Fork patch 6: renewal reads it as optional.
+    Ws.layer.pipe(Layer.provide(TailscalePairing.layer)),
   ),
   McpHttpServer.layer.pipe(
     Layer.provide(ProviderAdapterRegistry.layerFromProviderInstanceRegistry),

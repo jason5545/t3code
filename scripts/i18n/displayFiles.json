@@ -84,6 +84,7 @@
     "apps/mobile/src/state/use-thread-outbox-drain.ts",
     "apps/mobile/src/state/use-vcs-action-state.ts",
     "packages/client-runtime/src/connection/presentation.ts",
+    "packages/client-runtime/src/connection/sessionEndedText.ts",
     "packages/client-runtime/src/device/duoControl.ts",
     "packages/client-runtime/src/errors/network.ts",
     "packages/client-runtime/src/operations/projects.ts",

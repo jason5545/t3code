@@ -255,6 +255,7 @@ import * as VcsDriverRegistry from "./vcs/VcsDriverRegistry.ts";
 import * as VcsProjectConfig from "./vcs/VcsProjectConfig.ts";
 import * as PairingGrantStore from "./auth/PairingGrantStore.ts";
 import * as SessionStore from "./auth/SessionStore.ts";
+import * as TailscalePairing from "./auth/TailscalePairing.ts";
 import { failEnvironmentAuthInvalid, failEnvironmentInternal } from "./auth/http.ts";
 import { isNetworkPath } from "@t3tools/shared/path";
 import * as RelayClient from "@t3tools/shared/relayClient";
@@ -3314,6 +3315,8 @@ export const layer = Layer.unwrap(
     const pullRequests = yield* PullRequestService.PullRequestService;
     const reviewGuides = yield* PullRequestReviewGuideService.PullRequestReviewGuideService;
     const sql = yield* SqlClient.SqlClient;
+    // Fork patch 6: renewal asks it whether a connection comes from its session's device.
+    const tailscalePairing = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
     return HttpRouter.add(
       "GET",
       "/ws",
@@ -3416,12 +3419,13 @@ export const layer = Layer.unwrap(
             ),
           ),
         );
+        const renewal = TailscalePairing.renewalCheckOf(tailscalePairing, request);
         return yield* Effect.acquireUseRelease(
-          sessions.markConnected(session.sessionId),
+          sessions.markConnected(session.sessionId, renewal),
           () =>
             Effect.raceFirst(
               rpcWebSocketHttpEffect,
-              sessions.awaitInvalidation(session.sessionId).pipe(
+              sessions.awaitInvalidation(session.sessionId, renewal).pipe(
                 Effect.as(HttpServerResponse.empty()),
                 Effect.catchTags({
                   SessionCredentialVerificationError: (error) =>

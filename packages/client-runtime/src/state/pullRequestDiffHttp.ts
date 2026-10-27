@@ -1,5 +1,6 @@
 import {
   EnvironmentAuthInvalidError,
+  isRejectedCredentialReason,
   type PullRequestDiffInput,
   type PullRequestDiffResult,
 } from "@t3tools/contracts";
@@ -56,7 +57,8 @@ export const fetchEnvironmentPullRequestDiff = Effect.fn(
     request: ({ client, headers }) => client.diff({ payload: input.diff, headers }),
   }).pipe(
     Effect.mapError((error) =>
-      error._tag === "EnvironmentAuthInvalidError" && error.reason === "invalid_credential"
+      // Fork patch 6: an expired or signed-out session is a refused credential too.
+      error._tag === "EnvironmentAuthInvalidError" && isRejectedCredentialReason(error.reason)
         ? new PullRequestDiffCredentialRejectedError({
             repository: input.diff.repository,
             number: input.diff.number,

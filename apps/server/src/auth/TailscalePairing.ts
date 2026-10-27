@@ -37,6 +37,7 @@ import { DESKTOP_RENDERER_ORIGINS } from "../httpCors.ts";
 import * as AuthSessions from "../persistence/AuthSessions.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import { MCP_CLIENT_SUBJECT } from "./mcpClientSubject.ts";
+import type { RenewalCheck } from "./sessionRenewal.ts";
 
 /**
  * Fork patch 7: a device on the owner's tailnet pairs without a code. Later
@@ -48,6 +49,8 @@ const TailscalePairingEnabled = Config.Boolean("T3CODE_TAILSCALE_PAIRING").pipe(
 );
 
 const TAILSCALE_SESSION_SUBJECT_PREFIX = "tailscale:";
+// What EnvironmentAuth records for a device paired with a typed or scanned code.
+const CODE_PAIRED_SUBJECT = "one-time-token";
 const TAILSCALE_MCP_SUBJECT_PREFIX = `${MCP_CLIENT_SUBJECT}:${TAILSCALE_SESSION_SUBJECT_PREFIX}`;
 const PAIRING_CREDENTIAL_TTL = Duration.minutes(1);
 
@@ -490,8 +493,27 @@ export class TailscalePairing extends Context.Service<
     >;
     /** The owner's other computers, without probing them; none without tailscaled. */
     readonly ownerMachines: () => Effect.Effect<Option.Option<ReadonlyArray<TailnetMachine>>>;
+    /**
+     * Fork patch 6: whom a connection may renew a session for. A `tailscale:`
+     * session renews only from its own node; a code-paired one from the owner's
+     * untagged, unblocked node takes that node's subject, once pairing is on.
+     */
+    readonly renewalSubject: (
+      request: TailscalePairingRequest,
+      session: AuthSessions.AuthSessionRecord,
+    ) => Effect.Effect<Option.Option<string>>;
   }
 >()("t3/auth/TailscalePairing") {}
+
+/** The renewal check for a request; none, so nothing renews, when the service is not built. */
+export const renewalCheckOf = (
+  service: Option.Option<TailscalePairing["Service"]>,
+  request: HttpServerRequest.HttpServerRequest,
+): RenewalCheck | undefined => {
+  if (Option.isNone(service)) return undefined;
+  const source = pairingRequestOf(request);
+  return (session) => service.value.renewalSubject(source, session);
+};
 
 /**
  * What McpOAuth answers an authorize request from an allowed tagged node with, without
@@ -783,12 +805,48 @@ export const make = Effect.gen(function* () {
     );
   });
 
+  const renewalSubject: TailscalePairing["Service"]["renewalSubject"] = Effect.fn(
+    "TailscalePairing.renewalSubject",
+  )(function* (request, session) {
+    const bound = session.subject.startsWith(TAILSCALE_SESSION_SUBJECT_PREFIX);
+    if (!bound && !(enabled && session.subject === CODE_PAIRED_SUBJECT)) return Option.none();
+    const host = yield* Effect.option(lookup.host);
+    if (Option.isNone(host)) return Option.none();
+    // Serve sends no user for a tagged node, and a bound session only needs its node.
+    const source = resolveSource(request, host.value, { requireServedUser: false });
+    if (source === null) return Option.none();
+    const peer = yield* Effect.option(lookup.whois(source.address));
+    if (Option.isNone(peer)) return Option.none();
+    const subject = tailscaleSessionSubject(peer.value.stableNodeId);
+    if (bound) {
+      if (subject === session.subject) return Option.some(subject);
+      yield* Effect.logWarning("Declined to renew a session from another tailnet node.").pipe(
+        Effect.annotateLogs({ sessionId: session.sessionId, node: peer.value.nodeName }),
+      );
+      return Option.none();
+    }
+    if (
+      peer.value.tags.length > 0 ||
+      host.value.ownerLoginName === null ||
+      peer.value.loginName !== host.value.ownerLoginName ||
+      (source.servedLogin !== undefined && source.servedLogin !== peer.value.loginName)
+    ) {
+      return Option.none();
+    }
+    // A blocked node must not regain a session through one it was never paired with.
+    if (yield* blocks.isNodeBlocked(subject).pipe(Effect.orElseSucceed(() => true))) {
+      return Option.none();
+    }
+    return Option.some(subject);
+  });
+
   return TailscalePairing.of({
     issueCredential,
     mcpAutoApproval,
     discoverServers,
     mcpOwnerClient,
     ownerMachines,
+    renewalSubject,
   });
 });
 

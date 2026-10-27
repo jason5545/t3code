@@ -102,13 +102,22 @@ export type EnvironmentRequestInvalidReason = typeof EnvironmentRequestInvalidRe
 export const EnvironmentAuthInvalidReason = Schema.Literals([
   "missing_credential",
   "invalid_credential",
+  // Fork patch 6: the session ran out or was signed out, so the client can say which.
+  "session_expired",
+  "session_revoked",
 ]);
 export type EnvironmentAuthInvalidReason = typeof EnvironmentAuthInvalidReason.Type;
+
+/** Fork patch 6: every reason but a missing credential means the one sent was refused. */
+export const isRejectedCredentialReason = (reason: EnvironmentAuthInvalidReason) =>
+  reason !== "missing_credential";
 
 export const EnvironmentOperationForbiddenReason = Schema.Literals([
   "current_session_revoke_not_allowed",
   // Fork patch 7: this connection cannot pair over Tailscale; pair with a code.
   "tailscale_pairing_refused",
+  // Fork patch 6: this device's node was signed out, so it cannot pair over Tailscale again.
+  "tailscale_pairing_revoked",
 ]);
 export type EnvironmentOperationForbiddenReason = typeof EnvironmentOperationForbiddenReason.Type;
 

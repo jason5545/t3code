@@ -17,6 +17,7 @@ import * as TestClock from "effect/testing/TestClock";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Etag from "effect/http/Etag";
 import * as HttpPlatform from "effect/http/HttpPlatform";
+import * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as HttpApi from "effect/http-api/HttpApi";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
@@ -27,6 +28,8 @@ import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as SessionStore from "./SessionStore.ts";
+import type { RenewalCheck } from "./sessionRenewal.ts";
+import * as TailscalePairing from "./TailscalePairing.ts";
 import * as AuthHttp from "./http.ts";
 
 const DAY = Duration.toMillis(Duration.days(1));
@@ -52,6 +55,11 @@ const layerTest = Layer.mergeAll(
   TestClock.layer(),
 );
 
+/** A connection that comes from the device its session belongs to. */
+const fromItsDevice: RenewalCheck = (session) => Effect.succeedSome(session.subject);
+/** A connection that cannot show where it comes from, such as one over the LAN. */
+const fromUnknownPeer: RenewalCheck = () => Effect.succeedNone;
+
 const storedExpiry = (sessionId: AuthSessionId) =>
   Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
@@ -61,16 +69,22 @@ const storedExpiry = (sessionId: AuthSessionId) =>
     return Date.parse(rows[0]!.expiresAt);
   });
 
-const reconnect = (sessions: SessionStore.SessionStore["Service"], sessionId: AuthSessionId) =>
-  sessions.markConnected(sessionId).pipe(Effect.andThen(sessions.markDisconnected(sessionId)));
+const reconnect = (
+  sessions: SessionStore.SessionStore["Service"],
+  sessionId: AuthSessionId,
+  check: RenewalCheck = fromItsDevice,
+) =>
+  sessions
+    .markConnected(sessionId, check)
+    .pipe(Effect.andThen(sessions.markDisconnected(sessionId)));
 
 it.layer(NodeServices.layer)("session renewal", (it) => {
   it.effect.each(["bearer-access-token", "browser-session-cookie"] as const)(
-    "extends a %s device session to 30 days when it connects, past its token's own deadline",
+    "extends a %s device session to 30 days when it connects from its device, past its token's own deadline",
     (method) =>
       Effect.gen(function* () {
         const sessions = yield* SessionStore.SessionStore;
-        const device = yield* sessions.issue({ subject: "one-time-token", method });
+        const device = yield* sessions.issue({ subject: "tailscale:nPhoneStable", method });
 
         yield* TestClock.adjust(Duration.days(20));
         yield* reconnect(sessions, device.sessionId);
@@ -92,29 +106,83 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
   it.effect("writes nothing while more than 29 days are left", () =>
     Effect.gen(function* () {
       const sessions = yield* SessionStore.SessionStore;
-      const device = yield* sessions.issue({ subject: "one-time-token" });
+      const device = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+      let asked = 0;
+      const counting: RenewalCheck = (session) =>
+        Effect.sync(() => (asked += 1)).pipe(Effect.andThen(fromItsDevice(session)));
 
       yield* TestClock.adjust(Duration.hours(23));
-      yield* reconnect(sessions, device.sessionId);
+      yield* reconnect(sessions, device.sessionId, counting);
       expect(yield* storedExpiry(device.sessionId)).toBe(device.expiresAt.epochMilliseconds);
+      // Nothing asks tailscaled before a renewal is due.
+      expect(asked).toBe(0);
 
       yield* TestClock.adjust(Duration.hours(2));
-      yield* reconnect(sessions, device.sessionId);
+      yield* reconnect(sessions, device.sessionId, counting);
       const renewedAt = (yield* DateTime.now).epochMilliseconds;
       expect(yield* storedExpiry(device.sessionId)).toBe(renewedAt + 30 * DAY);
+      expect(asked).toBe(1);
+    }).pipe(Effect.provide(layerTest)),
+  );
+
+  it.effect(
+    "keeps the deadline of a connection that cannot show it comes from the session's device",
+    () =>
+      Effect.gen(function* () {
+        const sessions = yield* SessionStore.SessionStore;
+        const device = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+
+        yield* TestClock.adjust(Duration.days(20));
+        yield* reconnect(sessions, device.sessionId, fromUnknownPeer);
+        // Callers without a check, such as routes built without Tailscale, renew nothing either.
+        yield* sessions.markConnected(device.sessionId);
+        yield* sessions.markDisconnected(device.sessionId);
+        expect(yield* sessions.renewIfDue(device.sessionId)).toEqual(Option.some(device.expiresAt));
+        expect(yield* storedExpiry(device.sessionId)).toBe(device.expiresAt.epochMilliseconds);
+
+        // It still works until the deadline it was given.
+        yield* TestClock.adjust(Duration.days(9));
+        expect((yield* sessions.verify(device.token)).sessionId).toBe(device.sessionId);
+        yield* TestClock.adjust(Duration.days(2));
+        expect((yield* Effect.flip(sessions.verify(device.token)))._tag).toBe(
+          "SessionTokenExpiredError",
+        );
+      }).pipe(Effect.provide(layerTest)),
+  );
+
+  it.effect("records the device's subject when a renewal adopts a code-paired session", () =>
+    Effect.gen(function* () {
+      const sessions = yield* SessionStore.SessionStore;
+      const device = yield* sessions.issue({ subject: "one-time-token" });
+      expect((yield* sessions.verify(device.token)).subject).toBe("one-time-token");
+
+      yield* TestClock.adjust(Duration.days(2));
+      yield* reconnect(sessions, device.sessionId, () =>
+        Effect.succeedSome("tailscale:nPhoneStable"),
+      );
+
+      // The token still carries the old `sub`; the stored subject wins.
+      const verified = yield* sessions.verify(device.token);
+      expect(verified.subject).toBe("tailscale:nPhoneStable");
+      expect(verified.expiresAt?.epochMilliseconds).toBe(
+        (yield* DateTime.now).epochMilliseconds + 30 * DAY,
+      );
+      expect(
+        (yield* sessions.listActive()).find((s) => s.sessionId === device.sessionId)?.subject,
+      ).toBe("tailscale:nPhoneStable");
     }).pipe(Effect.provide(layerTest)),
   );
 
   it.effect("never revives a revoked or expired session", () =>
     Effect.gen(function* () {
       const sessions = yield* SessionStore.SessionStore;
-      const revoked = yield* sessions.issue({ subject: "one-time-token" });
-      const expired = yield* sessions.issue({ subject: "one-time-token" });
+      const revoked = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+      const expired = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
 
       yield* TestClock.adjust(Duration.days(20));
       yield* sessions.revoke(revoked.sessionId);
       yield* reconnect(sessions, revoked.sessionId);
-      expect(yield* sessions.renewIfDue(revoked.sessionId)).toEqual(Option.none());
+      expect(yield* sessions.renewIfDue(revoked.sessionId, fromItsDevice)).toEqual(Option.none());
       expect(yield* storedExpiry(revoked.sessionId)).toBe(revoked.expiresAt.epochMilliseconds);
       expect((yield* Effect.flip(sessions.verify(revoked.token)))._tag).toBe(
         "SessionTokenRevokedError",
@@ -122,7 +190,7 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
 
       yield* TestClock.adjust(Duration.days(11));
       yield* reconnect(sessions, expired.sessionId);
-      expect(yield* sessions.renewIfDue(expired.sessionId)).toEqual(Option.none());
+      expect(yield* sessions.renewIfDue(expired.sessionId, fromItsDevice)).toEqual(Option.none());
       expect(yield* storedExpiry(expired.sessionId)).toBe(expired.expiresAt.epochMilliseconds);
       expect((yield* Effect.flip(sessions.verify(expired.token)))._tag).toBe(
         "SessionTokenExpiredError",
@@ -130,12 +198,17 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
     }).pipe(Effect.provide(layerTest)),
   );
 
-  it.effect("keeps the lifetime of MCP sign-ins and of sessions issued shorter", () =>
+  it.effect("keeps the lifetime of MCP, T3 Connect and shorter sign-ins", () =>
     Effect.gen(function* () {
       const sessions = yield* SessionStore.SessionStore;
       const mcp = yield* sessions.issue({ subject: "mcp-client", method: "bearer-access-token" });
+      const relay = yield* sessions.issue({
+        subject: "tailscale:nMacStable",
+        method: "dpop-access-token",
+        proofKeyThumbprint: "relay-proof-key",
+      });
       const shortLived = yield* sessions.issue({
-        subject: "cli-issued-session",
+        subject: "tailscale:nMacStable",
         method: "bearer-access-token",
         ttl: Duration.days(7),
       });
@@ -147,9 +220,13 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
       );
 
       yield* TestClock.adjust(Duration.days(20));
-      yield* reconnect(sessions, mcp.sessionId);
-      expect(yield* sessions.renewIfDue(mcp.sessionId)).toEqual(Option.some(mcp.expiresAt));
-      expect(yield* storedExpiry(mcp.sessionId)).toBe(mcp.expiresAt.epochMilliseconds);
+      for (const session of [mcp, relay]) {
+        yield* reconnect(sessions, session.sessionId);
+        expect(yield* sessions.renewIfDue(session.sessionId, fromItsDevice)).toEqual(
+          Option.some(session.expiresAt),
+        );
+        expect(yield* storedExpiry(session.sessionId)).toBe(session.expiresAt.epochMilliseconds);
+      }
 
       yield* TestClock.adjust(Duration.days(6));
       expect((yield* Effect.flip(sessions.verify(mcp.token)))._tag).toBe(
@@ -162,13 +239,13 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
     Effect.gen(function* () {
       const sessions = yield* SessionStore.SessionStore;
       const device = yield* sessions.issue({
-        subject: "one-time-token",
+        subject: "tailscale:nPhoneStable",
         method: "bearer-access-token",
       });
-      yield* sessions.markConnected(device.sessionId);
+      yield* sessions.markConnected(device.sessionId, fromItsDevice);
       const invalidated = yield* Deferred.make<void>();
       const watcher = yield* sessions
-        .awaitInvalidation(device.sessionId)
+        .awaitInvalidation(device.sessionId, fromItsDevice)
         .pipe(
           Effect.andThen(Deferred.succeed(invalidated, undefined)),
           Effect.forkScoped({ startImmediately: true }),
@@ -185,6 +262,32 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
 
       yield* sessions.revoke(device.sessionId);
       yield* Fiber.join(watcher);
+    }).pipe(Effect.scoped, Effect.provide(layerTest)),
+  );
+
+  it.effect("closes an open connection from elsewhere at the session's original deadline", () =>
+    Effect.gen(function* () {
+      const sessions = yield* SessionStore.SessionStore;
+      const device = yield* sessions.issue({
+        subject: "tailscale:nPhoneStable",
+        method: "bearer-access-token",
+      });
+      yield* sessions.markConnected(device.sessionId, fromUnknownPeer);
+      const invalidated = yield* Deferred.make<void>();
+      yield* sessions
+        .awaitInvalidation(device.sessionId, fromUnknownPeer)
+        .pipe(
+          Effect.andThen(Deferred.succeed(invalidated, undefined)),
+          Effect.forkScoped({ startImmediately: true }),
+        );
+
+      for (let day = 0; day < 29; day += 1) {
+        yield* TestClock.adjust(Duration.days(1));
+      }
+      expect(yield* Deferred.isDone(invalidated)).toBe(false);
+      yield* TestClock.adjust(Duration.days(1));
+      yield* Deferred.await(invalidated);
+      expect(yield* storedExpiry(device.sessionId)).toBe(device.expiresAt.epochMilliseconds);
     }).pipe(Effect.scoped, Effect.provide(layerTest)),
   );
 });
@@ -204,7 +307,18 @@ const sessionCookie = (response: Response) =>
 const cookieExpiry = (cookie: string | undefined) =>
   Date.parse(/Expires=([^;]+)/.exec(cookie ?? "")?.[1] ?? "");
 
-it.effect("resets the browser cookie's deadline when a socket ticket renews its session", () =>
+/**
+ * The auth routes on a clock the test can move, with a Tailscale service that
+ * vouches for every connection. `pair` opens a dev session and pairs a client.
+ */
+const withAuthRoutes = (
+  use: (routes: {
+    readonly handle: (request: Request) => Promise<Response>;
+    readonly pairingCredential: () => Promise<string>;
+    readonly advance: (millis: number) => void;
+    readonly now: () => number;
+  }) => Promise<void>,
+) =>
   Effect.gen(function* () {
     const realClock = yield* Clock.Clock;
     let offsetMillis = 0;
@@ -231,7 +345,15 @@ it.effect("resets the browser cookie's deadline when a socket ticket renews its 
       }),
     ).pipe(Layer.provide(layerServerConfig));
     const layerRoutes = HttpApiBuilder.layer(AuthTestApi).pipe(
-      Layer.provide(AuthHttp.layer),
+      Layer.provide(
+        AuthHttp.layer.pipe(
+          Layer.provide(
+            Layer.mock(TailscalePairing.TailscalePairing)({
+              renewalSubject: (_request, session) => Effect.succeedSome(session.subject),
+            }),
+          ),
+        ),
+      ),
       Layer.provide(AuthHttp.layerAuthenticatedAuth),
       Layer.provideMerge(
         EnvironmentAuth.layer.pipe(
@@ -267,43 +389,91 @@ it.effect("resets the browser cookie's deadline when a socket ticket renews its 
     return yield* Effect.acquireUseRelease(
       Effect.sync(() => HttpRouter.toWebHandler(layerRoutes, { disableLogger: true })),
       (environment) =>
-        Effect.tryPromise(async () => {
-          const devCookie = (
-            await environment.handler(
-              post("/api/auth/browser-session", {}, { credential: DEV_TOKEN }),
-              requestContext,
-            )
-          ).headers
-            .getSetCookie()
-            .find((cookie) => cookie.startsWith("t3_dev_session_"))
-            ?.split(";", 1)[0];
-          const pairing = (await (
-            await environment.handler(
-              post("/api/auth/pairing-token", { cookie: devCookie ?? "" }, {}),
-              requestContext,
-            )
-          ).json()) as { credential: string };
-          const paired = sessionCookie(
-            await environment.handler(
-              post("/api/auth/browser-session", {}, { credential: pairing.credential }),
-              requestContext,
-            ),
-          );
-          const pairedCookie = paired?.split(";", 1)[0] ?? "";
-          expect(pairedCookie).toMatch(/^t3_session_[^=]+=.+/);
-
-          offsetMillis = 20 * DAY;
-          const ticket = await environment.handler(
-            post("/api/auth/websocket-ticket", { cookie: pairedCookie }),
-            requestContext,
-          );
-          expect(ticket.status).toBe(200);
-          const renewed = sessionCookie(ticket);
-          expect(renewed?.split(";", 1)[0]).toBe(pairedCookie);
-          expect(cookieExpiry(renewed) - cookieExpiry(paired)).toBeGreaterThan(19 * DAY);
-          expect(cookieExpiry(renewed) - nowMillis()).toBeGreaterThan(29 * DAY);
+        Effect.tryPromise(() => {
+          const handle = (request: Request) => environment.handler(request, requestContext);
+          return use({
+            handle,
+            pairingCredential: async () => {
+              const devCookie = (
+                await handle(post("/api/auth/browser-session", {}, { credential: DEV_TOKEN }))
+              ).headers
+                .getSetCookie()
+                .find((cookie) => cookie.startsWith("t3_dev_session_"))
+                ?.split(";", 1)[0];
+              const pairing = (await (
+                await handle(post("/api/auth/pairing-token", { cookie: devCookie ?? "" }, {}))
+              ).json()) as { credential: string };
+              return pairing.credential;
+            },
+            advance: (millis) => {
+              offsetMillis += millis;
+            },
+            now: nowMillis,
+          });
         }),
       (environment) => Effect.promise(() => environment.dispose()),
     );
-  }).pipe(Effect.provide(NodeServices.layer)),
+  }).pipe(Effect.provide(NodeServices.layer));
+
+it.effect("resets the browser cookie's deadline when a socket ticket renews its session", () =>
+  withAuthRoutes(async ({ handle, pairingCredential, advance, now }) => {
+    const paired = sessionCookie(
+      await handle(
+        post("/api/auth/browser-session", {}, { credential: await pairingCredential() }),
+      ),
+    );
+    const pairedCookie = paired?.split(";", 1)[0] ?? "";
+    expect(pairedCookie).toMatch(/^t3_session_[^=]+=.+/);
+
+    advance(20 * DAY);
+    const ticket = await handle(post("/api/auth/websocket-ticket", { cookie: pairedCookie }));
+    expect(ticket.status).toBe(200);
+    const renewed = sessionCookie(ticket);
+    expect(renewed?.split(";", 1)[0]).toBe(pairedCookie);
+    expect(cookieExpiry(renewed) - cookieExpiry(paired)).toBeGreaterThan(19 * DAY);
+    expect(cookieExpiry(renewed) - now()).toBeGreaterThan(29 * DAY);
+  }),
 );
+
+const layerAuth = EnvironmentAuth.layer.pipe(
+  Layer.provideMerge(SqlitePersistence.layerMemory),
+  Layer.provide(ServerSecretStore.layer),
+  Layer.provideMerge(ServerEnvironment.layerIdentity),
+  Layer.provideMerge(layerServerConfig),
+  Layer.provideMerge(TestClock.layer()),
+);
+
+it.layer(NodeServices.layer)("refused session credentials", (it) => {
+  it.effect("tell the client whether the session expired or was signed out", () =>
+    Effect.gen(function* () {
+      const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
+      const sessions = yield* SessionStore.SessionStore;
+      const reasonFor = (token: string) =>
+        environmentAuth
+          .authenticateHttpRequest(
+            HttpServerRequest.fromWeb(
+              new Request("http://127.0.0.1/api/orchestration/shell", {
+                headers: { authorization: `Bearer ${token}` },
+              }),
+            ),
+          )
+          .pipe(
+            Effect.flip,
+            Effect.map((error) =>
+              EnvironmentAuth.isServerAuthCredentialError(error)
+                ? EnvironmentAuth.serverAuthCredentialReason(error)
+                : error._tag,
+            ),
+          );
+      const revoked = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+      const expired = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+
+      yield* sessions.revoke(revoked.sessionId);
+      yield* TestClock.adjust(Duration.days(31));
+
+      expect(yield* reasonFor(revoked.token)).toBe("session_revoked");
+      expect(yield* reasonFor(expired.token)).toBe("session_expired");
+      expect(yield* reasonFor(`${expired.token}x`)).toBe("invalid_credential");
+    }).pipe(Effect.provide(layerAuth)),
+  );
+});

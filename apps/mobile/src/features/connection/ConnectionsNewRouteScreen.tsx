@@ -238,7 +238,7 @@ export function ConnectionsNewRouteScreen({
               <PairingInputRow
                 label="Address"
                 keyboardType="url"
-                placeholder="192.168.1.100:3773"
+                placeholder="Machine name or 192.168.1.100:3773"
                 value={hostInput}
                 onChangeText={handleHostChange}
               />
@@ -273,6 +273,7 @@ export function ConnectionsNewRouteScreen({
 
           {params.routeFor === undefined ? (
             <TailnetServerSection
+              placement="add-screen"
               disabled={isSubmitting}
               onConnect={(httpBaseUrl) => void connectAndClose(buildPairingUrl(httpBaseUrl, ""))}
             />

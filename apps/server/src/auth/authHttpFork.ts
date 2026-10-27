@@ -39,19 +39,22 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
   // Optional so routes built without it (tests) refuse instead of requiring it.
   const tailscalePairing = yield* Effect.serviceOption(TailscalePairing.TailscalePairing);
 
-  const failPairingRefused = Effect.currentParentSpan.pipe(
-    Effect.map((span) => span.traceId),
-    Effect.orElseSucceed(() => "unavailable"),
-    Effect.flatMap((traceId) =>
-      Effect.fail(
-        new EnvironmentOperationForbiddenError({
-          code: "operation_forbidden",
-          reason: "tailscale_pairing_refused",
-          traceId,
-        }),
+  const failPairingRefused = (refusal: TailscalePairing.TailscalePairingRefusal) =>
+    Effect.currentParentSpan.pipe(
+      Effect.map((span) => span.traceId),
+      Effect.orElseSucceed(() => "unavailable"),
+      Effect.flatMap((traceId) =>
+        Effect.fail(
+          new EnvironmentOperationForbiddenError({
+            code: "operation_forbidden",
+            // Only a blocked node learns why; the requester is that node itself.
+            reason:
+              refusal === "revoked" ? "tailscale_pairing_revoked" : "tailscale_pairing_refused",
+            traceId,
+          }),
+        ),
       ),
-    ),
-  );
+    );
 
   const tailscalePairingHandler = Effect.fn("environment.auth.tailscalePairing")(
     function* () {
@@ -65,7 +68,7 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
       });
     },
     Effect.catchTags({
-      TailscalePairingRefusedError: () => failPairingRefused,
+      TailscalePairingRefusedError: (error) => failPairingRefused(error.reason),
       TailscalePairingStoreError: (error) =>
         helpers.failEnvironmentInternal("pairing_credential_issuance_failed", error),
     }),
@@ -94,13 +97,17 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
       readonly method: ServerAuthSessionMethod;
     }) {
       if (session.method !== "browser-session-cookie") return;
+      const request = yield* HttpServerRequest.HttpServerRequest;
       const credential = EnvironmentAuth.selectRequestCredential(
-        yield* HttpServerRequest.HttpServerRequest,
+        request,
         helpers.sessions.cookieName,
         helpers.sessions.legacyCookieName,
       );
       if (credential?.source !== "cookie") return;
-      const expiresAt = yield* helpers.sessions.renewIfDue(session.sessionId);
+      const expiresAt = yield* helpers.sessions.renewIfDue(
+        session.sessionId,
+        TailscalePairing.renewalCheckOf(tailscalePairing, request),
+      );
       if (Option.isSome(expiresAt)) {
         yield* helpers.appendSessionCookie(
           helpers.sessions.cookieName,

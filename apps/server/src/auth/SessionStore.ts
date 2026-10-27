@@ -410,6 +410,7 @@ export class SessionStore extends Context.Service<
     readonly streamChanges: Stream.Stream<SessionCredentialChange>;
     readonly awaitInvalidation: (
       sessionId: AuthSessionId,
+      renewal?: SessionRenewal.RenewalCheck,
     ) => Effect.Effect<void, SessionCredentialVerificationError>;
     readonly revoke: (
       sessionId: AuthSessionId,
@@ -417,10 +418,14 @@ export class SessionStore extends Context.Service<
     readonly revokeAllExcept: (
       sessionId: AuthSessionId,
     ) => Effect.Effect<number, SessionCredentialInternalError>;
-    readonly markConnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
+    readonly markConnected: (
+      sessionId: AuthSessionId,
+      renewal?: SessionRenewal.RenewalCheck,
+    ) => Effect.Effect<void, never>;
     /** Fork patch 6: the session's expiry after renewing it when due; none once it is unusable. */
     readonly renewIfDue: (
       sessionId: AuthSessionId,
+      renewal?: SessionRenewal.RenewalCheck,
     ) => Effect.Effect<Option.Option<DateTime.Utc>, never>;
     readonly markDisconnected: (sessionId: AuthSessionId) => Effect.Effect<void, never>;
     readonly recordClientConnection: (
@@ -502,7 +507,7 @@ const make = Effect.gen(function* () {
   const serverEnvironment = yield* ServerEnvironment.ServerEnvironmentIdentity;
   const secretStore = yield* ServerSecretStore.ServerSecretStore;
   const authSessions = yield* AuthSessions.AuthSessionRepository;
-  const renewal = yield* SessionRenewal.make;
+  const sessionRenewal = yield* SessionRenewal.make;
   const signingSecret = yield* secretStore.getOrCreateRandom(SIGNING_SECRET_NAME, 32);
   const connectedSessionsRef = yield* Ref.make(new Map<AuthSessionId, number>());
   const changesPubSub = yield* PubSub.unbounded<SessionCredentialChange>();
@@ -583,7 +588,7 @@ const make = Effect.gen(function* () {
     );
   });
 
-  const markConnected: SessionStore["Service"]["markConnected"] = (sessionId) =>
+  const markConnected: SessionStore["Service"]["markConnected"] = (sessionId, renewal) =>
     Ref.modify(connectedSessionsRef, (current) => {
       const next = new Map(current);
       const wasDisconnected = !next.has(sessionId);
@@ -599,7 +604,7 @@ const make = Effect.gen(function* () {
                   lastConnectedAt,
                 }),
               ),
-              Effect.andThen(renewal.renewIfDue(sessionId)),
+              Effect.andThen(sessionRenewal.renewIfDue(sessionId, renewal)),
             )
           : Effect.void,
       ),
@@ -843,6 +848,13 @@ const make = Effect.gen(function* () {
       if (Option.isNone(row)) {
         return yield* new UnknownSessionTokenError({ sessionId: claims.sid });
       }
+      // Fork patch 6: a signed-out device hears so even after its deadline.
+      if (row.value.revokedAt !== null) {
+        return yield* new SessionTokenRevokedError({
+          sessionId: claims.sid,
+          revokedAt: row.value.revokedAt,
+        });
+      }
       // Fork patch 6: the stored expiry, which connections renew, outranks the
       // token's `exp`. Until a session is renewed the two are equal.
       if (row.value.expiresAt.epochMilliseconds <= observedAt.epochMilliseconds) {
@@ -852,12 +864,6 @@ const make = Effect.gen(function* () {
           observedAt,
         });
       }
-      if (row.value.revokedAt !== null) {
-        return yield* new SessionTokenRevokedError({
-          sessionId: claims.sid,
-          revokedAt: row.value.revokedAt,
-        });
-      }
 
       return {
         sessionId: claims.sid,
@@ -865,7 +871,8 @@ const make = Effect.gen(function* () {
         method: claims.method,
         client: toClientMetadata(row.value.client),
         expiresAt: row.value.expiresAt,
-        subject: claims.sub,
+        // Fork patch 6: renewal can bind a code-paired session to its device's subject.
+        subject: row.value.subject,
         scopes: claims.scopes,
         ...(claims.jkt ? { proofKeyThumbprint: claims.jkt } : {}),
         ...(claims.rtc ? { runtimeModeCeiling: claims.rtc } : {}),
@@ -1065,7 +1072,10 @@ const make = Effect.gen(function* () {
     return revokedSessionIds.length;
   });
 
-  const awaitInvalidation = Effect.fn(function* (sessionId: AuthSessionId) {
+  const awaitInvalidation = Effect.fn(function* (
+    sessionId: AuthSessionId,
+    renewal?: SessionRenewal.RenewalCheck,
+  ) {
     return yield* Effect.scoped(
       Effect.gen(function* () {
         // Subscribe before reading: revocation can race with the WebSocket upgrade.
@@ -1089,7 +1099,7 @@ const make = Effect.gen(function* () {
             Stream.runHead,
           ),
           // Fork patch 6: replaces sleeping out the deadline read at connect time.
-          renewal.awaitExpiry(
+          sessionRenewal.awaitExpiry(
             row.value,
             loadActiveSession(sessionId).pipe(
               Effect.flatMap((session) =>
@@ -1101,6 +1111,7 @@ const make = Effect.gen(function* () {
                 ),
               ),
             ),
+            renewal,
           ),
         );
       }),
@@ -1122,7 +1133,7 @@ const make = Effect.gen(function* () {
     revoke,
     revokeAllExcept,
     markConnected,
-    renewIfDue: renewal.renewIfDue,
+    renewIfDue: sessionRenewal.renewIfDue,
     markDisconnected,
     recordClientConnection,
   });
