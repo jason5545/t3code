@@ -23,7 +23,9 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const ended = yield* Queue.unbounded<ThreadId>();
     return EphemeralThreadSignals.of({
-      sessionEnded: (threadIds) => Queue.offerAll(ended, Array.from(threadIds)).pipe(Effect.asVoid),
+      sessionEnded: Effect.fn("EphemeralThreadSignals.sessionEnded")(function (threadIds) {
+        return Queue.offerAll(ended, Array.from(threadIds)).pipe(Effect.asVoid);
+      }),
       endedThreads: ended,
     });
   }),

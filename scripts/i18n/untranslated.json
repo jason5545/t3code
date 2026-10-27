@@ -206,7 +206,10 @@
     "font-medium text-warning",
     "font-medium text-destructive",
     "Muse Code",
-    "10 seconds"
+    "10 seconds",
+    "asset url",
+    "load cited thread history",
+    "preview viewport resize"
   ],
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],

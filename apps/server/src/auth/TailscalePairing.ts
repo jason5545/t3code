@@ -173,8 +173,8 @@ const layerNodeLookup = Layer.effect(
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
         Effect.mapError((cause) => new TailscaleLookupError({ unknownPeer: false, cause })),
       ),
-      whois: (address) =>
-        readTailscaleWhois(address).pipe(
+      whois: Effect.fn("TailscaleNodeLookup.whois")(function (address) {
+        return readTailscaleWhois(address).pipe(
           Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
           Effect.mapError(
             (cause) =>
@@ -183,7 +183,8 @@ const layerNodeLookup = Layer.effect(
                 cause,
               }),
           ),
-        ),
+        );
+      }),
       peers: readTailscalePeers.pipe(
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
         Effect.mapError((cause) => new TailscaleLookupError({ unknownPeer: false, cause })),
@@ -211,8 +212,8 @@ const layerEnvironmentProbe = Layer.effect(
   Effect.gen(function* () {
     const http = yield* HttpClient.HttpClient;
     return EnvironmentProbe.of({
-      describe: (httpBaseUrl) =>
-        http
+      describe: Effect.fn("EnvironmentProbe.describe")(function (httpBaseUrl) {
+        return http
           .execute(HttpClientRequest.get(new URL("/.well-known/t3/environment", httpBaseUrl)))
           .pipe(
             Effect.flatMap(HttpClientResponse.filterStatusOk),
@@ -220,7 +221,8 @@ const layerEnvironmentProbe = Layer.effect(
             Effect.flatMap(decodeDescriptor),
             Effect.timeoutOption(PROBE_TIMEOUT),
             Effect.orElseSucceed(() => Option.none()),
-          ),
+          );
+      }),
     });
   }),
 );

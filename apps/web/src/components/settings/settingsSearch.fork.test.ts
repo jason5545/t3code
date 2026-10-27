@@ -35,7 +35,7 @@ describe("settings search in zh-TW", () => {
     expect(searchSettings("傳送快捷鍵")[0]).toMatchObject({
       id: "send-shortcut",
       title: "傳送快捷鍵",
-      to: "/settings/general",
+      to: "/settings/chat",
     });
     expect(searchSettings("介面語言")[0]).toMatchObject({
       id: "interface-language",

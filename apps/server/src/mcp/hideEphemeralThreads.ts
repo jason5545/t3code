@@ -74,21 +74,27 @@ export const layer = Layer.effect(
         ),
       );
 
+    // Untraced: each call is the wrapped service's, which has its own spans.
     return ThreadManagement.ThreadManagementService.of({
       ...base,
-      getThreadShell: (threadId) =>
-        base
+      getThreadShell: Effect.fnUntraced(function* (threadId) {
+        return yield* base
           .getThreadShell(threadId)
-          .pipe(Effect.map((shell) => (shell?.ephemeral === true ? null : shell))),
-      getShellSnapshot: (options) =>
-        base.getShellSnapshot(options).pipe(Effect.map(visibleSnapshot)),
-      readShellSnapshot: (options) =>
-        base
+          .pipe(Effect.map((shell) => (shell?.ephemeral === true ? null : shell)));
+      }),
+      getShellSnapshot: Effect.fnUntraced(function* (options) {
+        return yield* base.getShellSnapshot(options).pipe(Effect.map(visibleSnapshot));
+      }),
+      readShellSnapshot: Effect.fnUntraced(function* (options) {
+        return yield* base
           .readShellSnapshot(options)
-          .pipe(Effect.map((read) => read.pipe(Effect.map(visibleSnapshot)))),
-      listProjectThreads: (input) => base.listProjectThreads(input).pipe(Effect.map(visible)),
-      dispatch: (command) =>
-        Effect.forEach(involvedThreadIds(command), isHidden).pipe(
+          .pipe(Effect.map((read) => read.pipe(Effect.map(visibleSnapshot))));
+      }),
+      listProjectThreads: Effect.fnUntraced(function* (input) {
+        return yield* base.listProjectThreads(input).pipe(Effect.map(visible));
+      }),
+      dispatch: Effect.fnUntraced(function* (command) {
+        return yield* Effect.forEach(involvedThreadIds(command), isHidden).pipe(
           Effect.flatMap((hidden) =>
             hidden.some(Boolean)
               ? Effect.fail(
@@ -100,8 +106,11 @@ export const layer = Layer.effect(
                 )
               : base.dispatch(command),
           ),
-        ),
-      searchThread: (input) => unlessHidden(input.threadId, base.searchThread(input)),
+        );
+      }),
+      searchThread: Effect.fnUntraced(function* (input) {
+        return yield* unlessHidden(input.threadId, base.searchThread(input));
+      }),
       searchThreadStream: (input) =>
         Stream.unwrap(
           isHidden(input.threadId).pipe(
@@ -112,32 +121,66 @@ export const layer = Layer.effect(
             ),
           ),
         ),
-      getThreadHistoryPage: (threadId, ...rest) =>
-        unlessHidden(threadId, base.getThreadHistoryPage(threadId, ...rest)),
-      getTimelinePage: (threadId, options) =>
-        unlessHidden(threadId, base.getTimelinePage(threadId, options)),
-      getMessageCount: (threadId) => unlessHidden(threadId, base.getMessageCount(threadId)),
-      getTurnItem: (input) => unlessHidden(input.threadId, base.getTurnItem(input)),
-      getThreadRecords: (threadId, fields, filter) =>
-        unlessHidden(threadId, base.getThreadRecords(threadId, fields, filter)),
-      getThreadProjection: (threadId) => unlessHidden(threadId, base.getThreadProjection(threadId)),
-      getCheckpointContext: (threadId) =>
-        unlessHidden(threadId, base.getCheckpointContext(threadId)),
-      getThreadSnapshot: (threadId) => unlessHidden(threadId, base.getThreadSnapshot(threadId)),
-      getThreadTranscript: (threadId) => unlessHidden(threadId, base.getThreadTranscript(threadId)),
-      getThreadSnapshotWindow: (threadId, options) =>
-        unlessHidden(threadId, base.getThreadSnapshotWindow(threadId, options)),
-      getThreadEventSequence: (threadId) =>
-        unlessHidden(threadId, base.getThreadEventSequence(threadId)),
-      getProjectThreadRecords: (input, fields, filter) =>
-        unlessHiddenInProject(input, base.getProjectThreadRecords(input, fields, filter)),
-      getProjectThread: (input) => unlessHiddenInProject(input, base.getProjectThread(input)),
-      sendToThread: (input) => unlessHiddenInProject(input, base.sendToThread(input)),
-      waitForThread: (input) => unlessHiddenInProject(input, base.waitForThread(input)),
-      interruptThread: (input) => unlessHiddenInProject(input, base.interruptThread(input)),
-      settleAfterRun: (input) => unlessHiddenInProject(input, base.settleAfterRun(input)),
-      settleThread: (input) => unlessHidden(input.threadId, base.settleThread(input)),
-      stopDelegatedTasks: (input) => unlessHidden(input.threadId, base.stopDelegatedTasks(input)),
+      getThreadHistoryPage: Effect.fnUntraced(function* (threadId, ...rest) {
+        return yield* unlessHidden(threadId, base.getThreadHistoryPage(threadId, ...rest));
+      }),
+      getTimelinePage: Effect.fnUntraced(function* (threadId, options) {
+        return yield* unlessHidden(threadId, base.getTimelinePage(threadId, options));
+      }),
+      getMessageCount: Effect.fnUntraced(function* (threadId) {
+        return yield* unlessHidden(threadId, base.getMessageCount(threadId));
+      }),
+      getTurnItem: Effect.fnUntraced(function* (input) {
+        return yield* unlessHidden(input.threadId, base.getTurnItem(input));
+      }),
+      getThreadRecords: Effect.fnUntraced(function* (threadId, fields, filter) {
+        return yield* unlessHidden(threadId, base.getThreadRecords(threadId, fields, filter));
+      }),
+      getThreadProjection: Effect.fnUntraced(function* (threadId) {
+        return yield* unlessHidden(threadId, base.getThreadProjection(threadId));
+      }),
+      getCheckpointContext: Effect.fnUntraced(function* (threadId) {
+        return yield* unlessHidden(threadId, base.getCheckpointContext(threadId));
+      }),
+      getThreadSnapshot: Effect.fnUntraced(function* (threadId) {
+        return yield* unlessHidden(threadId, base.getThreadSnapshot(threadId));
+      }),
+      getThreadTranscript: Effect.fnUntraced(function* (threadId) {
+        return yield* unlessHidden(threadId, base.getThreadTranscript(threadId));
+      }),
+      getThreadSnapshotWindow: Effect.fnUntraced(function* (threadId, options) {
+        return yield* unlessHidden(threadId, base.getThreadSnapshotWindow(threadId, options));
+      }),
+      getThreadEventSequence: Effect.fnUntraced(function* (threadId) {
+        return yield* unlessHidden(threadId, base.getThreadEventSequence(threadId));
+      }),
+      getProjectThreadRecords: Effect.fnUntraced(function* (input, fields, filter) {
+        return yield* unlessHiddenInProject(
+          input,
+          base.getProjectThreadRecords(input, fields, filter),
+        );
+      }),
+      getProjectThread: Effect.fnUntraced(function* (input) {
+        return yield* unlessHiddenInProject(input, base.getProjectThread(input));
+      }),
+      sendToThread: Effect.fnUntraced(function* (input) {
+        return yield* unlessHiddenInProject(input, base.sendToThread(input));
+      }),
+      waitForThread: Effect.fnUntraced(function* (input) {
+        return yield* unlessHiddenInProject(input, base.waitForThread(input));
+      }),
+      interruptThread: Effect.fnUntraced(function* (input) {
+        return yield* unlessHiddenInProject(input, base.interruptThread(input));
+      }),
+      settleAfterRun: Effect.fnUntraced(function* (input) {
+        return yield* unlessHiddenInProject(input, base.settleAfterRun(input));
+      }),
+      settleThread: Effect.fnUntraced(function* (input) {
+        return yield* unlessHidden(input.threadId, base.settleThread(input));
+      }),
+      stopDelegatedTasks: Effect.fnUntraced(function* (input) {
+        return yield* unlessHidden(input.threadId, base.stopDelegatedTasks(input));
+      }),
     });
   }),
 );

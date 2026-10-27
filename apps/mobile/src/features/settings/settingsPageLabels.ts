@@ -3,22 +3,22 @@
  * build-time pass does not translate, so the helper looks the title up here.
  */
 export const SETTINGS_PAGE_LABELS: Readonly<Record<string, string>> = {
+  General: "General",
   Appearance: "Appearance",
+  Chat: "Chat",
   "Navigation tabs": "Navigation tabs",
   Keyboard: "Keyboard",
   Microphone: "Microphone",
+  Providers: "Providers",
+  Threads: "Threads",
   "Scheduled tasks": "Scheduled tasks",
-  Overview: "Overview",
-  Organization: "Organization",
-  "Thread behavior": "Thread behavior",
-  "Follow-ups": "Follow-ups",
-  "Archived Threads": "Archived Threads",
-  "Provider accounts": "Provider accounts",
-  "New threads": "New threads",
+  Projects: "Projects",
   "Source control": "Source control",
-  "Agent behavior": "Agent behavior",
+  Worktrees: "Worktrees",
   Maintenance: "Maintenance",
-  "About T3 Code": "About T3 Code",
+  Labs: "Labs",
+  About: "About",
+  Archive: "Archive",
 };
 
 export function settingsPageLabel(label: string): string {

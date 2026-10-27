@@ -78,12 +78,6 @@ export function skippedMachineText(machine: {
   return `Skips ${machine.label}: ${machine.reason}`;
 }
 
-/** The composer's compact toggle, a word the catalog translates as 全寬 for the chat width setting. */
-export function compactSendModeText(keepFullHistory: boolean): string {
-  if (useChinese) return keepFullHistory ? "完整" : "壓縮";
-  return keepFullHistory ? "Full" : "Compact";
-}
-
 /** An empty thought's placeholder, which reaches `remarkThoughtPreview` as a plugin option. */
 export function thoughtPreviewFallbackText(english: string): string {
   if (!useChinese) return english;
