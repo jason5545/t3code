@@ -11,7 +11,7 @@ import { providerIconKind, resolveOfficialAcpRegistryIconUrl } from "@t3tools/co
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { AppText as Text } from "./ui/AppText";
 import { OmpIcon } from "./OmpIcon";
-import { getProviderClient } from "../lib/providerClients";
+import { getProviderClient } from "@t3tools/client-runtime/provider-clients";
 
 type ProviderIconProps = {
   readonly provider: string | null | undefined;

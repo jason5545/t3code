@@ -21,6 +21,7 @@ import * as McpOAuth from "./McpOAuth.ts";
 import { encodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
 import * as McpOAuthHttp from "./mcpOAuthHttp.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
+import * as ServerSettings from "../serverSettings.ts";
 import * as AuthHttp from "./http.ts";
 
 // The route harness mirrors McpOAuth.test.ts so fork cases stay out of the upstream file.
@@ -42,7 +43,11 @@ const makeLayerRoutes = (capture: (auth: EnvironmentAuth.EnvironmentAuth["Servic
     ),
     HttpApiBuilder.layer(AuthTestApi).pipe(
       Layer.provide(AuthHttp.layer),
-      Layer.provide(McpOAuthHttp.layer.pipe(Layer.provide(McpOAuth.layer))),
+      Layer.provide(
+        McpOAuthHttp.layer.pipe(
+          Layer.provide(McpOAuth.layer.pipe(Layer.provide(ServerSettings.layerTest()))),
+        ),
+      ),
       Layer.provide(AuthHttp.layerAuthenticatedAuth),
     ),
   ).pipe(

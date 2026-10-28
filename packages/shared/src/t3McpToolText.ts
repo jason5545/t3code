@@ -94,6 +94,9 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   t3_preview_list: { phrase: "列出預覽分頁" },
   t3_preview_close: { phrase: "關閉預覽分頁" },
   t3_environment_read: { phrase: "讀取環境偏好設定" },
+  t3_environment_links: { phrase: "列出已連結的環境" },
+  t3_environment_link: { phrase: "要求連結環境" },
+  t3_environment_unlink: { phrase: "移除已連結的環境" },
   t3_environment_preferences_update: { phrase: "更新環境偏好設定" },
   t3_machine_call: { phrase: "呼叫其他機器的工具" },
   t3_thread_launch: { phrase: "啟動專案對話" },
@@ -170,6 +173,7 @@ const DONE: ReadonlyArray<readonly [english: string, chinese: string]> = [
   ["Started", "已開始{o}"],
   ["Handed off to", "已交接到{o}"],
   ["Waited on", "等候了{o}"],
+  ["Asked to link", "已要求連結{o}"],
   ["Asked for", "索取了{o}"],
   ["Delegated", "委派了{o}"],
   ["Sent", "傳送了{o}"],
@@ -196,6 +200,7 @@ const DONE: ReadonlyArray<readonly [english: string, chinese: string]> = [
   ["Previewed", "預覽了{o}"],
   ["Rendered", "轉譯了{o}"],
   ["Called", "呼叫了{o}"],
+  ["Forgot", "移除了{o}"],
 ];
 
 /** `Tried to …` summaries by the English infinitive. */
@@ -205,6 +210,7 @@ const TRIED: ReadonlyArray<readonly [english: string, chinese: string]> = [
   ["hand off to", "交接到{o}"],
   ["steer with", "用{o}引導"],
   ["wait on", "等候{o}"],
+  ["ask to link", "要求連結{o}"],
   ["ask for", "索取{o}"],
   ["interrupt", "中斷{o}"],
   ["delegate", "委派{o}"],
@@ -236,6 +242,7 @@ const TRIED: ReadonlyArray<readonly [english: string, chinese: string]> = [
   ["set", "設定{o}"],
   ["use", "使用{o}"],
   ["call", "呼叫{o}"],
+  ["forget", "移除{o}"],
 ];
 
 /** Counted nouns: singular, plural, measure word, noun. */
@@ -258,6 +265,8 @@ const COUNTED: ReadonlyArray<readonly [string, string, string, string]> = [
   ["worktree", "worktrees", "個", "工作樹"],
   ["message", "messages", "則", "訊息"],
   ["project", "projects", "個", "專案"],
+  ["linked environment", "linked environments", "個", "已連結的環境"],
+  ["environment", "environments", "個", "環境"],
   ["thread", "threads", "個", "對話"],
   ["secret", "secrets", "個", "密鑰"],
   ["task", "tasks", "個", "任務"],
@@ -270,6 +279,7 @@ const OBJECTS: Readonly<Record<string, string>> = {
   "environment preferences": "環境偏好設定",
   "other machines": "其他機器",
   "linked pull requests": "已連結的提取請求",
+  "linked environments": "已連結的環境",
   "thread configuration": "對話設定",
   "workspace branches": "工作區分支",
   "pending questions": "待處理的問題",

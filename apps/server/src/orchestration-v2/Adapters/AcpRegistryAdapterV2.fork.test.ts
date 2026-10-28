@@ -12,7 +12,6 @@ import {
 } from "@t3tools/contracts";
 import { resolveSelfInvocation } from "@t3tools/shared/nodeRuntime";
 import * as DateTime from "effect/DateTime";
-import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
@@ -25,7 +24,6 @@ import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
 import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
 import * as TestProviderHost from "@t3tools/provider-testing/TestProviderHost";
 import * as ServerSettings from "../../serverSettings.ts";
-import type { AcpRegistryAvailableCommands } from "@t3tools/provider-acp-registry/testing";
 import * as AcpRegistrySupport from "@t3tools/provider-acp-registry/server/AcpRegistrySupport";
 import * as AcpRegistryRuntimeCoordinator from "@t3tools/provider-acp-registry/server/AcpRegistryRuntimeCoordinator";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
@@ -104,18 +102,11 @@ describe("AcpRegistryAdapterV2 (fork)", () => {
         authMethodId: "test",
       });
       const instanceId = ProviderInstanceId.make("acp-registry-fixture");
-      const commandsPublished = yield* Deferred.make<{
-        readonly instanceId: ProviderInstanceId;
-        readonly commands: AcpRegistryAvailableCommands;
-      }>();
       const adapter = yield* makeAcpRegistryAdapterV2({
         selfInvocation: yield* resolveSelfInvocation(),
         instanceId,
         settings,
-        environment: {
-          T3_ACP_SESSION_LIFECYCLE: "1",
-          T3_ACP_COMMAND_ADVERTISEMENT_DELAY_MS: "750",
-        },
+        environment: { T3_ACP_SESSION_LIFECYCLE: "1" },
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
@@ -124,11 +115,7 @@ describe("AcpRegistryAdapterV2 (fork)", () => {
               runBackgroundProbe: (_agentId, effect) => Effect.asSome(effect),
               withSessionMutation: (effect) => effect,
               clearAvailableCommands: () => Effect.void,
-              publishAvailableCommands: (publishedInstanceId, commands) =>
-                Deferred.succeed(commandsPublished, {
-                  instanceId: publishedInstanceId,
-                  commands,
-                }).pipe(Effect.asVoid),
+              publishAvailableCommands: () => Effect.void,
               getAvailableCommands: () => Effect.succeedNone,
               watchAvailableCommands: () => Effect.never,
               clearLiveConfiguration: () => Effect.void,
@@ -173,7 +160,6 @@ describe("AcpRegistryAdapterV2 (fork)", () => {
         modelSelection,
         runtimePolicy,
       });
-      yield* Deferred.await(commandsPublished);
 
       const now = yield* DateTime.now;
       assert.isDefined(runtime.compactThread);

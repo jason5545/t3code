@@ -35,7 +35,6 @@ describe("ephemeral OMP launch", () => {
       launch.args[launch.args.indexOf("--extension") + 1],
       "/cache/pi-t3-mcp-extension.ts",
     );
-    assert.isFalse(launch.hasT3Mcp);
     assert.isUndefined(launch.env[T3_MCP_URL_ENV]);
     assert.isUndefined(launch.env[T3_MCP_BEARER_ENV]);
   });

@@ -2,7 +2,6 @@ import {
   createEnvironmentShellAtoms,
   createEnvironmentShellSummaryAtom,
   createLocalizedEnvironmentSnapshotAtom,
-  createShellEnvironmentAtoms,
   EMPTY_SHELL_STATE,
   type EnvironmentShellState,
 } from "@t3tools/client-runtime/state/shell";
@@ -15,7 +14,6 @@ import { environmentCatalog } from "../connection/catalog";
 import { connectionAtomRuntime } from "../connection/runtime";
 import { __t3_t } from "../locale/autoTranslateRuntime";
 
-export const shellEnvironment = createShellEnvironmentAtoms(connectionAtomRuntime);
 export const environmentShell = createEnvironmentShellAtoms(connectionAtomRuntime);
 /** Shown for untitled threads; the English title stays in stored and sent data. */
 export const newThreadDisplayTitle = __t3_t("New thread", "新對話");

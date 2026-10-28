@@ -60,22 +60,9 @@ export function deleteThreadsConfirmation(count: number): string {
   ].join("\n");
 }
 
-/** The Update everything confirmation's title, a question about its summary. */
-export function updateEverythingQuestion(summary: string): string {
-  return `${summary}${useChinese ? "？" : "?"}`;
-}
-
 export function runningThreadsText(running: number): string {
   if (useChinese) return `${running} 個執行中的對話`;
   return `${running} running ${running === 1 ? "thread" : "threads"}`;
-}
-
-export function skippedMachineText(machine: {
-  readonly label: string;
-  readonly reason: string;
-}): string {
-  if (useChinese) return `略過 ${machine.label}：${machine.reason}`;
-  return `Skips ${machine.label}: ${machine.reason}`;
 }
 
 /** An empty thought's placeholder, which reaches `remarkThoughtPreview` as a plugin option. */

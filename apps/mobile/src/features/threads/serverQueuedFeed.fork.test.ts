@@ -28,9 +28,9 @@ function workflow(...queuedRuns: QueuedRun[]): ThreadQueueWorkflowState {
     activeRun: null,
     queuedRuns,
     isHeld: false,
-    canReorder: true,
     canPromoteToSteer: false,
     canSendNow: false,
+    promoteSkipsCompaction: false,
   };
 }
 

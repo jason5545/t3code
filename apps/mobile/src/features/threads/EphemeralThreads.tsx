@@ -17,7 +17,7 @@ export function EphemeralNewTaskToggle(props: {
 }) {
   const { draftKey, available } = props;
   const ephemeral = useComposerDraft(draftKey).ephemeral === true;
-  // oxlint-disable-next-line t3code/react-effect-budget -- launch reads the stored draft flag, so clear it when the model loses local support.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- launch reads the stored draft flag, so clear it when the model loses local support.
   useEffect(() => {
     if (!available && ephemeral && draftKey !== null) setComposerDraftEphemeral(draftKey, false);
   }, [available, ephemeral, draftKey]);

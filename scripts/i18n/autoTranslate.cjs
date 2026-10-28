@@ -1,34 +1,9 @@
 "use strict";
 
 /**
- * Build-time interface translation for the fork's zh-TW locale.
- *
- * Components keep upstream's English source. This Babel plugin finds English
- * UI text in display positions (JSX text, display attributes and object
- * properties, toast, alert and mobile `Dialog` calls) and, when the catalog has a translation,
- * replaces it with a runtime call that carries both languages. Syncing
- * upstream therefore never conflicts with translated component code; new
- * upstream text stays English until `node scripts/i18n/extract.ts` lists it.
- *
- * Options:
- * - catalogFile: absolute path of the `{ english: translation }` JSON catalog.
- * - runtimeFile: absolute path of the app module exporting `__t3_t`,
- *   `__t3_tf` and `__t3_tj`.
- * - roots: absolute directories whose files are translated.
- * - onMessage: collect mode. Receives every candidate and transforms nothing.
- *
- * `untranslated.json` beside this file keeps text English: `everywhere` for
- * names and identifiers, `files` for positions whose value code compares
- * against the English literal (translating them would change behavior).
- *
- * `displayFiles.json` lists files whose helpers build display copy outside
- * those positions (status summaries, banner titles). There, returned values,
- * variable initializers, array elements, `detail`/`details`/`message`/`reason`/
- * `error`/`notice`/`statusText` properties, capitalized values in constant tables such as
- * `const STATES = { open: "Open" }`, and sentences (text with a space) passed
- * to calls, assigned, used as defaults, listed in arrays or given to any JSX
- * prop (`fail("Viewer stopped.")`, `error = "Clipboard is empty."`) are
- * display text too.
+ * Fork patch 2: rewrites English UI text in display positions into zh-TW runtime calls at build
+ * time, so components keep upstream's source. Options: catalogFile, runtimeFile, roots, onMessage
+ * (collect mode). Position rules, `untranslated.json` and `displayFiles.json`: patches.md section 2.
  */
 
 const fs = require("node:fs");

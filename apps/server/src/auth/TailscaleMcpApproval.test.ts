@@ -15,6 +15,7 @@ import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as McpOAuth from "./McpOAuth.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
+import * as ServerSettings from "../serverSettings.ts";
 import * as SessionStore from "./SessionStore.ts";
 import * as TailscalePairing from "./TailscalePairing.ts";
 
@@ -67,6 +68,7 @@ const layerLookup = Layer.succeed(
 
 const layerTest = (mcpTags: string | undefined) =>
   McpOAuth.layer.pipe(
+    Layer.provide(ServerSettings.layerTest()),
     Layer.provideMerge(
       Layer.effect(TailscalePairing.TailscalePairing, TailscalePairing.make).pipe(
         Layer.provide(layerLookup),

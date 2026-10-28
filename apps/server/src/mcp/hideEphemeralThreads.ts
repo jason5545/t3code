@@ -160,9 +160,6 @@ export const layer = Layer.effect(
           base.getProjectThreadRecords(input, fields, filter),
         );
       }),
-      getProjectThread: Effect.fnUntraced(function* (input) {
-        return yield* unlessHiddenInProject(input, base.getProjectThread(input));
-      }),
       sendToThread: Effect.fnUntraced(function* (input) {
         return yield* unlessHiddenInProject(input, base.sendToThread(input));
       }),

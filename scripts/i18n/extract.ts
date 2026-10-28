@@ -1,11 +1,8 @@
 // @effect-diagnostics nodeBuiltinImport:off globalConsole:off - A command-line report run with node.
 /**
- * Lists interface text the zh-TW catalog does not cover yet, using the same
- * rules as the build plugin. Run after syncing upstream:
- *
- *   node scripts/i18n/extract.ts                 # summary
- *   node scripts/i18n/extract.ts --json out.json # missing keys with context
- *   node scripts/i18n/extract.ts --stale         # catalog keys no longer in source
+ * Lists interface text the zh-TW catalog lacks, by the build plugin's rules. Run after syncing
+ * upstream: no flag for a summary, `--json out.json` for missing keys with context, `--stale`
+ * for catalog keys no longer in source.
  */
 import * as NodeFS from "node:fs";
 import * as NodeModule from "node:module";

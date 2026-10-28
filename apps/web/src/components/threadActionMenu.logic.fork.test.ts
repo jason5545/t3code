@@ -48,7 +48,9 @@ describe("ephemeral threads (fork patch 11)", () => {
         ],
       },
       { instanceId: codex, models: [{ slug: "gpt-5" }] },
-    ] as unknown as Parameters<typeof getStartedThreadModelChangeBlockReason>[0]["providers"];
+    ] as unknown as NonNullable<
+      Parameters<typeof getStartedThreadModelChangeBlockReason>[0]["providers"]
+    >;
     const blocked = (instanceId: ProviderInstanceId, model: string) =>
       getStartedThreadModelChangeBlockReason({
         providers,

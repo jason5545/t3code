@@ -37,7 +37,7 @@ export function EphemeralThreadsWatcher() {
   );
   const previousKeys = useRef<ReadonlySet<string>>(new Set());
 
-  // oxlint-disable-next-line t3code/react-effect-budget -- mirrors server purges into the draft store and announces them once.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- mirrors server purges into the draft store and announces them once.
   useEffect(() => {
     setEphemeralThreadKeys(ephemeralKeys);
     const endedKeys = [...previousKeys.current].filter((key) => !ephemeralKeys.has(key));
@@ -50,7 +50,7 @@ export function EphemeralThreadsWatcher() {
     }
   }, [ephemeralKeys, router]);
 
-  // oxlint-disable-next-line t3code/react-effect-budget -- voice input reads the window title, which startDocumentTitle rewrites outside React.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- voice input reads the window title, which startDocumentTitle rewrites outside React.
   useEffect(() => {
     if (!ephemeralForeground) return;
     const suffix = `（${EPHEMERAL_THREAD_PLACEHOLDER_TEXT}）`;

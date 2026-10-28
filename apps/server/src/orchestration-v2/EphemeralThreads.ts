@@ -1,9 +1,7 @@
 /**
- * Fork patch 11: ephemeral threads. A thread created ephemeral lives in Scratch,
- * runs on OMP with a model served from this machine, and is purged when it
- * ends: deleted by the user, idle for an hour, its OMP process gone, or found
- * at startup. Purging removes every row that names the thread, found from the
- * schema so tables upstream adds later are covered, then its files.
+ * Fork patch 11: an ephemeral thread lives in Scratch on a local OMP model and is purged when it
+ * ends (deleted, idle an hour, its process gone, or found at startup): every row naming it, found
+ * from the schema so tables upstream adds are covered, then its files.
  */
 import {
   CommandId,

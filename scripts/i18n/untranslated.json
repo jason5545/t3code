@@ -209,7 +209,16 @@
     "10 seconds",
     "asset url",
     "load cited thread history",
-    "preview viewport resize"
+    "preview viewport resize",
+    "decline link request",
+    "answer link request",
+    "thread server stop",
+    "unlink environment",
+    "link environment",
+    "sign out of {appSignIn.appName}",
+    "check app access",
+    "behavior probe",
+    "linked environments beta update"
   ],
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
@@ -329,7 +338,8 @@
       "wrench",
       "alert",
       "work-live",
-      "work-toggle"
+      "work-toggle",
+      "stop"
     ],
     "apps/mobile/src/state/use-thread-outbox-drain.ts": [
       "failed",
@@ -395,7 +405,12 @@
       "revert"
     ],
     "apps/mobile/src/features/pull-requests/pullRequestStatus.ts": ["check", "checks"],
-    "apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx": ["unknown"],
+    "apps/mobile/src/features/settings/SettingsNotificationsRouteScreen.tsx": [
+      "unknown",
+      "enabled",
+      "checking",
+      "signed-out"
+    ],
     "apps/mobile/src/features/settings/SettingsScheduledTasksRouteScreen.tsx": [
       "Could not {0} task",
       "update"
@@ -449,7 +464,8 @@
       "day",
       "hour",
       "no known rates",
-      "{0} premium"
+      "{0} premium",
+      "tokens"
     ],
     "apps/mobile/src/features/threads/ComposerCommandPopover.tsx": ["terminal"],
     "apps/mobile/src/features/threads/NewTaskDraftScreen.tsx": [
@@ -560,6 +576,12 @@
       "collapsed",
       "expanded"
     ],
-    "apps/web/src/components/DiffPanel.tsx": ["vs"]
+    "apps/web/src/components/DiffPanel.tsx": ["vs"],
+    "apps/web/src/components/clerk/clerkAppearance.ts": ["text-xl font-semibold"],
+    "apps/mobile/src/features/settings/SettingsMicrophoneRouteScreen.tsx": [
+      "granted",
+      "ask",
+      "denied"
+    ]
   }
 }

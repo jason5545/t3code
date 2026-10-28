@@ -1,7 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
-import * as Predicate from "effect/Predicate";
 import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
 import { View } from "react-native";
@@ -11,7 +9,6 @@ import * as Dialog from "../../components/ui/Dialog";
 import { ListRow } from "../../components/ui/ListRow";
 import { tailnetServersAtom } from "../../connection/tailnetDiscovery";
 import {
-  setPendingConnectionError,
   useRemoteConnectionStatus,
   useRemoteConnections,
 } from "../../state/use-remote-environment-registry";
@@ -80,19 +77,10 @@ export function TailnetServerSuggestions() {
 
   const add = async (httpBaseUrl: string) => {
     setAdding(true);
-    const result = await onConnectPress(buildPairingUrl(httpBaseUrl, ""));
+    const outcome = await onConnectPress(buildPairingUrl(httpBaseUrl, ""));
     setAdding(false);
-    if (AsyncResult.isFailure(result)) {
-      // That error belongs to the add screen's form, which is not open here.
-      setPendingConnectionError(null);
-      const error = Cause.squash(result.cause);
-      // An unsupported client already got its own dialog.
-      if (Predicate.hasProperty(error, "reason") && error.reason === "unsupported") return;
-      Dialog.alert(
-        "Could not add the server",
-        error instanceof Error ? error.message : "Failed to pair with the environment.",
-      );
-    }
+    // A null error already got its own dialog (an unsupported client).
+    if (outcome.error !== null) Dialog.alert("Could not add the server", outcome.error);
   };
 
   return (

@@ -11,6 +11,7 @@ import * as McpHttpServer from "./McpHttpServer.ts";
 import * as McpInvocationContext from "./McpInvocationContext.ts";
 import * as McpSessionRegistry from "./McpSessionRegistry.ts";
 import * as McpToolAccess from "./McpToolAccess.ts";
+import * as ServerSettings from "../serverSettings.ts";
 
 const ownerMachine: McpInvocationContext.McpInvocationScope = {
   environmentId: EnvironmentId.make("environment-mcp-fork-test"),
@@ -43,7 +44,9 @@ it.effect("lets the client authenticator admit a request that carries no token",
           ),
         }),
       ).pipe(
-        Layer.provideMerge(McpHttpServer.layerMcpTransport),
+        Layer.provideMerge(
+          McpHttpServer.layerMcpTransport.pipe(Layer.provide(ServerSettings.layerTest())),
+        ),
         Layer.provide(
           Layer.mock(McpSessionRegistry.McpSessionRegistry)({
             resolve: () => Effect.undefined,
