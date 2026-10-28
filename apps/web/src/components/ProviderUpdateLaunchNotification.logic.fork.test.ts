@@ -77,4 +77,41 @@ describe("provider update launch notification logic (fork)", () => {
       ])?.title,
     ).toBe("Updating OMP");
   });
+
+  it("names each ACP Registry agent and offers its own update", () => {
+    const acp = (id: string, name: string) => ({
+      ...provider({
+        driver: driver("acpRegistry"),
+        instanceId: instanceId(`acpRegistry_${id}`),
+        updateCommand: `${id} update`,
+      }),
+      displayName: name,
+    });
+    const kimi = acp("kimi", "Kimi");
+    const qoder = acp("qoder", "Qoder");
+
+    const candidates = collectProviderUpdateCandidates([kimi, qoder]);
+    expect(candidates.map((candidate) => candidate.displayName).toSorted()).toEqual([
+      "Kimi",
+      "Qoder",
+    ]);
+    expect(canOneClickUpdateProviderCandidate(kimi as ProviderUpdateCandidate, [kimi, qoder])).toBe(
+      true,
+    );
+    expect(
+      getProviderUpdateSidebarPillView([
+        {
+          ...kimi,
+          updateState: {
+            status: "running",
+            startedAt: checkedAt,
+            finishedAt: null,
+            message: null,
+            output: null,
+          },
+        },
+        qoder,
+      ])?.title,
+    ).toBe("Updating Kimi");
+  });
 });

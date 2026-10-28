@@ -17,7 +17,6 @@ import {
   defaultInstanceIdForDriver,
   type EnvironmentId,
   type AcpRegistryUrlAuthAction,
-  PROVIDER_DISPLAY_NAMES,
   ProviderDriverKind,
   type ProjectId,
   type ProviderInstanceConfig,
@@ -48,6 +47,7 @@ import {
 } from "../../hooks/useSettings";
 import { useStableCallback } from "../../hooks/useStableCallback";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
+import { providerUpdateName } from "../providerUpdateName";
 import { cn } from "../../lib/utils";
 import { resolveAppModelSelectionState } from "../../modelSelection";
 import {
@@ -675,7 +675,7 @@ export function EnvironmentProviderSettings({
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: `Could not update ${PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver}`,
+            title: `Could not update ${providerUpdateName(candidate)}`,
             description:
               error instanceof Error
                 ? error.message
