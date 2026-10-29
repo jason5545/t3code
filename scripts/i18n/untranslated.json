@@ -218,7 +218,9 @@
     "sign out of {appSignIn.appName}",
     "check app access",
     "behavior probe",
-    "linked environments beta update"
+    "linked environments beta update",
+    "T3 Chat",
+    "Simlock"
   ],
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
@@ -524,7 +526,7 @@
       "Attempt {attempt.attemptOrdinal} · {attempt.status} · {0}"
     ],
     "packages/client-runtime/src/state/shell.ts": ["empty", "cached"],
-    "packages/client-runtime/src/state/threads.ts": ["empty", "cached", "conversation"],
+    "packages/client-runtime/src/state/threads.ts": ["empty", "cached", "conversation", "work"],
     "packages/client-runtime/src/device/duoControl.ts": ["portrait"],
     "packages/client-runtime/src/operations/projects.ts": ["url"],
     "packages/client-runtime/src/state/assets.ts": ["Invalid asset collection atom key: {0}."],

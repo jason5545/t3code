@@ -33,7 +33,7 @@ type UndoNotice = {
 
 export const useThreadUndoNotice = create<{ notice: UndoNotice | null }>(() => ({ notice: null }));
 
-export function threadUndoNoticeSummary(notice: Pick<UndoNotice, "action" | "count">): string {
+function threadUndoNoticeSummary(notice: Pick<UndoNotice, "action" | "count">): string {
   return threadUndoNoticeText(notice);
 }
 

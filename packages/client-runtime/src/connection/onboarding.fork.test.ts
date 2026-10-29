@@ -1,12 +1,19 @@
-import { AuthStandardClientScopes, ORCHESTRATION_PROTOCOL_VERSION } from "@t3tools/contracts";
+import {
+  AuthStandardClientScopes,
+  type EnvironmentId,
+  ORCHESTRATION_PROTOCOL_VERSION,
+} from "@t3tools/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as SubscriptionRef from "effect/SubscriptionRef";
 
 import * as RpcHttp from "../rpc/http.ts";
 import * as ClientCapabilities from "../platform/capabilities.ts";
-import { BearerConnectionCredential } from "./catalog.ts";
+import { BearerConnectionCredential, type ConnectionCatalogEntry } from "./catalog.ts";
+import type { NetworkStatus } from "./model.ts";
 import { preparePairingRegistration } from "./onboarding.ts";
+import * as EnvironmentRegistry from "./registry.ts";
 
 const layerClientPresentation = Layer.succeed(
   ClientCapabilities.ClientPresentation,
@@ -16,6 +23,19 @@ const layerClientPresentation = Layer.succeed(
       deviceType: "desktop",
       os: "Test OS",
     },
+  }),
+);
+
+// Pairing without a target environment checks the address against saved environments.
+const layerEnvironmentRegistry = Layer.unwrap(
+  Effect.gen(function* () {
+    return Layer.mock(EnvironmentRegistry.EnvironmentRegistry)({
+      entries: yield* SubscriptionRef.make<ReadonlyMap<EnvironmentId, ConnectionCatalogEntry>>(
+        new Map(),
+      ),
+      networkStatus: yield* SubscriptionRef.make<NetworkStatus>("online"),
+      assertKnownAddress: () => Effect.void,
+    });
   }),
 );
 
@@ -84,7 +104,11 @@ describe("connection onboarding over Tailscale", () => {
   it.effect("pairs an address without a code over Tailscale", () =>
     Effect.gen(function* () {
       const calls: Array<{ readonly url: string; readonly init: RequestInit }> = [];
-      const layer = Layer.mergeAll(layerClientPresentation, layerPairingHttp(calls, "issue"));
+      const layer = Layer.mergeAll(
+        layerClientPresentation,
+        layerEnvironmentRegistry,
+        layerPairingHttp(calls, "issue"),
+      );
       const registration = yield* preparePairingRegistration({ host: "remote.example.test" }).pipe(
         Effect.provide(layer),
       );
@@ -113,7 +137,11 @@ describe("connection onboarding over Tailscale", () => {
 
   it.effect("asks for a code when the host will not pair over Tailscale", () =>
     Effect.gen(function* () {
-      const layer = Layer.mergeAll(layerClientPresentation, layerPairingHttp([], "refuse"));
+      const layer = Layer.mergeAll(
+        layerClientPresentation,
+        layerEnvironmentRegistry,
+        layerPairingHttp([], "refuse"),
+      );
       const error = yield* Effect.flip(
         preparePairingRegistration({ host: "remote.example.test" }).pipe(Effect.provide(layer)),
       );

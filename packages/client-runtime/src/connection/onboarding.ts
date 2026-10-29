@@ -119,6 +119,26 @@ export const preparePairingRegistration = Effect.fn(
   ) {
     return yield* differentMachineError(descriptor.label);
   }
+  const connectionId = bearerConnectionId(descriptor.environmentId, target.httpBaseUrl);
+  const route = {
+    target: new BearerConnectionTarget({
+      environmentId: descriptor.environmentId,
+      label: descriptor.label,
+      connectionId,
+    }),
+    profile: new BearerConnectionProfile({
+      connectionId,
+      environmentId: descriptor.environmentId,
+      label: descriptor.label,
+      httpBaseUrl: target.httpBaseUrl,
+      wsBaseUrl: target.wsBaseUrl,
+    }),
+  };
+  // The registry checks again under its lease; this early check keeps a refused code unspent.
+  if (input.expectedEnvironmentId === undefined) {
+    const registry = yield* EnvironmentRegistry.EnvironmentRegistry;
+    yield* registry.assertKnownAddress({ ...route, profile: Option.some(route.profile) });
+  }
   const compatibilityError = orchestrationProtocolCompatibilityError(descriptor);
   // An outdated server is still saved so it can be updated from this client.
   if (compatibilityError !== null && compatibilityError.serverUpdateRequired !== true) {
@@ -139,21 +159,9 @@ export const preparePairingRegistration = Effect.fn(
           isSignedOutRefusal(error) ? mapRemoteEnvironmentError(error) : resolved.failure,
         ),
       );
-  const connectionId = bearerConnectionId(descriptor.environmentId, target.httpBaseUrl);
 
   return new BearerConnectionRegistration({
-    target: new BearerConnectionTarget({
-      environmentId: descriptor.environmentId,
-      label: descriptor.label,
-      connectionId,
-    }),
-    profile: new BearerConnectionProfile({
-      connectionId,
-      environmentId: descriptor.environmentId,
-      label: descriptor.label,
-      httpBaseUrl: target.httpBaseUrl,
-      wsBaseUrl: target.wsBaseUrl,
-    }),
+    ...route,
     credential: new BearerConnectionCredential({
       token: access.access_token,
     }),
@@ -165,7 +173,10 @@ const registerPairingConnection = Effect.fn(
 )(function* (input: PairingConnectionInput) {
   const registration = yield* preparePairingRegistration(input);
   const registry = yield* EnvironmentRegistry.EnvironmentRegistry;
-  if (!(yield* registry.register(registration))) return registration.target.environmentId;
+  const knownAddressOnly = input.expectedEnvironmentId === undefined;
+  if (!(yield* registry.register(registration, { knownAddressOnly }))) {
+    return registration.target.environmentId;
+  }
   yield* registry.setCompatibility(registration.target.environmentId, null);
   yield* registry
     .setEnabled(registration.target.environmentId, true)

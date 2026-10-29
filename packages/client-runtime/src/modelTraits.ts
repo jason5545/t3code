@@ -111,7 +111,13 @@ export function buildTraitsTriggerDisplay(input: {
   ultrathinkPromptControlled: boolean;
   modelSelection?: ModelSelection | null;
   reportedModelSelection?: ModelSelection | null | undefined;
-}): { label: string } {
+}): {
+  label: string;
+  /** "Fast" or "Ultrafast" when a speed option is on. */
+  speedLabel: string | null;
+  /** Labels other than reasoning and speed, such as context window or thinking. */
+  otherLabels: ReadonlyArray<string>;
+} {
   let fastModeFallbackLabel: string | null = null;
   let speedLabel: string | null = null;
   let reasoningLabelIndex = -1;
@@ -168,8 +174,9 @@ export function buildTraitsTriggerDisplay(input: {
     }
   }
 
+  const otherLabels = labels.filter((_, index) => index !== reasoningLabelIndex);
   if (labels.length === 0 && fastModeFallbackLabel !== null) {
-    return { label: localize(fastModeFallbackLabel) };
+    return { label: localize(fastModeFallbackLabel), speedLabel, otherLabels };
   }
   if (speedLabel) {
     const localizedSpeedLabel = localize(speedLabel);
@@ -179,5 +186,5 @@ export function buildTraitsTriggerDisplay(input: {
       labels.push(localizedSpeedLabel);
     }
   }
-  return { label: labels.join(" · ") };
+  return { label: labels.join(" · "), speedLabel, otherLabels };
 }

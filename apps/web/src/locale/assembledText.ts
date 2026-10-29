@@ -12,14 +12,15 @@ const FOLLOW_UP_ACTIONS = { queue: "加入佇列", steer: "引導", restart: "�
 
 export function followUpClickTooltip(
   behavior: ActiveTurnComposerAction,
+  modifierLabel: string,
   alternateShortcutLabel: string | null,
   alternate: ActiveTurnComposerAction,
 ): string {
   if (useChinese) {
     const shortcut = alternateShortcutLabel ? `或按 ${alternateShortcutLabel}` : "";
-    return `點擊以${FOLLOW_UP_ACTIONS[behavior]}，Ctrl/⌘+點擊${shortcut}以${FOLLOW_UP_ACTIONS[alternate]}`;
+    return `點擊以${FOLLOW_UP_ACTIONS[behavior]}，${modifierLabel}+點擊${shortcut}以${FOLLOW_UP_ACTIONS[alternate]}`;
   }
-  return `Click to ${behavior}, Ctrl/⌘-click${alternateShortcutLabel ? ` or ${alternateShortcutLabel}` : ""} to ${alternate}`;
+  return `Click to ${behavior}, ${modifierLabel}-click${alternateShortcutLabel ? ` or ${alternateShortcutLabel}` : ""} to ${alternate}`;
 }
 
 const UNDO_ACTIONS = {
@@ -41,6 +42,19 @@ export function threadUndoNoticeText(notice: {
   }
   const noun = `${notice.action === "Discarded" ? "draft" : "thread"}${notice.count === 1 ? "" : "s"}`;
   return `${notice.action} ${notice.count} ${noun}`;
+}
+
+/** The sidebar footer's short undo notice, such as "Settled 2". */
+export function threadUndoNoticeShortText(notice: {
+  readonly action: keyof typeof UNDO_ACTIONS;
+  readonly count: number;
+}): string {
+  if (useChinese) {
+    const action = UNDO_ACTIONS[notice.action];
+    if (notice.count === 1) return action;
+    return `${action} ${notice.count} ${notice.action === "Discarded" ? "份" : "個"}`;
+  }
+  return notice.count === 1 ? notice.action : `${notice.action} ${notice.count}`;
 }
 
 export const threadUndoNoticeSeparator = useChinese ? "，" : ", ";
