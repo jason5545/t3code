@@ -48,7 +48,7 @@ import {
   type SessionPhase,
   type TurnDiffSummary,
 } from "./types";
-import { localizeAgentNotice } from "./locale/serverMessages";
+import { localizeAgentNotice, localizeServerMessage } from "./locale/serverMessages";
 import * as DateTime from "effect/DateTime";
 import * as Equal from "effect/Equal";
 import { shallow } from "zustand/vanilla/shallow";
@@ -623,7 +623,7 @@ export function deriveTimelineEntriesFromVisibleTurnItems(
           id: item.id,
           createdAt,
           runId: item.runId,
-          label: item.summary,
+          label: localizeServerMessage(item.summary),
           tone: "info",
           itemType: item.type,
           structuredPayload: item,

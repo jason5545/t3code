@@ -39,6 +39,22 @@ describe("translateProviderStatusMessage", () => {
     );
   });
 
+  it("translates notifications the server writes into the timeline", () => {
+    expect(translateProviderStatusMessage("T3 Code restarted and resumed this turn")).toBe(
+      "T3 Code 重新啟動了，已接續這一輪",
+    );
+    expect(translateProviderStatusMessage("Continue where you left off.")).toBe(
+      "從中斷的地方繼續。",
+    );
+    expect(translateProviderStatusMessage('Delegated task "Fix CI" has a question')).toBe(
+      "委派的工作「Fix CI」有問題要問",
+    );
+    expect(translateProviderStatusMessage("#42: closed, stopped watching")).toBe(
+      "#42：已關閉，停止監看",
+    );
+    expect(translateProviderStatusMessage("Could not link agent-fr")).toBe("無法連結 agent-fr");
+  });
+
   it("returns null for unknown text", () => {
     expect(translateProviderStatusMessage("spawn omp ENOENT")).toBeNull();
   });

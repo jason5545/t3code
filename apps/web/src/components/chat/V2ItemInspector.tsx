@@ -14,6 +14,7 @@ import { memo, type ReactNode, Suspense, use } from "react";
 
 import { useRenderedAppearance } from "../../hooks/useTheme";
 import { cn } from "../../lib/utils";
+import { localizeServerMessage } from "../../locale/serverMessages";
 import { resolveDiffThemeName } from "../../lib/diffRendering";
 import { getSyntaxHighlighterPromise } from "../../lib/syntaxHighlighting";
 import { useTurnItemDetail } from "../../state/queries";
@@ -399,7 +400,9 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
             .join("\n\n")}
         />
       ) : null}
-      {item.type === "notification" ? <StructuredValue value={item.detail} /> : null}
+      {item.type === "notification" ? (
+        <StructuredValue value={localizeServerMessage(item.detail)} />
+      ) : null}
       {item.type === "system_notice" ? <StructuredValue value={item.message} /> : null}
       {item.type === "error" ? <StructuredValue value={item.failure.message} /> : null}
       {item.type === "todo_list" ? (

@@ -77,7 +77,7 @@ import {
   IDLE_COMPACTING_LABELS,
 } from "@t3tools/client-runtime/user-message";
 
-import { localizeAgentNotice } from "../locale/serverMessages";
+import { localizeAgentNotice, localizeServerMessage } from "../locale/serverMessages";
 
 export type PendingApproval = ThreadPendingApproval;
 export type PendingUserInput = ThreadPendingUserInput;
@@ -580,7 +580,7 @@ function itemSummary(
   item: OrchestrationV2TurnItem,
   toolPresentation: T3McpToolPresentation | null = null,
 ): string {
-  if (item.type === "notification") return item.summary;
+  if (item.type === "notification") return localizeServerMessage(item.summary);
   if (item.type === "system_notice") return item.message;
   if (item.type === "compaction") return contextCompactionLabel(item);
   const title =

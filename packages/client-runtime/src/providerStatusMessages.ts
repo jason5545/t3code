@@ -155,6 +155,17 @@ const RULES: ReadonlyArray<Rule> = [
     () => "這個環境尚未連線，重新連線後再試一次。",
   ),
   rule(`This connection cannot manage provider accounts\\.`, () => "此連線無法管理供應商帳號。"),
+  // Notifications the server writes into a thread's timeline.
+  rule(`T3 Code restarted and resumed this turn`, () => "T3 Code 重新啟動了，已接續這一輪"),
+  rule(`T3 Code restarted and stopped background work`, () => "T3 Code 重新啟動了，背景工作已停止"),
+  rule(`Continue where you left off\\.`, () => "從中斷的地方繼續。"),
+  rule(`Delegated task "${NAME}" has a question`, (m) => `委派的工作「${m[1]}」有問題要問`),
+  rule(`Delegated task has a question`, () => "委派的工作有問題要問"),
+  rule(`#(\\d+): closed, stopped watching`, (m) => `#${m[1]}：已關閉，停止監看`),
+  rule(`#(\\d+): stopped watching, could not read it`, (m) => `#${m[1]}：無法讀取，已停止監看`),
+  rule(`Linked ${NAME}`, (m) => `已連結 ${m[1]}`),
+  rule(`Could not link ${NAME}`, (m) => `無法連結 ${m[1]}`),
+  rule(`Declined to link ${NAME}`, (m) => `已拒絕連結 ${m[1]}`),
   // Approval option labels that adapters send with an approval request.
   rule(`Approve`, () => "核准"),
   rule(`Decline`, () => "拒絕"),
