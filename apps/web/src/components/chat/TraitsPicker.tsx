@@ -674,7 +674,7 @@ export const TraitsPicker = memo(function TraitsPicker({
               ) : null}
               {effortWord !== null ? (
                 <>
-                  <span data-composer-control-label>{effortWord}</span>
+                  <span data-composer-control-label>{localizeProviderOptionLabel(effortWord)}</span>
                   {/* Icon-only footers hide labels and reveal this instead. */}
                   <GaugeIcon
                     aria-hidden="true"
