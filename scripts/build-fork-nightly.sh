@@ -9,7 +9,8 @@ case "$origin" in
   https://github.com/jason5545/t3code.git|git@github.com:jason5545/t3code.git) ;;
   *) echo "Refusing to build for an unexpected origin." >&2; exit 1 ;;
 esac
-node24=$(pnpm dlx node@24 -p 'process.execPath')
+# T3CODE_BUILD_NODE: a Node 24 executable, for when `pnpm dlx node@24` cannot install.
+node24=${T3CODE_BUILD_NODE:-$(pnpm dlx node@24 -p 'process.execPath')}
 export PATH="$(dirname "$node24"):$PWD/node_modules/.bin:$PATH"
 base=$(node -p 'JSON.parse(require("node:fs").readFileSync("apps/server/package.json","utf8")).version.split("-")[0]')
 export T3CODE_DESKTOP_VERSION="${T3CODE_DESKTOP_VERSION:-$base-nightly.$(date -u +%Y%m%d).$(date +%s)}"

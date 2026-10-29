@@ -205,7 +205,7 @@ On the owner's Mac, from a clean committed fork checkout:
 bash scripts/build-fork-nightly.sh
 ```
 
-The script selects the single Apple Development identity in the keychain, uses Node 24, produces native-architecture DMG/ZIP and the nightly update manifest, and writes provenance/checksums. Set `T3CODE_MACOS_DEVELOPMENT_IDENTITY` explicitly if multiple development identities exist. It builds only; publication remains a separate action.
+The script selects the single Apple Development identity in the keychain, uses Node 24, produces native-architecture DMG/ZIP and the nightly update manifest, and writes provenance/checksums. Set `T3CODE_MACOS_DEVELOPMENT_IDENTITY` explicitly if multiple development identities exist. Set `T3CODE_BUILD_NODE` to a Node 24 executable when `pnpm dlx node@24` fails: on 2026-10-29 the `node@24.22.2` package's preinstall passed `--allow-scripts` to npm, which npm refuses in project-scoped installs, so the build used the `node@24.21.0` binary already in the pnpm dlx cache. It builds only; publication remains a separate action.
 
 ## Pre-release checks (2026-10-07)
 
