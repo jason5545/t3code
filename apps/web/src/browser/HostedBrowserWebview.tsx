@@ -4,7 +4,7 @@ import type {
   ScopedThreadRef,
 } from "@t3tools/contracts";
 import { useShallow } from "zustand/react/shallow";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 
 import { previewBridge } from "~/components/preview/previewBridge";
 import { usePreviewBridge } from "~/components/preview/usePreviewBridge";
@@ -45,6 +45,13 @@ declare global {
     webview: ElectronWebview;
   }
 }
+
+const subscribeToWindowSize = (onChange: () => void) => {
+  window.addEventListener("resize", onChange);
+  return () => window.removeEventListener("resize", onChange);
+};
+const readWindowWidth = () => window.innerWidth;
+const readWindowHeight = () => window.innerHeight;
 
 export function HostedBrowserWebview(props: {
   readonly threadRef: ScopedThreadRef;
@@ -217,15 +224,19 @@ export function HostedBrowserWebview(props: {
     setAspectRatioLocked(aspectRatio !== null);
   };
   const content = presentation.content;
+  const windowWidth = useSyncExternalStore(subscribeToWindowSize, readWindowWidth);
+  const windowHeight = useSyncExternalStore(subscribeToWindowSize, readWindowHeight);
+  // Chromium paints a guest only near the app window, so a fixed viewport larger than the window
+  // is scaled to fit while hidden; otherwise its snapshot loses the part outside the window.
   const hiddenWidth =
     viewport._tag !== "fill"
-      ? viewport.width * layoutZoomFactor
+      ? Math.min(windowWidth, viewport.width * layoutZoomFactor)
       : content
         ? content.width / content.scale
         : (lastRect?.width ?? 1280);
   const hiddenHeight =
     viewport._tag !== "fill"
-      ? viewport.height * layoutZoomFactor
+      ? Math.min(windowHeight, viewport.height * layoutZoomFactor)
       : content
         ? content.height / content.scale
         : (lastRect?.height ?? 800);
