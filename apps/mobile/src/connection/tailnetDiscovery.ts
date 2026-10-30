@@ -1,19 +1,30 @@
 import { TailnetDiscovery } from "@t3tools/client-runtime/connection";
+import * as Effect from "effect/Effect";
+import * as Queue from "effect/Queue";
 import { Atom } from "effect/reactivity";
+import * as Stream from "effect/Stream";
+import { AppState } from "react-native";
 
 import { connectionAtomRuntime } from "./runtime";
 
 /**
  * Fork patch 7: T3 Code servers that connected environments see on their
- * tailnet, asked while an environment list is open. Each ask has every server
- * run `tailscale status` and probe the owner's machines, so the answer is
- * reused for ten minutes after the last list closes.
+ * tailnet, asked in the background while the app is in the foreground (see
+ * `watchTailnetDiscovery` for the schedule). Kept alive so the answer and the
+ * backoff survive screens that stop reading it.
  */
-const TAILNET_SERVERS_REUSE_MS = 10 * 60_000;
+const foreground = Stream.callback<boolean>((queue) =>
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      Queue.offerUnsafe(queue, AppState.currentState === "active");
+      return AppState.addEventListener("change", (state) => {
+        Queue.offerUnsafe(queue, state === "active");
+      });
+    }),
+    (subscription) => Effect.sync(() => subscription.remove()),
+  ),
+);
 
-export const tailnetServersAtom = connectionAtomRuntime
-  .atom(TailnetDiscovery.discoverTailnetServers())
-  .pipe(
-    Atom.setIdleTTL(TAILNET_SERVERS_REUSE_MS),
-    Atom.withLabel("mobile:connection:tailnet-servers"),
-  );
+export const tailnetDiscoveryAtom = connectionAtomRuntime
+  .atom(TailnetDiscovery.watchTailnetDiscovery(foreground))
+  .pipe(Atom.keepAlive, Atom.withLabel("mobile:connection:tailnet-discovery"));

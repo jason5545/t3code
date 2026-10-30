@@ -152,12 +152,12 @@ function PairingForm({
     }
   };
 
-  const connectAndClose = async (pairingUrl: string) => {
+  const connectAndClose = async (pairingUrl: string, suggestedEnvironmentId?: EnvironmentId) => {
     setOwnAttempt(true);
     setSubmitError(null);
     setIsSubmitting(true);
     onChangeConnectionPairingUrl(pairingUrl);
-    const outcome = await onConnectPress(pairingUrl, routeFor);
+    const outcome = await onConnectPress(pairingUrl, routeFor, suggestedEnvironmentId);
     setIsSubmitting(false);
     setSubmitError(outcome.error);
     void Haptics.notificationAsync(
@@ -267,7 +267,9 @@ function PairingForm({
             <TailnetServerSection
               placement="add-screen"
               disabled={connecting}
-              onConnect={(httpBaseUrl) => void connectAndClose(buildPairingUrl(httpBaseUrl, ""))}
+              onConnect={(server) =>
+                void connectAndClose(buildPairingUrl(server.httpBaseUrl, ""), server.environmentId)
+              }
             />
           ) : null}
 

@@ -43,11 +43,17 @@ export interface PairingOutcome {
 export async function pairEnvironment(
   pairingUrl: string,
   expectedEnvironmentId?: EnvironmentId,
+  // Fork patch 7: a tailnet suggestion pairs only if the address answers as that environment.
+  suggestedEnvironmentId?: EnvironmentId,
 ): Promise<PairingOutcome> {
   const result = await runAtomCommand(
     appAtomRegistry,
     connectPairingUrlCommand,
-    { pairingUrl, ...(expectedEnvironmentId === undefined ? {} : { expectedEnvironmentId }) },
+    {
+      pairingUrl,
+      ...(expectedEnvironmentId === undefined ? {} : { expectedEnvironmentId }),
+      ...(suggestedEnvironmentId === undefined ? {} : { suggestedEnvironmentId }),
+    },
     { reportFailure: false },
   );
   if (AsyncResult.isSuccess(result)) {
@@ -153,8 +159,16 @@ export function useRemoteConnections() {
     appAtomRegistry.set(connectionPairingUrlAtom, pairingUrl);
   };
 
-  const onConnectPress = (pairingUrl?: string, expectedEnvironmentId?: EnvironmentId) =>
-    pairEnvironment(pairingUrl ?? connectionPairingUrl, expectedEnvironmentId);
+  const onConnectPress = (
+    pairingUrl?: string,
+    expectedEnvironmentId?: EnvironmentId,
+    suggestedEnvironmentId?: EnvironmentId,
+  ) =>
+    pairEnvironment(
+      pairingUrl ?? connectionPairingUrl,
+      expectedEnvironmentId,
+      suggestedEnvironmentId,
+    );
 
   const onReconnectEnvironment = (environmentId: EnvironmentId) =>
     controller.retryEnvironment(environmentId);

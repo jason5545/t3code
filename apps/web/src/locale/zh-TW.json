@@ -7535,7 +7535,6 @@
   "The sign-in expired. Pair this device again.": "登入已過期，請重新配對這台裝置。",
   "This device was signed out.": "這台裝置已被登出。",
   "Add from your tailnet": "從 tailnet 加入",
-  "Every server on your tailnet is added.": "tailnet 上的伺服器都加過了。",
   "Could not add the server": "無法加入伺服器",
   "Machine name or 192.168.1.100:3773": "機器名稱或 192.168.1.100:3773",
   "No connected environment can add a project": "沒有已連線的環境可以新增專案",
@@ -7968,5 +7967,9 @@
   "Secrets": "密鑰",
   "Secret providers": "密鑰來源",
   "Add secret provider": "新增密鑰來源",
-  "Update release notes": "更新內容說明"
+  "Update release notes": "更新內容說明",
+  "No servers to add were found right now.": "目前沒有找到可加入的伺服器。",
+  "Can't get the server list right now.": "目前問不到伺服器清單。",
+  "Tap to add": "點一下加入",
+  "Found {name} on your tailnet": "在 tailnet 找到 {name}"
 }

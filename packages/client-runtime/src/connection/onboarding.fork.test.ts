@@ -27,17 +27,22 @@ const layerClientPresentation = Layer.succeed(
 );
 
 // Pairing without a target environment checks the address against saved environments.
-const layerEnvironmentRegistry = Layer.unwrap(
-  Effect.gen(function* () {
-    return Layer.mock(EnvironmentRegistry.EnvironmentRegistry)({
-      entries: yield* SubscriptionRef.make<ReadonlyMap<EnvironmentId, ConnectionCatalogEntry>>(
-        new Map(),
-      ),
-      networkStatus: yield* SubscriptionRef.make<NetworkStatus>("online"),
-      assertKnownAddress: () => Effect.void,
-    });
-  }),
-);
+const layerEnvironmentRegistryCounting = (knownAddressChecks: { count: number }) =>
+  Layer.unwrap(
+    Effect.gen(function* () {
+      return Layer.mock(EnvironmentRegistry.EnvironmentRegistry)({
+        entries: yield* SubscriptionRef.make<ReadonlyMap<EnvironmentId, ConnectionCatalogEntry>>(
+          new Map(),
+        ),
+        networkStatus: yield* SubscriptionRef.make<NetworkStatus>("online"),
+        assertKnownAddress: () =>
+          Effect.sync(() => {
+            knownAddressChecks.count += 1;
+          }),
+      });
+    }),
+  );
+const layerEnvironmentRegistry = layerEnvironmentRegistryCounting({ count: 0 });
 
 // A slimmer copy of onboarding.test.ts's pairing server, plus the fork's Tailscale endpoint.
 function layerPairingHttp(
@@ -150,6 +155,36 @@ describe("connection onboarding over Tailscale", () => {
         reason: "configuration",
         detail: "Enter a pairing code.",
       });
+    }),
+  );
+
+  it.effect("pairs a tailnet suggestion only when it answers as the suggested environment", () =>
+    Effect.gen(function* () {
+      const calls: Array<{ readonly url: string; readonly init: RequestInit }> = [];
+      const knownAddressChecks = { count: 0 };
+      const layer = Layer.mergeAll(
+        layerClientPresentation,
+        layerEnvironmentRegistryCounting(knownAddressChecks),
+        layerPairingHttp(calls, "issue"),
+      );
+      const error = yield* Effect.flip(
+        preparePairingRegistration({
+          host: "http://100.64.10.1:3773",
+          suggestedEnvironmentId: "environment-other" as EnvironmentId,
+        }).pipe(Effect.provide(layer)),
+      );
+      expect(error).toMatchObject({ _tag: "ConnectionBlockedError", reason: "configuration" });
+      expect(calls.map((call) => new URL(call.url).pathname)).toEqual([
+        "/.well-known/t3/environment",
+      ]);
+
+      const registration = yield* preparePairingRegistration({
+        host: "http://100.64.10.1:3773",
+        suggestedEnvironmentId: "environment-paired" as EnvironmentId,
+      }).pipe(Effect.provide(layer));
+      expect(registration.target.environmentId).toBe("environment-paired");
+      // Unlike adding a route, a suggestion keeps the saved-address check.
+      expect(knownAddressChecks.count).toBe(1);
     }),
   );
 });

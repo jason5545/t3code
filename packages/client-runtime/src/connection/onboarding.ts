@@ -41,6 +41,11 @@ export interface PairingConnectionInput {
   readonly host?: string;
   readonly pairingCode?: string;
   readonly expectedEnvironmentId?: EnvironmentId;
+  /**
+   * Fork patch 7: the environment a tailnet suggestion named. Unlike `expectedEnvironmentId`,
+   * this adds a new environment, so the saved-address check still applies.
+   */
+  readonly suggestedEnvironmentId?: EnvironmentId;
 }
 
 export interface SshConnectionInput {
@@ -118,6 +123,15 @@ export const preparePairingRegistration = Effect.fn(
     descriptor.environmentId !== input.expectedEnvironmentId
   ) {
     return yield* differentMachineError(descriptor.label);
+  }
+  if (
+    input.suggestedEnvironmentId !== undefined &&
+    descriptor.environmentId !== input.suggestedEnvironmentId
+  ) {
+    return yield* new ConnectionBlockedError({
+      reason: "configuration",
+      detail: "That address now answers as a different server than the one suggested.",
+    });
   }
   const connectionId = bearerConnectionId(descriptor.environmentId, target.httpBaseUrl);
   const route = {
