@@ -24,10 +24,7 @@ export function deriveSubagentElapsedMs(
 export function formatDuration(durationMs: number): string {
   if (!Number.isFinite(durationMs) || durationMs < 0) return formatDurationUnits([0, "ms"]);
   if (durationMs < 1_000) return formatDurationUnits([Math.max(1, Math.round(durationMs)), "ms"]);
-  if (durationMs < 10_000) {
-    const tenths = Math.round(durationMs / 100) / 10;
-    return formatDurationUnits([tenths >= 10 ? 10 : tenths.toFixed(1), "s"]);
-  }
+  if (durationMs < 10_000) return formatDurationUnits([Math.round(durationMs / 100) / 10, "s"]);
   const totalSeconds = Math.round(durationMs / 1_000);
   // Choose the unit after rounding so 59.5 seconds never renders as "60s".
   if (totalSeconds < 60) return formatDurationUnits([totalSeconds, "s"]);

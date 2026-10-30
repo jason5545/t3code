@@ -102,3 +102,20 @@ export function fileNavigationLabel(
     return `${direction === "previous" ? "上一" : "下一"}${FILE_NAVIGATION[navigation]}`;
   return `${direction === "previous" ? "Previous" : "Next"} ${navigation}`;
 }
+
+/** The scroll-to-end button's note of what waits below, such as "Subagent waiting · 2 queued". */
+export function scrollToEndSummaryText(
+  subagentWaiting: boolean,
+  queuedCount: number,
+): string | null {
+  const parts = useChinese
+    ? [
+        subagentWaiting ? "子代理程式等待中" : null,
+        queuedCount === 0 ? null : `${queuedCount} 則在佇列中`,
+      ]
+    : [
+        subagentWaiting ? "Subagent waiting" : null,
+        queuedCount === 0 ? null : `${queuedCount} queued`,
+      ];
+  return parts.filter((part) => part !== null).join(" · ") || null;
+}

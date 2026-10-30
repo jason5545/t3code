@@ -577,7 +577,8 @@
       "woke",
       "fresh",
       "collapsed",
-      "expanded"
+      "expanded",
+      "other"
     ],
     "apps/web/src/components/DiffPanel.tsx": ["vs"],
     "apps/web/src/components/clerk/clerkAppearance.ts": ["text-xl font-semibold"],
