@@ -10,8 +10,9 @@ export function parseTailnetEntryUrls(raw: string | undefined): ReadonlyArray<st
     .map((entry) => entry.trim())
     .filter((entry) => entry !== "");
   return entries.map((entry) => {
-    // Checked before `new URL`, which would normalize `https:host`, `/a/..` or `@host` into a valid entry.
-    if (!/^https:\/\/[^/?#@\\]+\/?$/.test(entry)) {
+    // Checked before `new URL`, which would normalize `https:host`, `/a/..`, `@host`, an
+    // embedded tab or an empty port into a valid entry.
+    if (!/^https:\/\/[^\s\x00-\x1f\x7f/?#@\\]+\/?$/.test(entry) || /:\/?$/.test(entry)) {
       throw new Error(`Tailnet entry ${entry} must be https://host[:port]/ with nothing else.`);
     }
     let url: URL;

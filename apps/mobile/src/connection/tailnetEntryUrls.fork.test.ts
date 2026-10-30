@@ -7,8 +7,14 @@ describe("tailnet entry URLs", () => {
     expect(parseTailnetEntryUrls(undefined)).toEqual([]);
     expect(parseTailnetEntryUrls(" ")).toEqual([]);
     expect(
-      parseTailnetEntryUrls("https://agent-hub.tailb20be.ts.net/, https://nas.tail.ts.net:8443"),
-    ).toEqual(["https://agent-hub.tailb20be.ts.net/", "https://nas.tail.ts.net:8443/"]);
+      parseTailnetEntryUrls(
+        "https://agent-hub.tailb20be.ts.net/, https://nas.tail.ts.net:8443, https://[fd7a:115c:a1e0::1]:8443/",
+      ),
+    ).toEqual([
+      "https://agent-hub.tailb20be.ts.net/",
+      "https://nas.tail.ts.net:8443/",
+      "https://[fd7a:115c:a1e0::1]:8443/",
+    ]);
   });
 
   it.each([
@@ -24,6 +30,8 @@ describe("tailnet entry URLs", () => {
     "https://agent-hub.tailb20be.ts.net/.",
     "https://@agent-hub.tailb20be.ts.net/",
     "https://agent-hub.tailb20be.ts.net\\",
+    "https://agent-hub.tail\tb20be.ts.net/",
+    "https://agent-hub.tailb20be.ts.net:/",
   ])("rejects %s", (entry) => {
     expect(() => parseTailnetEntryUrls(entry)).toThrow(entry);
   });
