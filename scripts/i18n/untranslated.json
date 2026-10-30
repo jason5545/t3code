@@ -294,6 +294,7 @@
       "large"
     ],
     "apps/web/src/components/pullRequest/pullRequestPresentation.tsx": ["ghost"],
+    "apps/web/src/components/chat/useComposerMenuItems.ts": ["all", "default", "server"],
     "apps/mobile/src/features/threads/NewTaskRouteScreen.tsx": ["image", "file", "images", "files"],
     "apps/mobile/src/features/sharing/incoming-share-model.ts": ["file", "png", "bin", "images"],
     "apps/mobile/src/lib/composerImages.ts": [

@@ -7975,5 +7975,9 @@
   "Possible T3 servers": "可能的 T3 伺服器",
   "This server would not pair without a code. Enter a pairing code, or try another server.": "這台伺服器無法免碼配對。請改填配對碼，或試試別的伺服器。",
   "Couldn't reach this server.": "無法連到這個伺服器。",
-  "That address now answers as a different server than the one suggested.": "這個位址現在回應的是另一台伺服器，不是建議的那台。"
+  "That address now answers as a different server than the one suggested.": "這個位址現在回應的是另一台伺服器，不是建議的那台。",
+  "Pull requests are not available for this project.": "這個專案無法使用提取請求。",
+  "Pull requests could not be read for this project.": "無法讀取這個專案的提取請求。",
+  "No pull requests found in this repository.": "這個存放庫裡沒有提取請求。",
+  "No pull request matches {composerTrigger.query}.": "沒有符合 {composerTrigger.query} 的提取請求。"
 }
