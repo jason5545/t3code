@@ -16,6 +16,7 @@ import {
   ProviderInteractionMode,
   RuntimeMode,
   ThreadId,
+  isCompactionCommandMessage,
   type ModelSelection as ModelSelectionType,
   type ProjectId as ProjectIdType,
   type ProviderInteractionMode as ProviderInteractionModeType,
@@ -56,6 +57,7 @@ export const QueuedThreadMessageSchema = Schema.Struct({
   attachments: Schema.Array(DraftComposerAttachmentSchema),
   modelSelection: Schema.optional(ModelSelection),
   dispatchMode: Schema.optional(Schema.Literals(["auto", "queue", "steer", "restart"])),
+  compactBeforeSend: Schema.optional(Schema.Boolean),
   runtimeMode: Schema.optional(RuntimeMode),
   interactionMode: Schema.optional(ProviderInteractionMode),
   creation: Schema.optional(QueuedThreadCreationSchema),
@@ -91,8 +93,47 @@ export interface QueuedThreadMessage {
   readonly interactionMode?: ProviderInteractionModeType;
   /** Captured at enqueue because draining may occur long after the tap. */
   readonly dispatchMode?: ComposerDispatchMode;
+  /** Fork patch 26: send a "When you return" `/compact` ahead of this message. */
+  readonly compactBeforeSend?: boolean;
   readonly creation?: QueuedThreadCreation;
   readonly createdAt: string;
+}
+
+/**
+ * Fork patch 26: a send into a stale Claude thread compacts first, as web's composer does, and
+ * queues behind that run because steering into it is rejected.
+ */
+export function resumeCompactionSendFields(input: {
+  readonly resumeCompactionTokens: number | null;
+  readonly keepFullHistory: boolean;
+  readonly text: string;
+  readonly attachmentCount: number;
+}): { readonly compactBeforeSend: true; readonly dispatchMode: "queue" } | null {
+  return input.resumeCompactionTokens !== null &&
+    !input.keepFullHistory &&
+    !isCompactionCommandMessage({
+      role: "user",
+      text: input.text,
+      attachments: Array.from({ length: input.attachmentCount }),
+    })
+    ? { compactBeforeSend: true, dispatchMode: "queue" }
+    : null;
+}
+
+/** The `/compact` turn sent ahead of a message marked `compactBeforeSend`; ids repeat on retry. */
+export function resumeCompactionTurnMessage(message: QueuedThreadMessage) {
+  return message.compactBeforeSend === true
+    ? {
+        commandId: CommandId.make(`${message.commandId}:compact`),
+        message: {
+          messageId: MessageId.make(`${message.messageId}:compact`),
+          role: "user" as const,
+          text: "/compact",
+          attachments: [],
+          idleCompaction: "onReturn" as const,
+        },
+      }
+    : null;
 }
 
 export interface ThreadSettingsSnapshot {

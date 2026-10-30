@@ -13,6 +13,7 @@ import { parseThreadKey, threadKey } from "@t3tools/client-runtime/state/entitie
 import { createThreadVisitTracker } from "@t3tools/client-runtime/state/thread-visits";
 import { useChildThreadInputs, useThreadReportedModelSelection } from "../../state/entities";
 import { UsageLimitRecoveryCard } from "./UsageLimitRecoveryCard";
+import type { ResumeCompactionControl } from "./ResumeCompactionChip";
 import { ChatGptUsageLimitNotice } from "./ChatGptUsageLimitNotice";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
@@ -286,6 +287,7 @@ export interface ThreadDetailScreenProps {
   readonly onStopThread: () => void;
   /** Present while the thread's queue is held. */
   readonly onResumeQueue: (() => Promise<void>) | null;
+  readonly resumeCompaction?: ResumeCompactionControl | null;
   readonly onSendMessage: (
     followUp?: ActiveTurnComposerAction,
     beforeDispatch?: (
@@ -1759,6 +1761,7 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
                         onRemoveDraftImage={props.onRemoveDraftImage}
                         onStopThread={props.onStopThread}
                         onResumeQueue={props.onResumeQueue}
+                        resumeCompaction={props.resumeCompaction ?? null}
                         onSendMessage={handleSendMessage}
                         onShowUsageLimits={showUsageLimits}
                         canSwitchProvider={props.canSwitchThreadProvider}

@@ -1114,6 +1114,15 @@ function ThreadRouteContent(
           serverConfig={serverConfig}
           onStopThread={awaitingBootstrapTurn ? handleCancelWorktreeSetup : handleStopThread}
           onResumeQueue={composer.queueHeld ? handleResumeQueue : null}
+          resumeCompaction={
+            composer.resumeCompactionTokens === null
+              ? null
+              : {
+                  tokens: composer.resumeCompactionTokens,
+                  keepFullHistory: composer.keepFullHistory,
+                  onToggleKeepFullHistory: composer.onToggleKeepFullHistory,
+                }
+          }
           onSendMessage={composer.onSendMessage}
           onReconnectEnvironment={handleReconnectEnvironment}
           canSwitchThreadProvider={composer.canSwitchThreadProvider}

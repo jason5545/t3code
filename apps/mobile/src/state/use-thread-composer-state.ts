@@ -1,6 +1,8 @@
 import { useComposerAttachmentActions } from "./use-composer-attachment-actions";
 import * as Dialog from "../components/ui/Dialog";
-import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+import { AuthOrchestrationOperateScope, resolveIdleCompaction } from "@t3tools/contracts";
+import { resumeCompactionCandidate } from "@t3tools/client-runtime/state/resume-compaction";
+import { useNowAfter } from "../lib/clock";
 import { readEnvironmentScope } from "./session";
 import { useAtomValue } from "@effect/atom-react";
 import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/shell";
@@ -102,6 +104,7 @@ import {
 } from "../state/use-thread-detail";
 import { useThreadSelection } from "../state/use-thread-selection";
 import { enqueueThreadOutboxMessage } from "./thread-outbox";
+import { resumeCompactionSendFields } from "./thread-outbox-model";
 import { dispatchingQueuedMessageIdAtom, useThreadOutboxMessages } from "./use-thread-outbox";
 import { threadEnvironment } from "./threads";
 import { useAtomCommand } from "./use-atom-command";
@@ -359,6 +362,35 @@ export function useThreadComposerState() {
   // A stop or a restart holds the queue, completion wakes included, until it
   // is resumed; the queue sheet lists only the user's own messages.
   const queueHeld = queueWorkflow?.isHeld === true;
+
+  // Fork patch 26: web's "When you return" compaction, which mobile sends lacked.
+  const resumeCompaction =
+    selectedThreadProjection && serverConfig?.settings && modelSelection && !queueHeld
+      ? resumeCompactionCandidate({
+          projection: selectedThreadProjection.projection,
+          provider: selectedProvider?.driver,
+          idleCompaction: resolveIdleCompaction(serverConfig.settings, modelSelection.instanceId),
+        })
+      : null;
+  const resumeCompactionNowMs = useNowAfter(resumeCompaction?.dueAtMs ?? null);
+  const resumeCompactionTokens =
+    resumeCompaction !== null && resumeCompactionNowMs >= resumeCompaction.dueAtMs
+      ? resumeCompaction.tokens
+      : null;
+  const [fullHistoryThreadKeys, setFullHistoryThreadKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const keepFullHistory =
+    selectedThreadKey !== null && fullHistoryThreadKeys.has(selectedThreadKey);
+  const onToggleKeepFullHistory = () => {
+    if (selectedThreadKey === null) return;
+    setFullHistoryThreadKeys((current) => {
+      const next = new Set(current);
+      if (next.has(selectedThreadKey)) next.delete(selectedThreadKey);
+      else next.add(selectedThreadKey);
+      return next;
+    });
+  };
 
   const runlessWorkStartedAt = selectedThreadProjection
     ? deriveRunlessWorkStartedAt(selectedThreadProjection.projection)
@@ -667,6 +699,12 @@ export function useThreadComposerState() {
         draft.interactionMode ?? thread.interactionMode,
       ),
       ...(followUpDispatchMode === null ? {} : { dispatchMode: followUpDispatchMode }),
+      ...resumeCompactionSendFields({
+        resumeCompactionTokens,
+        keepFullHistory,
+        text,
+        attachmentCount: attachments.length,
+      }),
       createdAt: metadata.createdAt,
     });
     clearComposerDraftContent(threadKey, { deferAttachmentCleanup: true });
@@ -743,6 +781,9 @@ export function useThreadComposerState() {
     followUpBehavior,
     canSteerActiveTurn,
     queueHeld,
+    resumeCompactionTokens,
+    keepFullHistory,
+    onToggleKeepFullHistory,
     queuedRunEdit,
     isSavingQueuedEdit,
     cancelQueuedRunEdit,
