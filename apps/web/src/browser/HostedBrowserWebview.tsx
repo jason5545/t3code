@@ -67,7 +67,6 @@ export function HostedBrowserWebview(props: {
   readonly serverRendering?: {
     readonly colorScheme: DesktopPreviewColorScheme;
     readonly zoomFactor: number;
-    readonly agentDriven?: boolean;
   };
 }) {
   const {
@@ -303,14 +302,7 @@ export function HostedBrowserWebview(props: {
 
   if (!clientSettingsHydrated || !config) return null;
 
-  // An agent screenshots its tab through CDP while the panel is often collapsed. A guest parked
-  // outside the window is not composited, so those captures came back as a blurry low-res frame.
-  const renderingActive =
-    active ||
-    backgroundActivity ||
-    pictureInPicture ||
-    recordingActive ||
-    serverRendering?.agentDriven === true;
+  const renderingActive = active || backgroundActivity || pictureInPicture || recordingActive;
   const wrapperStyle = resolveHostedBrowserWebviewWrapperStyle({
     active,
     renderingActive,

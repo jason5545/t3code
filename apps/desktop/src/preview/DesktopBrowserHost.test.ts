@@ -137,10 +137,10 @@ describe("DesktopBrowserHost", () => {
   it.effect("announces tabs already attached to a backend that starts later", () =>
     Effect.gen(function* () {
       const host = yield* DesktopBrowserHost.make;
-      host.attach(key, makeDebuggee().tab);
+      host.attach(key, makeDebuggee().tab, false);
 
-      expect(yield* takeEvents(host, 1)).toEqual([{ type: "attached", ...key }]);
-      expect(yield* takeEvents(host, 1)).toEqual([{ type: "attached", ...key }]);
+      expect(yield* takeEvents(host, 1)).toEqual([{ type: "attached", ...key, background: false }]);
+      expect(yield* takeEvents(host, 1)).toEqual([{ type: "attached", ...key, background: false }]);
     }),
   );
 
@@ -148,7 +148,7 @@ describe("DesktopBrowserHost", () => {
     Effect.gen(function* () {
       const host = yield* DesktopBrowserHost.make;
       const debuggee = makeDebuggee();
-      host.attach(key, debuggee.tab);
+      host.attach(key, debuggee.tab, false);
       const reader = yield* takeEvents(host, 2).pipe(Effect.forkScoped);
 
       yield* Effect.yieldNow;
@@ -916,7 +916,7 @@ describe("DesktopBrowserHost", () => {
     Effect.gen(function* () {
       const host = yield* DesktopBrowserHost.make;
       const debuggee = makeDebuggee();
-      host.attach(key, debuggee.tab);
+      host.attach(key, debuggee.tab, false);
       const paths: Array<string> = [];
       const item = {
         setSavePath: (path: string) => void paths.push(path),
@@ -944,7 +944,7 @@ describe("DesktopBrowserHost", () => {
     Effect.gen(function* () {
       const host = yield* DesktopBrowserHost.make;
       const debuggee = makeDebuggee();
-      host.attach(key, debuggee.tab);
+      host.attach(key, debuggee.tab, false);
 
       yield* host.handleCommandLine(
         encodeJson({
