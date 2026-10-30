@@ -130,7 +130,10 @@ export function historicalMessage(
   let text: string;
   switch (item.type) {
     case "user_message":
+      text = item.text;
+      break;
     case "assistant_message":
+      if (item.text.trim().length === 0) return null;
       text = item.text;
       break;
     case "command_execution":
