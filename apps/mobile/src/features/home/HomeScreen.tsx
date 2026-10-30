@@ -674,6 +674,7 @@ export function HomeScreen(props: HomeScreenProps) {
           }}
         >
           <View className="w-full max-w-[430px]">
+            <TailnetServerHomeRows />
             <EmptyState
               title={emptyState.title}
               detail={emptyState.detail}
@@ -757,6 +758,9 @@ export function HomeScreen(props: HomeScreenProps) {
           className="flex-1 items-center justify-center overflow-hidden rounded-t-[28px] bg-screen px-4"
           style={{ paddingBottom: insets.bottom }}
         >
+          <View className="w-full max-w-[430px]">
+            <TailnetServerHomeRows />
+          </View>
           {v2ListEmpty}
         </View>
       </View>

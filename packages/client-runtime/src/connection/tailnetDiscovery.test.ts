@@ -1,6 +1,16 @@
 import { EnvironmentId } from "@t3tools/contracts";
 import { describe, expect, it } from "@effect/vitest";
+import * as Clock from "effect/Clock";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as Queue from "effect/Queue";
+import * as Stream from "effect/Stream";
+import * as SubscriptionRef from "effect/SubscriptionRef";
+import * as HttpClient from "effect/http/HttpClient";
+import * as TestClock from "effect/testing/TestClock";
 
+import * as EnvironmentRegistry from "./registry.ts";
 import {
   dueTailnetDiscoveryEnvironments,
   mergeDiscoveredServers,
@@ -8,8 +18,10 @@ import {
   presentTailnetDiscovery,
   recordTailnetDiscoveryFailure,
   recordTailnetDiscoverySuccess,
+  watchTailnetDiscovery,
   type TailnetDiscoveryRecord,
   type TailnetDiscoveryState,
+  type TailnetDiscoveryView,
 } from "./tailnetDiscovery.ts";
 
 const MINUTE = 60_000;
@@ -123,6 +135,58 @@ describe("background tailnet discovery schedule", () => {
       "found",
     );
   });
+
+  it.effect(
+    "waits for the foreground instead of spinning when an ask falls due in the background",
+    () =>
+      Effect.gen(function* () {
+        const testClock = yield* TestClock.testClockWith(Effect.succeed);
+        // A timer that is already due returns at once, which is how the loop used to spin.
+        let dueTimers = 0;
+        const clock: Clock.Clock = {
+          ...testClock,
+          sleep: (duration) => {
+            if (Duration.toMillis(duration) <= 0) dueTimers += 1;
+            return testClock.sleep(duration);
+          },
+        };
+        const foreground = yield* Queue.unbounded<boolean>();
+        const asks = yield* Queue.unbounded<number>();
+        const views = yield* Queue.unbounded<TailnetDiscoveryView["kind"]>();
+        const registry = EnvironmentRegistry.EnvironmentRegistry.of({
+          entries: yield* SubscriptionRef.make(new Map([[HUB, undefined]])),
+          followStream: () => Stream.make({ phase: "connected" }),
+          run: () =>
+            Clock.currentTimeMillis.pipe(
+              Effect.flatMap((now) => Queue.offer(asks, now / MINUTE)),
+              Effect.as(Option.some([MAC])),
+            ),
+        } as unknown as EnvironmentRegistry.EnvironmentRegistry["Service"]);
+
+        yield* watchTailnetDiscovery(Stream.fromQueue(foreground)).pipe(
+          Stream.runForEach((view) => Queue.offer(views, view.kind)),
+          Effect.provideService(EnvironmentRegistry.EnvironmentRegistry, registry),
+          Effect.provideService(
+            HttpClient.HttpClient,
+            HttpClient.make(() => Effect.die(new Error("unused"))),
+          ),
+          Effect.provideService(Clock.Clock, clock),
+          Effect.forkScoped,
+        );
+        yield* Queue.offer(foreground, true);
+        expect(yield* Queue.take(asks)).toBe(0);
+        expect([yield* Queue.take(views), yield* Queue.take(views)]).toEqual([
+          "unavailable",
+          "found",
+        ]);
+
+        yield* Queue.offer(foreground, false);
+        yield* TestClock.adjust(11 * MINUTE);
+        yield* Queue.offer(foreground, true);
+        expect(yield* Queue.take(asks)).toBe(11);
+        expect(dueTimers).toBe(0);
+      }).pipe(Effect.scoped),
+  );
 
   it("shows only connected environments' fresh lists, and says when none has answered", () => {
     const found = recordTailnetDiscoverySuccess(0, [MAC]);

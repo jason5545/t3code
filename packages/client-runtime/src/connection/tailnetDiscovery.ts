@@ -327,7 +327,8 @@ export const watchTailnetDiscovery = (foreground: Stream.Stream<boolean>) =>
           shown = view;
           Queue.offerUnsafe(output, view);
         }
-        const wakeAt = nextTailnetDiscoveryWakeAt(state(), now);
+        // In the background nothing is asked, so only a signal (such as coming back) can change anything.
+        const wakeAt = active ? nextTailnetDiscoveryWakeAt(state(), now) : null;
         yield* wakeAt === null
           ? Queue.take(signals)
           : Queue.take(signals).pipe(

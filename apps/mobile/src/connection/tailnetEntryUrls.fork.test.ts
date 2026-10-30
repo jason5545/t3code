@@ -19,6 +19,11 @@ describe("tailnet entry URLs", () => {
     "https://agent-hub.tailb20be.ts.net/?",
     "https://agent-hub.tailb20be.ts.net/#top",
     "agent-hub",
+    "https://agent-hub.tailb20be.ts.net/a/..",
+    "https:agent-hub.tailb20be.ts.net",
+    "https://agent-hub.tailb20be.ts.net/.",
+    "https://@agent-hub.tailb20be.ts.net/",
+    "https://agent-hub.tailb20be.ts.net\\",
   ])("rejects %s", (entry) => {
     expect(() => parseTailnetEntryUrls(entry)).toThrow(entry);
   });

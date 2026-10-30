@@ -10,23 +10,15 @@ export function parseTailnetEntryUrls(raw: string | undefined): ReadonlyArray<st
     .map((entry) => entry.trim())
     .filter((entry) => entry !== "");
   return entries.map((entry) => {
+    // Checked before `new URL`, which would normalize `https:host`, `/a/..` or `@host` into a valid entry.
+    if (!/^https:\/\/[^/?#@\\]+\/?$/.test(entry)) {
+      throw new Error(`Tailnet entry ${entry} must be https://host[:port]/ with nothing else.`);
+    }
     let url: URL;
     try {
       url = new URL(entry);
     } catch {
       throw new Error(`Tailnet entry ${entry} is not a URL.`);
-    }
-    if (
-      url.protocol !== "https:" ||
-      url.hostname === "" ||
-      url.username !== "" ||
-      url.password !== "" ||
-      url.pathname !== "/" ||
-      // `new URL` drops an empty `?` or `#`, so look at the text itself.
-      entry.includes("?") ||
-      entry.includes("#")
-    ) {
-      throw new Error(`Tailnet entry ${entry} must be https://host[:port]/ with nothing else.`);
     }
     return url.toString();
   });

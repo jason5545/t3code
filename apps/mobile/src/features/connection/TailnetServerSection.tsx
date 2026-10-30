@@ -18,6 +18,7 @@ import {
   useRemoteConnectionStatus,
   useRemoteConnections,
 } from "../../state/use-remote-environment-registry";
+import { useConnectionsReady } from "../../state/workspace";
 import { buildPairingUrl } from "./pairing";
 
 type DiscoveredTailnetServer = TailnetDiscovery.DiscoveredTailnetServer;
@@ -150,7 +151,11 @@ export function TailnetEntrySection(props: {
   readonly onConnect: (candidate: TailnetEntryCandidate) => void;
 }) {
   const { connectedEnvironments } = useRemoteConnectionStatus();
-  if (connectedEnvironments.length > 0 || tailnetEntryUrls.length === 0) return null;
+  // Before the saved environments load, the list is empty on every phone.
+  const connectionsReady = useConnectionsReady();
+  if (!connectionsReady || connectedEnvironments.length > 0 || tailnetEntryUrls.length === 0) {
+    return null;
+  }
   return <TailnetEntryRows {...props} />;
 }
 
