@@ -67,6 +67,29 @@ function object(value: unknown): PiRpcRecord | undefined {
     : undefined;
 }
 
+interface OmpDeviceCall {
+  readonly toolName: string;
+  readonly args: unknown;
+}
+
+// OMP mounts MCP and rarely-used tools as xd:// devices: the model calls
+// `write xd://<tool>` with the tool's arguments as content (OMP 18.14.0).
+function ompDeviceCall(record: PiRpcRecord): OmpDeviceCall | undefined {
+  if (record.toolName !== "write") return undefined;
+  const args = object(record.args);
+  const path = args?.path ?? args?.file_path;
+  if (typeof path !== "string") return undefined;
+  const toolName = /^xd:\/\/([^/?#]+)$/i.exec(path.trim())?.[1];
+  if (toolName === undefined) return undefined;
+  const content = args?.content;
+  if (typeof content !== "string") return { toolName, args: content ?? {} };
+  try {
+    return { toolName, args: JSON.parse(content) };
+  } catch {
+    return { toolName, args: content };
+  }
+}
+
 export function makePiRpcDialect(command: string): PiRpcDialect {
   if (!isOmpBinary(command)) {
     return {
@@ -81,6 +104,7 @@ export function makePiRpcDialect(command: string): PiRpcDialect {
   // lose correlation. Never strip the caller's id from a correlated result.
   const prompts = new Map<string, { readonly id: unknown; readonly command: string }>();
   let nextPromptId = 0;
+  const deviceCalls = new Map<string, OmpDeviceCall>();
   const response = (
     record: PiRpcRecord,
     prompt: { readonly id: unknown; readonly command: string },
@@ -120,6 +144,21 @@ export function makePiRpcDialect(command: string): PiRpcDialect {
     },
     incoming: (record) => {
       if (record.type === "session_settled") return [{ ...record, type: "agent_settled" }];
+      if (
+        typeof record.toolCallId === "string" &&
+        (record.type === "tool_execution_start" ||
+          record.type === "tool_execution_update" ||
+          record.type === "tool_execution_end")
+      ) {
+        const device =
+          record.type === "tool_execution_start"
+            ? ompDeviceCall(record)
+            : deviceCalls.get(record.toolCallId);
+        if (device === undefined) return [record];
+        if (record.type === "tool_execution_end") deviceCalls.delete(record.toolCallId);
+        else deviceCalls.set(record.toolCallId, device);
+        return [{ ...record, ...device }];
+      }
       // Pi lifts the streaming message's cumulative usage to the event; OMP
       // only carries it on the partial message, which the live meter reads.
       if (record.type === "message_update" && record.usage === undefined) {

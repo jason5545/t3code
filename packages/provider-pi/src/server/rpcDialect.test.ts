@@ -193,6 +193,35 @@ describe("Pi RPC dialect", () => {
     const withoutUsage = { type: "message_update", message: { role: "assistant" } };
     expect(omp.incoming(withoutUsage)).toEqual([withoutUsage]);
   });
+  it("reports a write to an xd:// device as a call to that tool, not a file change", () => {
+    const omp = makePiRpcDialect("omp");
+    const write = {
+      type: "tool_execution_start",
+      toolCallId: "call-1",
+      toolName: "write",
+      args: { path: "xd://mcp__e302_batch", content: '{"actions": [{"action": "windows"}]}' },
+    };
+    const tool = { toolName: "mcp__e302_batch", args: { actions: [{ action: "windows" }] } };
+    expect(omp.incoming(write)).toEqual([{ ...write, ...tool }]);
+    const end = { type: "tool_execution_end", toolCallId: "call-1", toolName: "write" };
+    expect(omp.incoming(end)).toEqual([{ ...end, ...tool }]);
+    expect(omp.incoming(end)).toEqual([end]);
+
+    const objectContent = {
+      ...write,
+      toolCallId: "call-2",
+      args: { path: "XD://generate_image", content: { prompt: "a cat" } },
+    };
+    expect(omp.incoming(objectContent)).toEqual([
+      { ...objectContent, toolName: "generate_image", args: { prompt: "a cat" } },
+    ]);
+    for (const path of ["/tmp/out.txt", "xd://", "xd://tool/topic", "local://notes.md"]) {
+      const file = { ...write, toolCallId: path, args: { path, content: "{}" } };
+      expect(omp.incoming(file)).toEqual([file]);
+    }
+    const pi = makePiRpcDialect("pi");
+    expect(pi.incoming(write)).toEqual([write]);
+  });
   it("cuts before discarded user entries rather than retaining the next turn's input", () => {
     const omp = makePiRpcDialect("omp");
     expect(omp.outgoing({ type: "fork", id: "t3-1", entryId: "next-user" })).toEqual({
