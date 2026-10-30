@@ -2,6 +2,7 @@ import type { ExpoConfig } from "expo/config";
 
 import { BRAND_ASSET_PATHS } from "../../scripts/lib/brand-assets.ts";
 import { loadRepoEnv } from "../../scripts/lib/public-config.ts";
+import { parseTailnetEntryUrls } from "./src/connection/tailnetEntryUrls.ts";
 
 type AppVariant = "development" | "preview" | "production";
 
@@ -435,6 +436,8 @@ const config: ExpoConfig = {
   ],
   extra: {
     appVariant: APP_VARIANT,
+    // Fork patch 7: throws on a malformed entry, so a bad value fails the build.
+    tailnetEntryUrls: parseTailnetEntryUrls(repoEnv.T3CODE_MOBILE_TAILNET_ENTRY_URLS),
     iosPersonalTeamBuild: isIosPersonalTeamBuild,
     relay: {
       url: repoEnv.T3CODE_RELAY_URL ?? null,

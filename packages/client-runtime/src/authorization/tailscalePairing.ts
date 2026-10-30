@@ -8,7 +8,7 @@ import { bootstrapRemoteBearerSession } from "./remote.ts";
 const TAILSCALE_PAIRING_TIMEOUT_MS = 10_000;
 
 /** Fork patch 7: a pairing code the environment issues to this tailnet device. */
-const requestRemoteTailscalePairing = Effect.fn(
+export const requestRemoteTailscalePairing = Effect.fn(
   "clientRuntime.authorization.requestRemoteTailscalePairing",
 )(function* (input: { readonly httpBaseUrl: string; readonly timeoutMs?: number }) {
   const client = yield* makeEnvironmentHttpApiGroupClient(input.httpBaseUrl, "auth");

@@ -15,6 +15,7 @@ import {
   type ConnectionAttemptError,
   ConnectionTransientError,
 } from "./model.ts";
+import { PAIRING_REDIRECT_DETAIL } from "./pairingFailureText.ts";
 import { SESSION_EXPIRED_DETAIL, SIGNED_OUT_DETAIL } from "./sessionEndedText.ts";
 
 export function profileMissingError(connectionId: string): ConnectionBlockedError {
@@ -199,6 +200,14 @@ const isOperationForbidden = Schema.is(EnvironmentOperationForbiddenError);
 export const isSignedOutRefusal = (error: unknown): error is EnvironmentOperationForbiddenError =>
   isOperationForbidden(error) && error.reason === "tailscale_pairing_revoked";
 
+/**
+ * Fork patch 7: the environment does not pair this device without a code, either refusing it
+ * or, on a server without the fork, lacking the endpoint. The server gives no finer reason.
+ */
+export const isCodelessPairingRefusal = (error: RemoteEnvironmentAuthError): boolean =>
+  (isOperationForbidden(error) && error.reason === "tailscale_pairing_refused") ||
+  (error._tag === "RemoteEnvironmentAuthUndeclaredStatusError" && error.status === 404);
+
 export function mapRemoteEnvironmentError(
   error: RemoteEnvironmentAuthError,
   connectionMethod: ClientConnectionMethod = "direct",
@@ -273,8 +282,23 @@ export function mapRemoteEnvironmentError(
         hop: "server",
         via,
       });
-    case "RemoteEnvironmentAuthInvalidJsonError":
     case "RemoteEnvironmentAuthUndeclaredStatusError":
+      // Fork patch 7: only a client that refuses redirects sees one; a 3xx went nowhere.
+      if (error.status >= 300 && error.status < 400) {
+        return new ConnectionBlockedError({
+          reason: "configuration",
+          detail: PAIRING_REDIRECT_DETAIL,
+          hop: "server",
+          via,
+        });
+      }
+      return new ConnectionTransientError({
+        reason: "remote-unavailable",
+        detail: error.message,
+        hop: "server",
+        via,
+      });
+    case "RemoteEnvironmentAuthInvalidJsonError":
       return new ConnectionTransientError({
         reason: "remote-unavailable",
         detail: error.message,

@@ -10,6 +10,11 @@ import * as Dialog from "../../components/ui/Dialog";
 import { ListRow } from "../../components/ui/ListRow";
 import { tailnetDiscoveryAtom } from "../../connection/tailnetDiscovery";
 import {
+  tailnetEntryCandidatesAtom,
+  tailnetEntryUrls,
+  type TailnetEntryCandidate,
+} from "../../connection/tailnetEntry";
+import {
   useRemoteConnectionStatus,
   useRemoteConnections,
 } from "../../state/use-remote-environment-registry";
@@ -135,3 +140,43 @@ export function TailnetServerHomeRows() {
 }
 
 const tailnetSuggestionLabel = (name: string) => `Found ${name} on your tailnet`;
+
+/**
+ * With no environment, the build's entry servers that answer. Mounted only then, so the
+ * probing stops once a server is added.
+ */
+export function TailnetEntrySection(props: {
+  readonly disabled: boolean;
+  readonly onConnect: (candidate: TailnetEntryCandidate) => void;
+}) {
+  const { connectedEnvironments } = useRemoteConnectionStatus();
+  if (connectedEnvironments.length > 0 || tailnetEntryUrls.length === 0) return null;
+  return <TailnetEntryRows {...props} />;
+}
+
+function TailnetEntryRows(props: {
+  readonly disabled: boolean;
+  readonly onConnect: (candidate: TailnetEntryCandidate) => void;
+}) {
+  const candidates = Option.getOrElse(
+    AsyncResult.value(useAtomValue(tailnetEntryCandidatesAtom)),
+    (): ReadonlyArray<TailnetEntryCandidate> => [],
+  );
+  if (candidates.length === 0) return null;
+  return (
+    <View collapsable={false} className="gap-2">
+      <Text className="px-4 text-sm font-t3-medium text-foreground-muted">Possible T3 servers</Text>
+      <View collapsable={false} className="overflow-hidden rounded-[26px] border-continuous">
+        {candidates.map((candidate) => (
+          <ListRow
+            key={candidate.httpBaseUrl}
+            label={candidate.label}
+            description={new URL(candidate.httpBaseUrl).host}
+            disabled={props.disabled}
+            onPress={() => props.onConnect(candidate)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}

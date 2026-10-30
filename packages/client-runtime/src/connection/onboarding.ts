@@ -10,7 +10,7 @@ import * as SubscriptionRef from "effect/SubscriptionRef";
 import * as HttpClient from "effect/http/HttpClient";
 
 import { bootstrapRemoteBearerSession } from "../authorization/remote.ts";
-import { pairRemoteBearerOverTailscale } from "../authorization/tailscalePairing.ts";
+import { requestRemoteTailscalePairing } from "../authorization/tailscalePairing.ts";
 import { deriveWsBaseUrl, normalizeHttpBaseUrl } from "../environment/endpoint.ts";
 import { fetchRemoteEnvironmentDescriptor } from "../environment/descriptor.ts";
 import * as ClientCapabilities from "../platform/capabilities.ts";
@@ -24,7 +24,7 @@ import {
   SshConnectionRegistration,
 } from "./catalog.ts";
 import * as ConnectionCredentialStore from "./credentialStore.ts";
-import { isSignedOutRefusal, mapRemoteEnvironmentError } from "./errors.ts";
+import { isCodelessPairingRefusal, mapRemoteEnvironmentError } from "./errors.ts";
 import {
   BearerConnectionTarget,
   ConnectionBlockedError,
@@ -34,6 +34,10 @@ import {
 import * as Persistence from "../platform/persistence.ts";
 import * as EnvironmentRegistry from "./registry.ts";
 import { orchestrationProtocolCompatibilityError } from "./compatibility.ts";
+import {
+  CODELESS_PAIRING_REFUSED_DETAIL,
+  SUGGESTED_SERVER_CHANGED_DETAIL,
+} from "./pairingFailureText.ts";
 import { connectionRoutes, routeEntry, sshTargetKey } from "./routes.ts";
 
 export interface PairingConnectionInput {
@@ -130,7 +134,7 @@ export const preparePairingRegistration = Effect.fn(
   ) {
     return yield* new ConnectionBlockedError({
       reason: "configuration",
-      detail: "That address now answers as a different server than the one suggested.",
+      detail: SUGGESTED_SERVER_CHANGED_DETAIL,
     });
   }
   const connectionId = bearerConnectionId(descriptor.environmentId, target.httpBaseUrl);
@@ -164,13 +168,24 @@ export const preparePairingRegistration = Effect.fn(
         credential: resolved.success.credential,
         clientMetadata: presentation.metadata,
       }).pipe(Effect.mapError(mapRemoteEnvironmentError))
-    : yield* pairRemoteBearerOverTailscale({
-        httpBaseUrl: target.httpBaseUrl,
-        clientMetadata: presentation.metadata,
-      }).pipe(
-        // Fork patch 6: a signed-out device hears so instead of being asked for a code.
+    : yield* requestRemoteTailscalePairing({ httpBaseUrl: target.httpBaseUrl }).pipe(
+        // Fork patch 7: only a refusal asks for a code; a signed-out device, a network
+        // failure or a broken server each say what happened.
         Effect.mapError((error) =>
-          isSignedOutRefusal(error) ? mapRemoteEnvironmentError(error) : resolved.failure,
+          isCodelessPairingRefusal(error)
+            ? new ConnectionBlockedError({
+                reason: "configuration",
+                detail: CODELESS_PAIRING_REFUSED_DETAIL,
+                hop: "server",
+              })
+            : mapRemoteEnvironmentError(error),
+        ),
+        Effect.flatMap((issued) =>
+          bootstrapRemoteBearerSession({
+            httpBaseUrl: target.httpBaseUrl,
+            credential: issued.credential,
+            clientMetadata: presentation.metadata,
+          }).pipe(Effect.mapError(mapRemoteEnvironmentError)),
         ),
       );
 
@@ -182,7 +197,7 @@ export const preparePairingRegistration = Effect.fn(
   });
 });
 
-const registerPairingConnection = Effect.fn(
+export const registerPairingConnection = Effect.fn(
   "clientRuntime.connection.onboarding.registerPairingConnection",
 )(function* (input: PairingConnectionInput) {
   const registration = yield* preparePairingRegistration(input);

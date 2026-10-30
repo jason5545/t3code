@@ -7,6 +7,7 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 
 import { connectionAtomRuntime } from "./runtime";
+import { layerHttpClientWithoutRedirects } from "./tailnetEntry";
 
 const onboardingScheduler = createAtomCommandScheduler();
 
@@ -35,6 +36,25 @@ export const connectPairingUrl = createRuntimeCommand(connectionAtomRuntime, {
     ConnectionOnboarding.ConnectionOnboarding.pipe(
       Effect.flatMap((onboarding) => onboarding.registerPairing(input)),
     ),
+});
+
+/**
+ * Fork patch 7: pairs a probed entry server with the base URL it answered on,
+ * never following a redirect, and only if it still answers as that environment.
+ */
+export const connectTailnetEntry = createRuntimeCommand(connectionAtomRuntime, {
+  label: "mobile:connection:connect-tailnet-entry",
+  scheduler: onboardingScheduler,
+  concurrency: {
+    mode: "singleFlight",
+    key: (input: { readonly httpBaseUrl: string; readonly environmentId: EnvironmentId }) =>
+      JSON.stringify([input.httpBaseUrl, input.environmentId]),
+  },
+  execute: (input: { readonly httpBaseUrl: string; readonly environmentId: EnvironmentId }) =>
+    ConnectionOnboarding.registerPairingConnection({
+      pairingUrl: input.httpBaseUrl,
+      suggestedEnvironmentId: input.environmentId,
+    }).pipe(Effect.provide(layerHttpClientWithoutRedirects)),
 });
 
 export const updateBearerConnection = createRuntimeCommand(connectionAtomRuntime, {

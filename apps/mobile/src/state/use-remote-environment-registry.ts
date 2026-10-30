@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { EnvironmentId } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import { AsyncResult, Atom } from "effect/reactivity";
-import { runAtomCommand } from "@t3tools/client-runtime/state/runtime";
+import { type AtomCommandResult, runAtomCommand } from "@t3tools/client-runtime/state/runtime";
 
 import { hasCloudPublicConfig } from "../features/cloud/publicConfig";
 import { useConnectionController } from "../features/connection/useConnectionController";
@@ -17,7 +17,11 @@ import { environmentSession } from "./session";
 import { environmentCatalog } from "../connection/catalog";
 import { createRemoteEnvironmentProjectionAtoms } from "./remote-environment-projections";
 import { serverEnvironment } from "./server";
-import { connectPairingUrl as connectPairingUrlCommand } from "../connection/onboarding";
+import {
+  connectPairingUrl as connectPairingUrlCommand,
+  connectTailnetEntry,
+} from "../connection/onboarding";
+import type { TailnetEntryCandidate } from "../connection/tailnetEntry";
 
 const connectionPairingUrlAtom = Atom.make("").pipe(
   Atom.keepAlive,
@@ -56,6 +60,22 @@ export async function pairEnvironment(
     },
     { reportFailure: false },
   );
+  return pairingOutcome(result);
+}
+
+/** Fork patch 7: pairs an entry server a phone with no environment found. */
+export async function pairTailnetEntry(candidate: TailnetEntryCandidate): Promise<PairingOutcome> {
+  return pairingOutcome(
+    await runAtomCommand(
+      appAtomRegistry,
+      connectTailnetEntry,
+      { httpBaseUrl: candidate.httpBaseUrl, environmentId: candidate.environmentId },
+      { reportFailure: false },
+    ),
+  );
+}
+
+function pairingOutcome(result: AtomCommandResult<unknown, unknown>): PairingOutcome {
   if (AsyncResult.isSuccess(result)) {
     appAtomRegistry.set(connectionPairingUrlAtom, "");
     return { ok: true, error: null };

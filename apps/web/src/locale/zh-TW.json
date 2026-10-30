@@ -7971,5 +7971,9 @@
   "No servers to add were found right now.": "目前沒有找到可加入的伺服器。",
   "Can't get the server list right now.": "目前問不到伺服器清單。",
   "Tap to add": "點一下加入",
-  "Found {name} on your tailnet": "在 tailnet 找到 {name}"
+  "Found {name} on your tailnet": "在 tailnet 找到 {name}",
+  "Possible T3 servers": "可能的 T3 伺服器",
+  "This server would not pair without a code. Enter a pairing code, or try another server.": "這台伺服器無法免碼配對。請改填配對碼，或試試別的伺服器。",
+  "Couldn't reach this server.": "無法連到這個伺服器。",
+  "That address now answers as a different server than the one suggested.": "這個位址現在回應的是另一台伺服器，不是建議的那台。"
 }

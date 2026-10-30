@@ -24,11 +24,15 @@ import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { AppText as Text, AppTextInput, type AppTextInputProps } from "../../components/ui/AppText";
 import { FrostedCutout } from "../../components/ui/FrostedCutout";
 import { buildPairingUrl, extractPairingUrlFromQrPayload, parsePairingUrl } from "./pairing";
-import { useRemoteConnections } from "../../state/use-remote-environment-registry";
+import {
+  pairTailnetEntry,
+  type PairingOutcome,
+  useRemoteConnections,
+} from "../../state/use-remote-environment-registry";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { hasCloudPublicConfig } from "../cloud/publicConfig";
 import { CloudEnvironmentRows } from "./CloudEnvironmentRows";
-import { TailnetServerSection } from "./TailnetServerSection";
+import { TailnetEntrySection, TailnetServerSection } from "./TailnetServerSection";
 import { autoConnectReport, devAutoConnectAttemptAtom } from "./devAutoConnect";
 import { splitEnvironmentSections } from "./environmentSections";
 import { leaveSettingsPage } from "../settings/settings-navigation";
@@ -152,12 +156,17 @@ function PairingForm({
     }
   };
 
-  const connectAndClose = async (pairingUrl: string, suggestedEnvironmentId?: EnvironmentId) => {
+  const connectAndClose = async (
+    pairingUrl: string,
+    suggestedEnvironmentId?: EnvironmentId,
+    pair?: () => Promise<PairingOutcome>,
+  ) => {
     setOwnAttempt(true);
     setSubmitError(null);
     setIsSubmitting(true);
     onChangeConnectionPairingUrl(pairingUrl);
-    const outcome = await onConnectPress(pairingUrl, routeFor, suggestedEnvironmentId);
+    const outcome = await (pair?.() ??
+      onConnectPress(pairingUrl, routeFor, suggestedEnvironmentId));
     setIsSubmitting(false);
     setSubmitError(outcome.error);
     void Haptics.notificationAsync(
@@ -262,6 +271,17 @@ function PairingForm({
               </Text>
             )}
           </View>
+
+          {routeFor === undefined ? (
+            <TailnetEntrySection
+              disabled={connecting}
+              onConnect={(candidate) =>
+                void connectAndClose(candidate.httpBaseUrl, candidate.environmentId, () =>
+                  pairTailnetEntry(candidate),
+                )
+              }
+            />
+          ) : null}
 
           {routeFor === undefined ? (
             <TailnetServerSection

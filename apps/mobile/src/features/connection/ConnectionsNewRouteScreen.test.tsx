@@ -64,7 +64,10 @@ vi.mock("../workspace/workspace-selection-store", () => ({ workspaceHasColumns: 
 vi.mock("../cloud/publicConfig", () => ({ hasCloudPublicConfig: () => false }));
 vi.mock("./CloudEnvironmentRows", () => ({ CloudEnvironmentRows: () => null }));
 // Fork patch 7: the tailnet section loads the connection runtime.
-vi.mock("./TailnetServerSection", () => ({ TailnetServerSection: () => null }));
+vi.mock("./TailnetServerSection", () => ({
+  TailnetEntrySection: () => null,
+  TailnetServerSection: () => null,
+}));
 vi.mock("./environmentSections", () => ({
   splitEnvironmentSections: () => ({ connectedCloudEnvironments: [] }),
 }));
