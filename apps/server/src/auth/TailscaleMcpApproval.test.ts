@@ -48,21 +48,23 @@ const PEERS = new Map<string, TailscalePeerIdentity>([
   [HOST_ADDRESS, node("nHostStable", "agent-hub", "owner@example.com")],
 ]);
 
+const HOST = {
+  ownerLoginName: "owner@example.com",
+  addresses: [HOST_ADDRESS],
+  magicDnsSuffix: "tail.ts.net",
+};
+
 const layerLookup = Layer.succeed(
   TailscalePairing.TailscaleNodeLookup,
   TailscalePairing.TailscaleNodeLookup.of({
-    host: Effect.succeed({
-      ownerLoginName: "owner@example.com",
-      addresses: [HOST_ADDRESS],
-      magicDnsSuffix: "tail.ts.net",
-    }),
+    host: Effect.succeed(HOST),
     whois: (address) => {
       const peer = PEERS.get(address);
       return peer === undefined
         ? Effect.fail(new TailscalePairing.TailscaleLookupError({ unknownPeer: true, cause: "" }))
         : Effect.succeed(peer);
     },
-    peers: Effect.succeed([]),
+    status: Effect.succeed({ host: HOST, peers: [] }),
   }),
 );
 

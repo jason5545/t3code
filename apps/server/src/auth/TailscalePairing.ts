@@ -10,10 +10,11 @@ import {
   isTailscaleAddress,
   isTailscaleIpv4Address,
   readTailscaleHostIdentity,
-  readTailscalePeers,
+  readTailnetStatus,
   readTailscaleWhois,
   type TailscaleHostIdentity,
   type TailscalePeerIdentity,
+  type TailnetStatus,
   type TailscaleStatusPeer,
 } from "@t3tools/tailscale";
 import * as Config from "effect/Config";
@@ -22,6 +23,7 @@ import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -160,7 +162,7 @@ export class TailscaleNodeLookup extends Context.Service<
   {
     readonly host: Effect.Effect<TailscaleHostIdentity, TailscaleLookupError>;
     readonly whois: (address: string) => Effect.Effect<TailscalePeerIdentity, TailscaleLookupError>;
-    readonly peers: Effect.Effect<readonly TailscaleStatusPeer[], TailscaleLookupError>;
+    readonly status: Effect.Effect<TailnetStatus, TailscaleLookupError>;
   }
 >()("t3/auth/TailscalePairing/TailscaleNodeLookup") {}
 
@@ -185,7 +187,7 @@ const layerNodeLookup = Layer.effect(
           ),
         );
       }),
-      peers: readTailscalePeers.pipe(
+      status: readTailnetStatus.pipe(
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
         Effect.mapError((cause) => new TailscaleLookupError({ unknownPeer: false, cause })),
       ),
@@ -194,6 +196,7 @@ const layerNodeLookup = Layer.effect(
 );
 
 const PROBE_TIMEOUT = Duration.seconds(2);
+const DISCOVERY_SHARE = Duration.seconds(30);
 
 /** Another server's public descriptor; none when nothing there answers as T3 Code. */
 export class EnvironmentProbe extends Context.Service<
@@ -726,20 +729,14 @@ export const make = Effect.gen(function* () {
       ),
     );
 
-  const discoverServers: TailscalePairing["Service"]["discoverServers"] = Effect.fn(
-    "TailscalePairing.discoverServers",
-  )(function* () {
-    if (!enabled) return [];
-    const host = yield* Effect.option(lookup.host);
-    const peers = yield* Effect.option(lookup.peers);
-    if (Option.isNone(host) || Option.isNone(peers) || host.value.ownerLoginName === null) {
-      return [];
-    }
-    const owner = host.value.ownerLoginName;
+  const discoverFromStatus = Effect.gen(function* () {
+    const { host, peers } = yield* lookup.status;
+    if (host.ownerLoginName === null) return [];
+    const owner = host.ownerLoginName;
     const ownEnvironmentId = yield* environmentIdentity.getEnvironmentId;
     const found = yield* Effect.forEach(
       // Tagged nodes belong to the `tagged-devices` account, so the owner check leaves them out.
-      peers.value.filter(
+      peers.filter(
         (peer) => peer.online && peer.loginName === owner && !CLIENT_ONLY_OS.has(peer.os ?? ""),
       ),
       findServer,
@@ -753,6 +750,18 @@ export const make = Effect.gen(function* () {
       }
     }
     return [...byEnvironment.values()];
+  });
+
+  // Every client asks on a timer; an unreadable status is retried on the next request.
+  const sharedDiscovery = yield* Effect.cachedWithTTL(discoverFromStatus, (exit) =>
+    Exit.isSuccess(exit) ? DISCOVERY_SHARE : Duration.zero,
+  );
+
+  const discoverServers: TailscalePairing["Service"]["discoverServers"] = Effect.fn(
+    "TailscalePairing.discoverServers",
+  )(function* () {
+    if (!enabled) return [];
+    return yield* sharedDiscovery.pipe(Effect.orElseSucceed(() => []));
   });
 
   const mcpOwnerClient: TailscalePairing["Service"]["mcpOwnerClient"] = Effect.fn(
@@ -783,14 +792,13 @@ export const make = Effect.gen(function* () {
   const ownerMachines: TailscalePairing["Service"]["ownerMachines"] = Effect.fn(
     "TailscalePairing.ownerMachines",
   )(function* () {
-    const host = yield* Effect.option(lookup.host);
-    const peers = yield* Effect.option(lookup.peers);
-    if (Option.isNone(host) || Option.isNone(peers) || host.value.ownerLoginName === null) {
+    const status = yield* Effect.option(lookup.status);
+    if (Option.isNone(status) || status.value.host.ownerLoginName === null) {
       return Option.none();
     }
-    const owner = host.value.ownerLoginName;
+    const owner = status.value.host.ownerLoginName;
     return Option.some(
-      peers.value
+      status.value.peers
         .filter(
           (peer) =>
             peer.loginName === owner &&

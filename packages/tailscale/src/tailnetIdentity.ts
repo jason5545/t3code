@@ -194,6 +194,14 @@ export const parseTailscalePeers = (
     }),
   );
 
-export const readTailscalePeers = readTailscaleOutput("status", ["status", "--json"]).pipe(
-  Effect.flatMap(parseTailscalePeers),
+export interface TailnetStatus {
+  readonly host: TailscaleHostIdentity;
+  readonly peers: readonly TailscaleStatusPeer[];
+}
+
+/** This machine and its peers from one `tailscale status --json` read. */
+export const readTailnetStatus = readTailscaleOutput("status", ["status", "--json"]).pipe(
+  Effect.flatMap((raw) =>
+    Effect.all({ host: parseTailscaleHostIdentity(raw), peers: parseTailscalePeers(raw) }),
+  ),
 );

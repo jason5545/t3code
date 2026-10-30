@@ -55,32 +55,33 @@ const statusPeer = (
   ...overrides,
 });
 
+const HOST = { ownerLoginName: OWNER, addresses: [HOST_ADDRESS], magicDnsSuffix: "tail.ts.net" };
+
 const layerLookup = Layer.succeed(
   TailscalePairing.TailscaleNodeLookup,
   TailscalePairing.TailscaleNodeLookup.of({
-    host: Effect.succeed({
-      ownerLoginName: OWNER,
-      addresses: [HOST_ADDRESS],
-      magicDnsSuffix: "tail.ts.net",
-    }),
+    host: Effect.succeed(HOST),
     whois: (address) => {
       const peer = PEERS.get(address);
       return peer === undefined
         ? Effect.fail(new TailscalePairing.TailscaleLookupError({ unknownPeer: true, cause: "" }))
         : Effect.succeed(peer);
     },
-    peers: Effect.succeed([
-      statusPeer("macbook-pro", {
-        os: "macOS",
-        online: false,
-        lastSeen: "2026-10-26T18:13:05Z",
-        addresses: [MAC],
-      }),
-      statusPeer("agent-fr", { addresses: ["fd7a:115c:a1e0::1", "100.112.49.26"] }),
-      statusPeer("poco-f8-ultra", { os: "android" }),
-      statusPeer("lisky-box", { tags: ["tag:lisky"], loginName: "tagged-devices" }),
-      statusPeer("friend-laptop", { loginName: "friend@example.com" }),
-    ]),
+    status: Effect.succeed({
+      host: HOST,
+      peers: [
+        statusPeer("macbook-pro", {
+          os: "macOS",
+          online: false,
+          lastSeen: "2026-10-26T18:13:05Z",
+          addresses: [MAC],
+        }),
+        statusPeer("agent-fr", { addresses: ["fd7a:115c:a1e0::1", "100.112.49.26"] }),
+        statusPeer("poco-f8-ultra", { os: "android" }),
+        statusPeer("lisky-box", { tags: ["tag:lisky"], loginName: "tagged-devices" }),
+        statusPeer("friend-laptop", { loginName: "friend@example.com" }),
+      ],
+    }),
   }),
 );
 

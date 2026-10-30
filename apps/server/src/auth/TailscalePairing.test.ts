@@ -107,19 +107,29 @@ const layerProbe = (asked: string[], ownEnvironmentId: () => string) =>
     }),
   );
 
-const layerLookup = (options: { readonly hostUnavailable?: boolean; readonly asked: string[] }) =>
+/** Counts `tailscale status` reads; set `failing` to make them fail like a stopped tailscaled. */
+interface StatusReads {
+  count: number;
+  failing: boolean;
+}
+
+const HOST = {
+  ownerLoginName: OWNER,
+  addresses: [HOST_ADDRESS, "fd7a:115c:a1e0::e833:3c24"],
+  magicDnsSuffix: "tail.ts.net",
+};
+
+const lookupDown = new TailscalePairing.TailscaleLookupError({ unknownPeer: false, cause: "down" });
+
+const layerLookup = (options: {
+  readonly hostUnavailable?: boolean;
+  readonly asked: string[];
+  readonly statusReads: StatusReads;
+}) =>
   Layer.succeed(
     TailscalePairing.TailscaleNodeLookup,
     TailscalePairing.TailscaleNodeLookup.of({
-      host: options.hostUnavailable
-        ? Effect.fail(
-            new TailscalePairing.TailscaleLookupError({ unknownPeer: false, cause: "down" }),
-          )
-        : Effect.succeed({
-            ownerLoginName: OWNER,
-            addresses: [HOST_ADDRESS, "fd7a:115c:a1e0::e833:3c24"],
-            magicDnsSuffix: "tail.ts.net",
-          }),
+      host: options.hostUnavailable ? Effect.fail(lookupDown) : Effect.succeed(HOST),
       whois: (address) => {
         options.asked.push(address);
         const peer = PEERS.get(address);
@@ -132,7 +142,12 @@ const layerLookup = (options: { readonly hostUnavailable?: boolean; readonly ask
             )
           : Effect.succeed(peer);
       },
-      peers: Effect.succeed(STATUS_PEERS),
+      status: Effect.suspend(() => {
+        options.statusReads.count += 1;
+        return options.hostUnavailable || options.statusReads.failing
+          ? Effect.fail(lookupDown)
+          : Effect.succeed({ host: HOST, peers: STATUS_PEERS });
+      }),
     }),
   );
 
@@ -151,10 +166,17 @@ const layerTest = (
     readonly hostUnavailable?: boolean;
     readonly asked?: string[];
     readonly probed?: string[];
+    readonly statusReads?: StatusReads;
   } = {},
 ) =>
   Layer.effect(TailscalePairing.TailscalePairing, TailscalePairing.make).pipe(
-    Layer.provide(layerLookup({ ...options, asked: options.asked ?? [] })),
+    Layer.provide(
+      layerLookup({
+        ...options,
+        asked: options.asked ?? [],
+        statusReads: options.statusReads ?? { count: 0, failing: false },
+      }),
+    ),
     Layer.provide(layerProbe(options.probed ?? [], () => ownEnvironmentId)),
     Layer.provide(
       ConfigProvider.layer(
@@ -241,6 +263,42 @@ it.layer(NodeServices.layer)("Tailscale pairing", (it) => {
         );
       }
     }).pipe(Effect.provide(layerTest({ probed })));
+  });
+
+  it.effect("reads tailscale status once per discovery and shares a success for 30 seconds", () => {
+    const probed: string[] = [];
+    const statusReads: StatusReads = { count: 0, failing: false };
+    return Effect.gen(function* () {
+      const pairing = yield* TailscalePairing.TailscalePairing;
+      const [first, concurrent] = yield* Effect.all(
+        [pairing.discoverServers(), pairing.discoverServers()],
+        { concurrency: "unbounded" },
+      );
+      expect(statusReads.count).toBe(1);
+      expect(concurrent).toEqual(first);
+      const probesPerDiscovery = probed.length;
+
+      yield* TestClock.adjust(Duration.seconds(29));
+      expect(yield* pairing.discoverServers()).toEqual(first);
+      expect([statusReads.count, probed.length]).toEqual([1, probesPerDiscovery]);
+
+      yield* TestClock.adjust(Duration.seconds(2));
+      yield* pairing.discoverServers();
+      expect([statusReads.count, probed.length]).toEqual([2, probesPerDiscovery * 2]);
+    }).pipe(Effect.provide(layerTest({ probed, statusReads })));
+  });
+
+  it.effect("does not share an unreadable tailscale status", () => {
+    const statusReads: StatusReads = { count: 0, failing: true };
+    return Effect.gen(function* () {
+      const pairing = yield* TailscalePairing.TailscalePairing;
+      expect(yield* pairing.discoverServers()).toEqual([]);
+      statusReads.failing = false;
+      expect((yield* pairing.discoverServers()).map((server) => server.nodeName)).toContain(
+        "macbook-pro",
+      );
+      expect(statusReads.count).toBe(2);
+    }).pipe(Effect.provide(layerTest({ statusReads })));
   });
 
   it.effect("finds nothing while it is off", () => {
