@@ -181,6 +181,10 @@ Upstream baseline: `32ecd71726` (merged 2026-10-30).
 - Trade-offs: an agent tab in the panel is a stream, without DevTools, the desktop screenshot and recording buttons or native picture in picture; the mini player still works. An agent tab keeps painting for as long as it exists, as under the old section 9. On macOS a background window outlives a closed main window, so agents keep their tabs, but a tab closed while no main window is open keeps its window until the app quits.
 - Only the desktop app hosts background windows, so agent-hub, agent-fr and Android do not need this patch; a headless server's `isBackground` is always false. Drop this section when upstream merges #22743.
 
+## 25. A new thread's first reply shows without reloading (upstream PR #27522)
+
+- Upstream #27252 (Stop and force stop) made `useThreadLifecycle` read run-stop state through `activeThreadRef`, which on a new-thread draft is the reserved thread id. The draft then asked the server for that thread's history before it existed, the `thread_not_found` answer marked the thread deleted in the client, and the client never subscribed again: the agent ran and replied while the view stayed empty until Cmd+R (upstream issue #27443; on the Mac at 2026-10-30 20:02, after the sync to `32ecd71726`). The fork carries Julius's PR #27522, which reads run-stop through ChatView's `routeThreadDetailRef` instead. Only its two source files are applied; its browser test (`ChatView.browser.test.tsx`, plus exporting `PROJECT_ID` from `test/fakeEnvironment.ts`) failed before the change and passed after it, and stays out of the fork because it edits upstream test files. Mobile already gated this read. Drop this section when upstream merges #27522.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
