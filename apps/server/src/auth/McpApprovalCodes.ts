@@ -3,6 +3,7 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import type { AuthEnvironmentScope } from "@t3tools/contracts";
 
 import * as AuthPairingLinks from "../persistence/AuthPairingLinks.ts";
 import { decodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
@@ -20,6 +21,7 @@ export class McpApprovalCodes extends Context.Service<
     /** Like `consume` for an MCP approval, except a reusable code is only checked, not spent. */
     readonly use: (
       credential: string,
+      input?: { readonly requiredScopes?: ReadonlyArray<AuthEnvironmentScope> },
     ) => Effect.Effect<
       PairingGrantStore.BootstrapGrant,
       PairingGrantStore.BootstrapCredentialError
@@ -51,10 +53,10 @@ const make = Effect.gen(function* () {
     );
 
   const use: McpApprovalCodes["Service"]["use"] = Effect.fn("McpApprovalCodes.use")(
-    function* (credential) {
+    function* (credential, input) {
       const link = yield* storedLink(credential);
       if (link === undefined || decodeMcpApprovalSubject(link.subject)?.reusable !== true) {
-        return yield* store.consume(credential);
+        return yield* store.consume(credential, input);
       }
       const now = yield* DateTime.now;
       if (link.revokedAt !== null) {
@@ -68,6 +70,9 @@ const make = Effect.gen(function* () {
       }
       if (link.proofKeyThumbprint !== null) {
         return yield* new PairingGrantStore.BootstrapCredentialProofKeyMismatchError({});
+      }
+      if (input?.requiredScopes?.some((scope) => !link.scopes.includes(scope))) {
+        return yield* new PairingGrantStore.BootstrapCredentialScopeNotGrantedError({});
       }
       return {
         method: link.method,

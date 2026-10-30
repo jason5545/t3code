@@ -446,7 +446,7 @@ export class ServerAuthMcpApprovalCodeError extends Schema.TaggedError<ServerAut
 ) {
   override get message(): string {
     return this.reason === "insufficient_scope"
-      ? "That pairing code cannot grant this access, and it is now used up. Create one with the standard scopes, or choose Read only with a new code."
+      ? "That pairing code cannot grant this access. It has not been used, so choose an access level it grants, or create a code with the standard scopes."
       : this.reason === "not_a_pairing_code"
         ? "That is not a one-time pairing code."
         : "That pairing code is unknown, expired, or already used.";
@@ -929,6 +929,7 @@ export const make = Effect.gen(function* () {
     input?: {
       readonly proofKeyThumbprint?: string;
       readonly requestedScopes?: ReadonlyArray<AuthEnvironmentScope>;
+      readonly requiredScopes?: ReadonlyArray<AuthEnvironmentScope>;
     },
   ): Effect.Effect<
     ResolvedBootstrapGrant,
@@ -947,6 +948,12 @@ export const make = Effect.gen(function* () {
     }
     return sessions.verify(credential).pipe(
       mapSessionVerificationErrors,
+      Effect.filterOrFail(
+        (session) =>
+          input?.requiredScopes === undefined ||
+          input.requiredScopes.every((scope) => session.scopes.includes(scope)),
+        () => new ServerAuthScopeNotGrantedError({}),
+      ),
       Effect.map(
         (session) =>
           ({
@@ -1364,16 +1371,27 @@ export const make = Effect.gen(function* () {
   };
 
   // Fork patch 5: MCP approval reads a reusable approval code without spending it.
-  const resolveMcpApprovalGrant = (credential: string) =>
+  const resolveMcpApprovalGrant = (
+    credential: string,
+    requiredScopes: ReadonlyArray<AuthEnvironmentScope>,
+  ) =>
     devAuth?.matches(credential)
-      ? resolveBootstrapGrant(credential)
-      : mcpApprovalCodes.use(credential).pipe(Effect.mapError(toBootstrapExchangeError));
+      ? resolveBootstrapGrant(credential, { requiredScopes })
+      : mcpApprovalCodes
+          .use(credential, { requiredScopes })
+          .pipe(
+            Effect.mapError((cause) =>
+              cause._tag === "BootstrapCredentialScopeNotGrantedError"
+                ? new ServerAuthScopeNotGrantedError({})
+                : toBootstrapExchangeError(cause),
+            ),
+          );
 
   const consumeMcpApprovalCode: EnvironmentAuth["Service"]["consumeMcpApprovalCode"] = (
     code,
     access,
   ) =>
-    resolveMcpApprovalGrant(code.trim()).pipe(
+    resolveMcpApprovalGrant(code.trim(), mcpClientScopes(access)).pipe(
       Effect.catchTags({
         ServerAuthInvalidCredentialError: () =>
           Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "unknown_or_used" })),
@@ -1383,9 +1401,7 @@ export const make = Effect.gen(function* () {
       Effect.flatMap((grant) =>
         grant.method !== "one-time-token" && grant.method !== "reusable-dev-token"
           ? Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "not_a_pairing_code" }))
-          : mcpClientScopes(access).every((scope) => grant.scopes.includes(scope))
-            ? Effect.succeed(mcpApprovalSessionTtl(grant.subject))
-            : Effect.fail(new ServerAuthMcpApprovalCodeError({ reason: "insufficient_scope" })),
+          : Effect.succeed(mcpApprovalSessionTtl(grant.subject)),
       ),
       Effect.withSpan("EnvironmentAuth.consumeMcpApprovalCode"),
     );
