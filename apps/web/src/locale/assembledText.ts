@@ -111,17 +111,11 @@ export function fileNavigationLabel(
 
 /** The scroll-to-end button's note of what waits below, such as "Subagent waiting · 2 queued". */
 export function scrollToEndSummaryText(
-  subagentWaiting: boolean,
+  waitingLabel: string | null,
   queuedCount: number,
 ): string | null {
-  const parts = useChinese
-    ? [
-        subagentWaiting ? "子代理程式等待中" : null,
-        queuedCount === 0 ? null : `${queuedCount} 則在佇列中`,
-      ]
-    : [
-        subagentWaiting ? "Subagent waiting" : null,
-        queuedCount === 0 ? null : `${queuedCount} queued`,
-      ];
+  const queued =
+    queuedCount === 0 ? null : useChinese ? `${queuedCount} 則在佇列中` : `${queuedCount} queued`;
+  const parts = [waitingLabel, queued];
   return parts.filter((part) => part !== null).join(" · ") || null;
 }

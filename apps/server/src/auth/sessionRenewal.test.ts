@@ -245,7 +245,7 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
       yield* sessions.markConnected(device.sessionId, fromItsDevice);
       const invalidated = yield* Deferred.make<void>();
       const watcher = yield* sessions
-        .awaitInvalidation(device.sessionId, fromItsDevice)
+        .awaitInvalidation(device.sessionId, undefined, fromItsDevice)
         .pipe(
           Effect.andThen(Deferred.succeed(invalidated, undefined)),
           Effect.forkScoped({ startImmediately: true }),
@@ -275,7 +275,7 @@ it.layer(NodeServices.layer)("session renewal", (it) => {
       yield* sessions.markConnected(device.sessionId, fromUnknownPeer);
       const invalidated = yield* Deferred.make<void>();
       yield* sessions
-        .awaitInvalidation(device.sessionId, fromUnknownPeer)
+        .awaitInvalidation(device.sessionId, undefined, fromUnknownPeer)
         .pipe(
           Effect.andThen(Deferred.succeed(invalidated, undefined)),
           Effect.forkScoped({ startImmediately: true }),

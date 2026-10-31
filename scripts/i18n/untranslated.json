@@ -115,6 +115,8 @@
     "PR #{metadata.number}",
     "PR #{pullRequestNumber} review",
     "project name update",
+    "project update",
+    "project unarchive",
     "provider-env-{0}",
     "Python",
     "READY",
@@ -230,7 +232,8 @@
       "none",
       "muted",
       "audible",
-      "(prefers-reduced-motion: reduce)"
+      "(prefers-reduced-motion: reduce)",
+      "running"
     ],
     "apps/web/src/state/sourceControlActions.ts": ["Running source control action"],
     "apps/web/src/components/usage/usagePriceTable.ts": ["Mixed", "Unavailable"],
@@ -587,6 +590,8 @@
       "granted",
       "ask",
       "denied"
-    ]
+    ],
+    "packages/client-runtime/src/state/threadShell.ts": ["side chat", "subagent"],
+    "apps/web/src/components/chat/TraitsPicker.tsx": ["none"]
   }
 }
