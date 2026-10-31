@@ -5,11 +5,6 @@ import {
 } from "../../providerInstances";
 import { getDisplayModelName, type ModelEsque } from "./providerIconUtils";
 
-export {
-  hasDismissedResumeCompaction,
-  shouldOfferResumeCompaction,
-} from "@t3tools/client-runtime/state/resume-compaction";
-
 export function providerSupportsManualCompaction(
   provider: ProviderInstanceEntry | null | undefined,
 ): boolean {

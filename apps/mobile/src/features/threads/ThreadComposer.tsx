@@ -82,7 +82,6 @@ import { VideoPreviewModal, type VideoPreviewSource } from "../../components/Vid
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import { ComposerEditor, type ComposerEditorHandle } from "../../components/ComposerEditor";
 import { SecureWindow } from "./SecureWindow";
-import { ResumeCompactionChip, type ResumeCompactionControl } from "./ResumeCompactionChip";
 import { fileRoutePathSegments } from "../files/filePath";
 import { ComposerActionButton, ComposerToolbarRow } from "../../components/ComposerToolbar";
 import { ComposerModelControl } from "../../components/ComposerModelControl";
@@ -246,8 +245,6 @@ export interface ThreadComposerProps {
   readonly onStopThread: () => void;
   /** Present while the thread's queue is held. */
   readonly onResumeQueue: (() => Promise<void>) | null;
-  /** Fork patch 26: present while the next send compacts a stale Claude session first. */
-  readonly resumeCompaction?: ResumeCompactionControl | null;
   /** `stillSendable` reports whether the draft is unchanged after any wait before sending. */
   readonly onSendMessage: (
     followUp?: ActiveTurnComposerAction,
@@ -905,12 +902,6 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
           />
         ) : null}
 
-        {props.resumeCompaction && queuedEdit === null ? (
-          <ResumeCompactionChip
-            control={props.resumeCompaction}
-            disabled={!props.canOperateThread || isSubmissionLocked}
-          />
-        ) : null}
         <ComposerSurface
           animateLayout={false}
           style={{

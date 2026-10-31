@@ -363,9 +363,9 @@
       "types": "./src/state/composerDispatch.ts",
       "default": "./src/state/composerDispatch.ts"
     },
-    "./state/resume-compaction": {
-      "types": "./src/state/resumeCompaction.ts",
-      "default": "./src/state/resumeCompaction.ts"
+    "./state/context-window": {
+      "types": "./src/state/contextWindow.ts",
+      "default": "./src/state/contextWindow.ts"
     },
     "./state/thread-subagents": {
       "types": "./src/state/threadSubagents.ts",
