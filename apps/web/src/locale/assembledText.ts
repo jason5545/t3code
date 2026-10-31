@@ -59,6 +59,12 @@ export function threadUndoNoticeShortText(notice: {
 
 export const threadUndoNoticeSeparator = useChinese ? "，" : ", ";
 
+/** The background work banner's verb before a single task's label. */
+export function backgroundWorkVerb(waiting: boolean): string {
+  if (useChinese) return waiting ? "等待中" : "執行中";
+  return waiting ? "Waiting on" : "Running";
+}
+
 /** The undo notice's button, such as "⌘Z to undo". */
 export function threadUndoLabelText(shortcut: string | null): string {
   if (useChinese) return shortcut ? `按 ${shortcut} 復原` : "復原";
