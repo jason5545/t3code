@@ -217,7 +217,7 @@ This checkout is `jason5545/t3code`. Upstream owns everything above; keep fork n
 
 ### Fixing a bug the owner reports
 
-Sync upstream first (owner decision, 2026-10-31): steps 1 and 2 below, before reading the bug's code. Upstream may already have fixed it, and the fix then lands on the code that will ship. Deploy the sync and the fix together, then carry on as usual.
+Sync upstream first (owner decision, 2026-10-31): steps 1 and 2 below, before reading the bug's code. Upstream may already have fixed it, and the fix then lands on the code that will ship. This holds for fork-only bugs too, such as a missing translation (owner, 2026-10-31): the sync is required, not only a way to find an upstream fix. Deploy the sync and the fix together, then carry on as usual.
 
 ### Syncing upstream
 
