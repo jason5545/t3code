@@ -1,5 +1,9 @@
 {
   "claudeSystemAppendBytes": 5129,
   "codexAdditionalContextBytes": 6859,
+<<<<<<< HEAD
   "mcpToolListJsonBytes": 47566
+=======
+  "mcpToolListJsonBytes": 46109
+>>>>>>> upstream/main
 }

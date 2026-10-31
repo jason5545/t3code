@@ -3397,7 +3397,11 @@ export const layer = Layer.unwrap(
           () =>
             Effect.raceFirst(
               rpcWebSocketHttpEffect,
+<<<<<<< HEAD
               sessions.awaitInvalidation(session.sessionId, renewal).pipe(
+=======
+              sessions.awaitInvalidation(session.sessionId, session.proofKeyThumbprint).pipe(
+>>>>>>> upstream/main
                 Effect.as(HttpServerResponse.empty()),
                 Effect.catchTags({
                   SessionCredentialVerificationError: (error) =>
