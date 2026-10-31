@@ -8030,5 +8030,17 @@
   "Compact {tokens}": "壓縮 {tokens}",
   "Keep {tokens}": "保留 {tokens}",
   "Next send compacts {tokens} tokens first. Tap to keep full history": "下次傳送前會先壓縮 {tokens} 個 token。點一下改為保留完整歷史",
-  "Next send keeps all {tokens} tokens. Tap to compact first": "下次傳送會保留全部 {tokens} 個 token。點一下改為先壓縮"
+  "Next send keeps all {tokens} tokens. Tap to compact first": "下次傳送會保留全部 {tokens} 個 token。點一下改為先壓縮",
+  "Enjoying T3 Code?": "喜歡 T3 Code 嗎？",
+  "Give us a star on GitHub to let us know!": "在 GitHub 給我們一顆星，讓我們知道！",
+  "Star on GitHub": "在 GitHub 加星",
+  "Could not write a review guide": "無法撰寫審查指南",
+  "Could not rewrite this guide. {FAILURE_HINT}": "無法重寫這份指南。{FAILURE_HINT}",
+  "Destination": "目的地",
+  "Each run starts a new thread with the workspace and model below.": "每次執行都會用下方的工作區和模型開一個新對話。",
+  "Thread {ref.threadId}": "對話 {ref.threadId}",
+  "Each run continues this conversation, in its workspace and with its current model.": "每次執行都會接續這個對話，沿用它的工作區和目前的模型。",
+  "Assembly": "組合語言",
+  ", messages queued to send": "，有訊息排隊等待送出",
+  ", regenerating title": "，正在重新產生標題"
 }
