@@ -215,9 +215,9 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 
 This checkout is `jason5545/t3code`. Upstream owns everything above; keep fork notes in this last section so upstream merges do not conflict with them. Fork patches, build recipes and the deployment record live in [patches.md](patches.md). Commit and push straight to `origin main`; this fork does not use PRs or feature branches.
 
-### Fixing a bug the owner reports
+### Every change starts with a sync
 
-Sync upstream first (owner decision, 2026-10-31): steps 1 and 2 below, before reading the bug's code. Upstream may already have fixed it, and the fix then lands on the code that will ship. This holds for fork-only bugs too, such as a missing translation (owner, 2026-10-31): the sync is required, not only a way to find an upstream fix. Deploy the sync and the fix together, then carry on as usual.
+Any change to the fork, whether a bug fix, a translation or an update, starts by syncing upstream: steps 1 and 2 below, before reading the code you will change (owner decision, 2026-10-31). It is required every time, not only when upstream might already have fixed the problem; the change then lands on the code that will ship. Deploy the sync and the change together, then carry on as usual.
 
 ### Syncing upstream
 
