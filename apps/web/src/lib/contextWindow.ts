@@ -1,6 +1,5 @@
-import type { ThreadStructure, ThreadStructureTurnItem } from "@t3tools/client-runtime/state/shell";
+import type { ThreadStructureTurnItem } from "@t3tools/client-runtime/state/shell";
 import type {
-  OrchestrationV2ProviderTurn,
   OrchestrationV2ProviderTurnTokenUsage,
   OrchestrationV2ProviderThread,
   ThreadTokenUsageSnapshot,
@@ -23,36 +22,6 @@ export type ContextWindowSnapshot = NullableContextWindowUsage & {
   readonly remainingPercentage: number | null;
   readonly updatedAt: string;
 };
-
-/** Newest report by timestamp; snapshots order turns by provider thread. */
-export function latestProviderTurnTokenUsage(
-  turns: ReadonlyArray<Pick<OrchestrationV2ProviderTurn, "tokenUsage">>,
-  projection?: Pick<ThreadStructure, "thread" | "contextTransfers"> | null,
-  providerThread?: Pick<OrchestrationV2ProviderThread, "contextUsage"> | null,
-): OrchestrationV2ProviderTurnTokenUsage | null {
-  let latest: OrchestrationV2ProviderTurnTokenUsage | null = null;
-  for (const { tokenUsage } of turns) {
-    if (tokenUsage === undefined) continue;
-    // Ties go to the later entry, since live upserts append.
-    if (latest === null || Date.parse(tokenUsage.updatedAt) >= Date.parse(latest.updatedAt)) {
-      latest = tokenUsage;
-    }
-  }
-  if (latest !== null || projection == null || providerThread?.contextUsage != null) return latest;
-  const forkedFrom = projection.thread.forkedFrom;
-  if (forkedFrom?.type !== "run") return null;
-  return (
-    projection.contextTransfers.find(
-      (transfer) =>
-        transfer.type === "fork" &&
-        transfer.targetThreadId === projection.thread.id &&
-        transfer.sourceThreadId === forkedFrom.threadId &&
-        transfer.sourcePoint.runId === forkedFrom.runId &&
-        transfer.sourceProviderInstanceId === projection.thread.modelSelection.instanceId &&
-        (transfer.status === "pending" || transfer.resolution?.strategy === "native_fork"),
-    )?.sourceTokenUsage ?? null
-  );
-}
 
 export function deriveLatestContextWindowSnapshot(
   entries: ReadonlyArray<{

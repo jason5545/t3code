@@ -83,6 +83,8 @@ import {
   resolveThreadOutboxDispatchStep,
   resolveThreadOutboxFailureAction,
   resolveQueuedThreadSettings,
+  resumeCompactionSendFields,
+  resumeCompactionTurnMessage,
   shouldRetryThreadOutboxDelivery,
   type QueuedThreadMessage,
 } from "./thread-outbox-model";
@@ -1330,5 +1332,59 @@ describe("thread outbox", () => {
         interrupted: false,
       }),
     ).toBe("restore");
+  });
+});
+
+describe("resume compaction on mobile sends", () => {
+  const sendFields = (input: {
+    readonly tokens: number | null;
+    readonly keepFullHistory?: boolean;
+    readonly text?: string;
+  }) =>
+    resumeCompactionSendFields({
+      resumeCompactionTokens: input.tokens,
+      keepFullHistory: input.keepFullHistory ?? false,
+      text: input.text ?? "back again",
+      attachmentCount: 0,
+    });
+
+  it("queues a send into a stale session behind a compaction", () => {
+    expect(sendFields({ tokens: 293_611 })).toEqual({
+      compactBeforeSend: true,
+      dispatchMode: "queue",
+    });
+  });
+
+  it("leaves a fresh session, a kept history and a typed /compact alone", () => {
+    expect(sendFields({ tokens: null })).toBeNull();
+    expect(sendFields({ tokens: 293_611, keepFullHistory: true })).toBeNull();
+    expect(sendFields({ tokens: 293_611, text: "/compact" })).toBeNull();
+  });
+
+  it("keeps the flag in storage and resends the same /compact command on retry", () => {
+    const message = queuedMessage({
+      messageId: "message-1",
+      createdAt: "2026-10-31T00:00:00.000Z",
+    });
+    const stored = decodeQueuedThreadMessage(
+      JSON.parse(
+        JSON.stringify(
+          encodeQueuedThreadMessage({ ...message, compactBeforeSend: true, dispatchMode: "queue" }),
+        ),
+      ),
+    );
+    const first = resumeCompactionTurnMessage(stored);
+    expect(first).toEqual({
+      commandId: "command-message-1:compact",
+      message: {
+        messageId: "message-1:compact",
+        role: "user",
+        text: "/compact",
+        attachments: [],
+        idleCompaction: "onReturn",
+      },
+    });
+    expect(resumeCompactionTurnMessage(stored)).toEqual(first);
+    expect(resumeCompactionTurnMessage(message)).toBeNull();
   });
 });

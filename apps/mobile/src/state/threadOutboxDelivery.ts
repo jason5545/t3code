@@ -62,6 +62,7 @@ import {
   resolveThreadOutboxDispatchStep,
   resolveThreadOutboxFailureAction,
   resolveQueuedThreadSettings,
+  resumeCompactionTurnMessage,
   shouldRetryThreadOutboxDelivery,
   threadOutboxRetryDelayMs,
   type QueuedThreadCreation,
@@ -864,6 +865,30 @@ export function createThreadOutboxDelivery(): {
       settings,
       currentConfig.providers,
     );
+    const compaction = resumeCompactionTurnMessage(queuedMessage);
+    if (compaction !== null) {
+      if (!hasAccess()) return true;
+      const compactionResult = await runDeliveryCommand(threadEnvironment.startTurn, {
+        environmentId: queuedMessage.environmentId,
+        input: {
+          commandId: compaction.commandId,
+          creationSource: "mobile",
+          threadId: queuedMessage.threadId,
+          message: compaction.message,
+          modelSelection: sendSettings.modelSelection,
+          runtimeMode: sendSettings.runtimeMode,
+          interactionMode: sendSettings.interactionMode,
+          createdAt: queuedMessage.createdAt,
+        },
+      });
+      if (AsyncResult.isFailure(compactionResult) && !hasAccess()) return true;
+      const compactionFailure = reportCommandFailure(queuedMessage, compactionResult, "start-turn");
+      if (compactionFailure !== null) {
+        return compactionFailure.action === "retry"
+          ? false
+          : restoreQueuedMessage(persistedMessage, compactionFailure.message);
+      }
+    }
     if (!hasAccess()) return true;
     const deliveryResult = await runDeliveryCommand(threadEnvironment.startTurn, {
       environmentId: queuedMessage.environmentId,

@@ -351,6 +351,10 @@
       "types": "./src/state/composerDispatch.ts",
       "default": "./src/state/composerDispatch.ts"
     },
+    "./state/resume-compaction": {
+      "types": "./src/state/resumeCompaction.ts",
+      "default": "./src/state/resumeCompaction.ts"
+    },
     "./state/thread-subagents": {
       "types": "./src/state/threadSubagents.ts",
       "default": "./src/state/threadSubagents.ts"
