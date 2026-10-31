@@ -122,6 +122,7 @@
     "apps/web/src/components/RightPanelTabs.tsx",
     "apps/web/src/components/ephemeralThreadText.ts",
     "apps/mobile/src/features/threads/ephemeralThreadText.ts",
-    "apps/mobile/src/features/threads/ThreadDetailScreen.tsx"
+    "apps/mobile/src/features/threads/ThreadDetailScreen.tsx",
+    "apps/web/src/components/usage/UsagePage.tsx"
   ]
 }
