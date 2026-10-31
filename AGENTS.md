@@ -215,6 +215,10 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 
 This checkout is `jason5545/t3code`. Upstream owns everything above; keep fork notes in this last section so upstream merges do not conflict with them. Fork patches, build recipes and the deployment record live in [patches.md](patches.md). Commit and push straight to `origin main`; this fork does not use PRs or feature branches.
 
+### Fixing a bug the owner reports
+
+Sync upstream first (owner decision, 2026-10-31): steps 1 and 2 below, before reading the bug's code. Upstream may already have fixed it, and the fix then lands on the code that will ship. Deploy the sync and the fix together, then carry on as usual.
+
 ### Syncing upstream
 
 A sync is finished only when the agent-hub server runs the synced commit and the record is pushed:
