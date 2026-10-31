@@ -234,8 +234,10 @@ describe("autoTranslate", () => {
       `const SORT_ORDER_LABELS = { manual: "Cancel", recent: "Undo" } as const;`,
       `const toolbarTitles: Record<string, string> = { a: "Cancel" };`,
       `const ROUTES = { cancel: "Cancel" };`,
+      `const select = <Select items={{ undo: "Undo" }} />;`,
     ].join("\n");
     const output = transform(source);
+    expect(output).toContain(`undo: __t3_t("Undo", "復原")`);
     expect(output).toContain(`manual: __t3_t("Cancel", "取消")`);
     expect(output).toContain(`recent: __t3_t("Undo", "復原")`);
     expect(output).toContain(`a: __t3_t("Cancel", "取消")`);

@@ -394,6 +394,16 @@ module.exports = function autoTranslate(babel, options) {
       const name = path.node.name.type === "JSXIdentifier" ? path.node.name.name : "";
       if (DATA_PROPERTIES.has(name)) return;
       const value = path.get("value");
+      // Base UI Select's `items={{ value: "Label" }}` is the text its trigger shows.
+      if (name === "items" && value.isJSXExpressionContainer()) {
+        const table = value.get("expression");
+        if (!table.isObjectExpression()) return;
+        for (const property of table.get("properties")) {
+          if (property.isObjectProperty() && property.get("value").isStringLiteral())
+            translateValue(state, property.get("value"), "attr:items");
+        }
+        return;
+      }
       if (!DISPLAY_ATTRIBUTE.test(name)) {
         // Display files also pass sentences through props such as `value` on settings rows.
         if (!state.displayFile) return;
