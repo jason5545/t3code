@@ -1,7 +1,6 @@
 import { View } from "react-native";
 
 import { Chip } from "../../components/ui/Chip";
-import { useChinese } from "../../locale/autoTranslateRuntime";
 
 /** Fork patch 26: web's "When you return" compaction for the next mobile send. */
 export interface ResumeCompactionControl {
@@ -16,20 +15,8 @@ function formatTokens(tokens: number): string {
     : `${(tokens / 1_000_000).toFixed(1).replace(/\.0$/, "")}m`;
 }
 
-// The build-time translation pass keeps template values as they are, so the language is picked here.
 function chipText(control: ResumeCompactionControl) {
   const tokens = formatTokens(control.tokens);
-  if (useChinese) {
-    return control.keepFullHistory
-      ? {
-          label: `保留 ${tokens}`,
-          accessibilityLabel: `下次傳送會保留全部 ${tokens} 個 token。點一下改為先壓縮`,
-        }
-      : {
-          label: `壓縮 ${tokens}`,
-          accessibilityLabel: `下次傳送前會先壓縮 ${tokens} 個 token。點一下改為保留完整歷史`,
-        };
-  }
   return control.keepFullHistory
     ? {
         label: `Keep ${tokens}`,
