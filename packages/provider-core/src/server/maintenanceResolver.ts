@@ -91,6 +91,8 @@ export interface PackageManagedProviderMaintenanceDefinition {
     readonly env?:
       | NodeJS.ProcessEnv
       | ((context: ProviderMaintenanceResolutionContext) => NodeJS.ProcessEnv);
+    /** For updaters on their own release channel; `null` from it means the latest is unknown. */
+    readonly lookupLatestVersion?: Effect.Effect<string | null>;
   } | null;
 }
 
@@ -460,6 +462,9 @@ export const resolvePackageManagedProviderMaintenance = Effect.fn(
         platform: context.platform,
         ...(nativeEnv
           ? { env: typeof nativeEnv === "function" ? nativeEnv(context) : nativeEnv }
+          : {}),
+        ...(nativeUpdate.lookupLatestVersion
+          ? { latestVersion: null, lookupLatestVersion: nativeUpdate.lookupLatestVersion }
           : {}),
       })
     : manual;

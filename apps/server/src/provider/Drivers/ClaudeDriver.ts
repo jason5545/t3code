@@ -60,6 +60,7 @@ import {
   makeClaudeContinuationGroupKey,
   resolveClaudeHomePath,
 } from "./ClaudeHome.ts";
+import { lookupClaudeNativeLatestVersion } from "./ClaudeNativeRelease.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 const decodeClaudeSettings = Schema.decodeSync(ClaudeSettings);
 
@@ -81,14 +82,16 @@ function isClaudeNativeCommandPath(commandPath: string): boolean {
   );
 }
 
-const UPDATE = makePackageManagedProviderMaintenanceResolver({
-  provider: DRIVER_KIND,
-  npmPackageName: "@anthropic-ai/claude-code",
-  nativeUpdate: {
-    args: ["update"],
-    isCommandPath: isClaudeNativeCommandPath,
-  },
-});
+const makeUpdate = (lookupLatestVersion: Effect.Effect<string | null>) =>
+  makePackageManagedProviderMaintenanceResolver({
+    provider: DRIVER_KIND,
+    npmPackageName: "@anthropic-ai/claude-code",
+    nativeUpdate: {
+      args: ["update"],
+      isCommandPath: isClaudeNativeCommandPath,
+      lookupLatestVersion,
+    },
+  });
 
 export type ClaudeDriverEnv =
   | ClaudeAdapterV2DriverEnv
@@ -144,8 +147,19 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
       enabled,
       binaryPath: expandHomePath(config.binaryPath, yield* HostProcess.HomeDirectory),
     } satisfies ClaudeSettings;
+    // The updater runs with the server's env, so it reads the server's Claude settings.
+    const updateSettingsPath = path.join(
+      yield* resolveClaudeHomePath({ homePath: "" }, yield* HostProcess.Environment),
+      "settings.json",
+    );
+    const update = makeUpdate(
+      lookupClaudeNativeLatestVersion(updateSettingsPath).pipe(
+        Effect.provideService(FileSystem.FileSystem, fileSystem),
+        Effect.provideService(HttpClient.HttpClient, httpClient),
+      ),
+    );
     const resolveMaintenance = yield* makeCachedProviderMaintenanceResolution(
-      resolveProviderMaintenanceCapabilitiesEffect(UPDATE, {
+      resolveProviderMaintenanceCapabilitiesEffect(update, {
         binaryPath: effectiveConfig.binaryPath,
         env: processEnv,
       }).pipe(
