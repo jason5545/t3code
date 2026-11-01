@@ -6,6 +6,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import type * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as TestClock from "effect/testing/TestClock";
 
@@ -124,7 +125,7 @@ const signIn = (request: HttpServerRequest.HttpServerRequest, redirect = LOOPBAC
         redirect_uri: redirect,
         code_challenge: challenge,
         code_challenge_method: "S256",
-        state: "state-1",
+        state: Redacted.make("state-1"),
       },
     });
     const approved = yield* oauth.approveOverTailscale(request, authorization);
@@ -135,10 +136,10 @@ const signIn = (request: HttpServerRequest.HttpServerRequest, redirect = LOOPBAC
       urls,
       token: {
         grant_type: "authorization_code",
-        code,
+        code: Redacted.make(code),
         redirect_uri: redirect,
         client_id: client.clientId,
-        code_verifier: verifier,
+        code_verifier: Redacted.make(verifier),
       },
     });
     return Option.some({ redirect: approved.value, token: token.access_token });

@@ -592,6 +592,6 @@
       "denied"
     ],
     "packages/client-runtime/src/state/threadShell.ts": ["side chat", "subagent"],
-    "apps/web/src/components/chat/TraitsPicker.tsx": ["none"]
+    "apps/web/src/components/chat/TraitsPicker.tsx": ["body", "none", "prefix", "ultrathink"]
   }
 }
