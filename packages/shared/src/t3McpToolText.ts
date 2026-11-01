@@ -19,6 +19,8 @@ const PR = { target: "提取請求" } as const;
 const TOOLS: Readonly<Record<string, ToolText>> = {
   link_pull_request: { phrase: "連結{target}", ...PR },
   unlink_pull_request: { phrase: "取消連結{target}", ...PR },
+  link_pull_requests: { phrase: "連結提取請求" },
+  unlink_pull_requests: { phrase: "依狀態取消連結提取請求" },
   list_thread_pull_requests: { phrase: "查看已連結的提取請求" },
   watch_pull_request: { phrase: "監看{target}", completed: "已開始監看{target}", ...PR },
   unwatch_pull_request: { phrase: "停止監看{target}", ...PR },
@@ -289,6 +291,7 @@ const OBJECTS: Readonly<Record<string, string>> = {
   "worktree status": "工作樹狀態",
   "device controls": "裝置控制",
   "review guides": "審查指南",
+  "pull requests": "提取請求",
   "thread model": "對話模型",
   "task status": "任務狀態",
   "background waits": "背景等候",

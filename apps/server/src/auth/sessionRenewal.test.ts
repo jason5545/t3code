@@ -24,6 +24,7 @@ import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
 
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
@@ -357,6 +358,7 @@ const withAuthRoutes = (
       Layer.provide(AuthHttp.layerAuthenticatedAuth),
       Layer.provideMerge(
         EnvironmentAuth.layer.pipe(
+          Layer.provide(ManagedPolicy.layerTest()),
           Layer.provide(SqlitePersistence.layerMemory),
           Layer.provide(ServerSecretStore.layer),
           Layer.provide(ServerEnvironment.layerIdentity),
@@ -436,6 +438,7 @@ it.effect("resets the browser cookie's deadline when a socket ticket renews its 
 );
 
 const layerAuth = EnvironmentAuth.layer.pipe(
+  Layer.provide(ManagedPolicy.layerTest()),
   Layer.provideMerge(SqlitePersistence.layerMemory),
   Layer.provide(ServerSecretStore.layer),
   Layer.provideMerge(ServerEnvironment.layerIdentity),

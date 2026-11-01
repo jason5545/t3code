@@ -35,6 +35,7 @@ import * as SqlSchema from "effect/sql/SqlSchema";
 
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as ManagedLimits from "../policy/managedLimits.ts";
 import { DESKTOP_RENDERER_ORIGINS } from "../httpCors.ts";
 import * as AuthSessions from "../persistence/AuthSessions.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
@@ -464,6 +465,7 @@ export class TailscalePairing extends Context.Service<
       | TailscalePairingRefusedError
       | TailscalePairingStoreError
       | EnvironmentAuth.ServerAuthInternalError
+      | ManagedLimits.ManagedPolicyRefusedError
     >;
     /**
      * The access an MCP sign-in from an allowed tagged node gets without a

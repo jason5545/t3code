@@ -80,4 +80,6 @@ export interface SelectableMarkdownTextProps {
   readonly contextMenuItems?: import("react-native-enriched-markdown").TextContextMenuItem[];
   readonly marginTop?: number;
   readonly marginBottom?: number;
+  readonly writingDirection?: "ltr" | "rtl";
+  readonly textAlign?: "left" | "right";
 }

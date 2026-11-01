@@ -2,6 +2,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
@@ -43,7 +44,12 @@ function makeProcess(output: string): ChildProcessSpawner.ChildProcessHandle {
   });
 }
 
-function installFromLoginShell(env: NodeJS.ProcessEnv, shellOutput: string) {
+function runFromLoginShell(
+  env: NodeJS.ProcessEnv,
+  shellOutput: string,
+  stateDir: string,
+  wait: "discovery" | "install",
+) {
   const layer = DesktopShellEnvironment.layer.pipe(
     Layer.provide(
       Layer.mergeAll(
@@ -51,19 +57,25 @@ function installFromLoginShell(env: NodeJS.ProcessEnv, shellOutput: string) {
           DesktopEnvironment.DesktopEnvironment,
           DesktopEnvironment.DesktopEnvironment.of({
             platform: "darwin",
+            stateDir,
+            homeDirectory: "/test-home",
           } as DesktopEnvironment.DesktopEnvironment["Service"]),
         ),
         NodeServices.layer,
         Layer.succeed(
           ChildProcessSpawner.ChildProcessSpawner,
-          ChildProcessSpawner.make(() => Effect.succeed(makeProcess(shellOutput))),
+          ChildProcessSpawner.make(() =>
+            wait === "install" ? Effect.never : Effect.succeed(makeProcess(shellOutput)),
+          ),
         ),
       ),
     ),
   );
   const program = Effect.gen(function* () {
     const shellEnvironment = yield* DesktopShellEnvironment.DesktopShellEnvironment;
-    return yield* shellEnvironment.installIntoProcess;
+    return yield* wait === "install"
+      ? shellEnvironment.installIntoProcess
+      : shellEnvironment.awaitDiscovery;
   }).pipe(Effect.provide(layer));
 
   return Effect.acquireUseRelease(
@@ -85,46 +97,60 @@ function installFromLoginShell(env: NodeJS.ProcessEnv, shellOutput: string) {
   );
 }
 
+const FORK_SHELL_OUTPUT = envOutput({
+  PATH: "/opt/homebrew/bin:/usr/bin",
+  T3CODE_CONTEXT_HANDOFF_TOKEN_CAP: "48000",
+  T3CODE_TAILSCALE_MCP_OWNER_ACCESS: "full-access",
+  T3CODE_TAILSCALE_PAIRING: "true",
+});
+
 describe("DesktopShellEnvironment (fork)", () => {
   it.effect(
     "hydrates the provider handoff budget, owner MCP access and Tailscale pairing from the login shell",
     () =>
       Effect.gen(function* () {
+        const stateDir = yield* (yield* FileSystem.FileSystem).makeTempDirectoryScoped();
         const env: NodeJS.ProcessEnv = { SHELL: "/bin/zsh", PATH: "/usr/bin" };
 
-        yield* installFromLoginShell(
-          env,
-          envOutput({
-            PATH: "/opt/homebrew/bin:/usr/bin",
-            T3CODE_CONTEXT_HANDOFF_TOKEN_CAP: "48000",
-            T3CODE_TAILSCALE_MCP_OWNER_ACCESS: "full-access",
-            T3CODE_TAILSCALE_PAIRING: "true",
-          }),
-        );
+        yield* runFromLoginShell(env, FORK_SHELL_OUTPUT, stateDir, "discovery");
 
         assert.equal(env.T3CODE_CONTEXT_HANDOFF_TOKEN_CAP, "48000");
         assert.equal(env.T3CODE_TAILSCALE_MCP_OWNER_ACCESS, "full-access");
         assert.equal(env.T3CODE_TAILSCALE_PAIRING, "true");
-      }),
+      }).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  it.effect("restores them from the shell cache before the backend starts", () =>
+    Effect.gen(function* () {
+      const stateDir = yield* (yield* FileSystem.FileSystem).makeTempDirectoryScoped();
+      yield* runFromLoginShell(
+        { SHELL: "/bin/zsh", PATH: "/usr/bin" },
+        FORK_SHELL_OUTPUT,
+        stateDir,
+        "discovery",
+      );
+      const env: NodeJS.ProcessEnv = { SHELL: "/bin/zsh", PATH: "/usr/bin" };
+
+      assert.isTrue(yield* runFromLoginShell(env, "", stateDir, "install"));
+
+      assert.equal(env.T3CODE_CONTEXT_HANDOFF_TOKEN_CAP, "48000");
+      assert.equal(env.T3CODE_TAILSCALE_MCP_OWNER_ACCESS, "full-access");
+      assert.equal(env.T3CODE_TAILSCALE_PAIRING, "true");
+    }).pipe(Effect.provide(NodeServices.layer)),
   );
 
   it.effect("keeps an inherited provider handoff budget", () =>
     Effect.gen(function* () {
+      const stateDir = yield* (yield* FileSystem.FileSystem).makeTempDirectoryScoped();
       const env: NodeJS.ProcessEnv = {
         SHELL: "/bin/zsh",
         PATH: "/usr/bin",
         T3CODE_CONTEXT_HANDOFF_TOKEN_CAP: "32000",
       };
 
-      yield* installFromLoginShell(
-        env,
-        envOutput({
-          PATH: "/opt/homebrew/bin:/usr/bin",
-          T3CODE_CONTEXT_HANDOFF_TOKEN_CAP: "48000",
-        }),
-      );
+      yield* runFromLoginShell(env, FORK_SHELL_OUTPUT, stateDir, "discovery");
 
       assert.equal(env.T3CODE_CONTEXT_HANDOFF_TOKEN_CAP, "32000");
-    }),
+    }).pipe(Effect.provide(NodeServices.layer)),
   );
 });

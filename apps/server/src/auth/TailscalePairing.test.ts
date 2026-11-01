@@ -12,6 +12,7 @@ import * as TestClock from "effect/testing/TestClock";
 
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
@@ -187,6 +188,7 @@ const layerTest = (
     ),
     Layer.provideMerge(layerAuth),
     Layer.provideMerge(TestClock.layer()),
+    Layer.provideMerge(ManagedPolicy.layerTest()),
   );
 
 const direct = (peerAddress: string, headers: Record<string, string> = {}) => ({

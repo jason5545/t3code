@@ -18,6 +18,13 @@ function logPathHydrationWarning(message: string, error?: unknown): void {
   );
 }
 
+// Fork patch 17: a desktop launch without a shell cache gets these from here before startup.
+const FORK_LOGIN_SHELL_ENV_NAMES = [
+  "T3CODE_CONTEXT_HANDOFF_TOKEN_CAP",
+  "T3CODE_TAILSCALE_MCP_OWNER_ACCESS",
+  "T3CODE_TAILSCALE_PAIRING",
+] as const;
+
 function hydratePosixPath(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): void {
   let shellEnvironment: Partial<Record<string, string>> = {};
   for (const shell of listLoginShellCandidates(platform, env.SHELL)) {
@@ -25,7 +32,12 @@ function hydratePosixPath(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): vo
       // mise's record of the PATH entries it added. It must travel with the
       // shell's PATH, or `mise x` can rebuild PATH behind a same-named wrapper
       // (`exec mise x claude -- claude`) that then re-runs itself forever.
-      shellEnvironment = readEnvironmentFromLoginShell(shell, ["PATH", "__MISE_DIFF", "JAVA_HOME"]);
+      shellEnvironment = readEnvironmentFromLoginShell(shell, [
+        "PATH",
+        "__MISE_DIFF",
+        "JAVA_HOME",
+        ...FORK_LOGIN_SHELL_ENV_NAMES,
+      ]);
     } catch (error) {
       logPathHydrationWarning(`Failed to read PATH from login shell ${shell}.`, error);
     }
@@ -46,6 +58,9 @@ function hydratePosixPath(env: NodeJS.ProcessEnv, platform: NodeJS.Platform): vo
   // is only reachable through the JAVA_HOME the shell profile sets.
   if (!env.JAVA_HOME && shellEnvironment.JAVA_HOME) {
     env.JAVA_HOME = shellEnvironment.JAVA_HOME;
+  }
+  for (const name of FORK_LOGIN_SHELL_ENV_NAMES) {
+    if (!env[name] && shellEnvironment[name]) env[name] = shellEnvironment[name];
   }
 }
 

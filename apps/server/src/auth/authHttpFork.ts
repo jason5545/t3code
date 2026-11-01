@@ -71,6 +71,8 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
       TailscalePairingRefusedError: (error) => failPairingRefused(error.reason),
       TailscalePairingStoreError: (error) =>
         helpers.failEnvironmentInternal("pairing_credential_issuance_failed", error),
+      // A managed policy that allows no remote clients refuses this like pairing turned off.
+      ManagedPolicyRefusedError: () => failPairingRefused("disabled"),
     }),
     Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
       helpers.failEnvironmentInternal("pairing_credential_issuance_failed", error),

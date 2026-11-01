@@ -12,6 +12,7 @@ import * as TestClock from "effect/testing/TestClock";
 
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
+import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import * as McpHttpServer from "../mcp/McpHttpServer.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
@@ -122,6 +123,7 @@ const layerTest = (ownerAccess: string | undefined) =>
       ),
     ),
     Layer.provideMerge(TestClock.layer()),
+    Layer.provideMerge(ManagedPolicy.layerTest()),
   );
 
 const fakeRequest = (peerAddress: string, headers: Record<string, string> = {}) =>

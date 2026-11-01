@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `575579d68a` (merged 2026-11-01).
+Upstream baseline: `fa31b66bbb` (merged 2026-11-02).
 
 ## 1. OMP provider
 
@@ -131,7 +131,7 @@ Upstream baseline: `575579d68a` (merged 2026-11-01).
 
 ## 17. Desktop imports the provider handoff budget from the login shell
 
-- The desktop app copies only the names in `LOGIN_SHELL_ENV_NAMES` and its hydration list (`apps/desktop/src/shell/DesktopShellEnvironment.ts`) from the login shell into the server's environment, so a `T3CODE_CONTEXT_HANDOFF_TOKEN_CAP` exported in the shell profile never reached the Mac server. The name sits after `T3CODE_TELEMETRY_ENABLED` in both lists, followed by patch 22's `T3CODE_TAILSCALE_MCP_OWNER_ACCESS` and patch 7's `T3CODE_TAILSCALE_PAIRING`; an inherited value still wins. `DesktopShellEnvironment.fork.test.ts` covers it. Drop this section if upstream forwards the variable.
+- The desktop app copies only the names in `LOGIN_SHELL_ENV_NAMES` and its hydration list (`apps/desktop/src/shell/DesktopShellEnvironment.ts`) from the login shell into the server's environment, so a `T3CODE_CONTEXT_HANDOFF_TOKEN_CAP` exported in the shell profile never reached the Mac server. The name sits after `T3CODE_TELEMETRY_ENABLED` in both lists, followed by patch 22's `T3CODE_TAILSCALE_MCP_OWNER_ACCESS` and patch 7's `T3CODE_TAILSCALE_PAIRING`; an inherited value still wins. Since upstream #28556 the desktop no longer waits for the login shell: it applies `shell-environment-cache.json` to its own environment before the server starts, then discovers in the background and sends the server a `ShellEnvironmentPatch`. Only patch fields reach the environment, so the three names are also in `ShellEnvironmentPatch` (`contracts/src/resourceTelemetry.ts`) and `CACHED_ENV_NAMES`. The server reads them once at startup, so on a launch with no cache (section 28) the server's own PATH hydration (`hydratePosixPath` in `apps/server/src/os-jank.ts`) reads them from the login shell too. `DesktopShellEnvironment.fork.test.ts` covers discovery, the cache and an inherited value. Drop this section if upstream forwards the variables.
 
 ## 18. Web compaction counts unloaded history
 
@@ -190,11 +190,16 @@ Upstream baseline: `575579d68a` (merged 2026-11-01).
 - `ClaudeNativeRelease.ts` reads that bucket; the driver hands it to provider-core as `nativeUpdate.lookupLatestVersion`, which the native capabilities use with `latestVersion: null`, so a failed lookup reports an unknown latest instead of falling back to npm. npm, pnpm, bun and Homebrew installs are unchanged. Managed settings are not read.
 - Upstream issue #26400 covers the stable half; its open PR #26518 adds the same `lookupLatestVersion` field but reads npm's `stable` dist-tag, which does not match the bucket either. The owner had the bucket evidence posted there on 2026-10-31 ([comment](https://github.com/pingdotgg/t3code/pull/26518#issuecomment-6537674658)); replies reach only the jason5545 account. When upstream merges a fix that compares native installs against the bucket, take upstream's version and drop this section. `maintenanceResolver.fork.test.ts` and `ClaudeNativeRelease.fork.test.ts` cover it.
 
+## 28. A desktop launch without a shell cache hydrates PATH itself (upstream PR #28904)
+
+- Upstream #28556 made desktop startup skip the login shell, but `installIntoProcess` told the server the environment was prepared even when no cache matched, so the first launch after updating to it started the server with launchd's `PATH=/usr/bin:/bin:/usr/sbin:/sbin` and every provider CLI read "not found on PATH" until a relaunch (upstream issues #28714 and #28890).
+- The fork carries the maintainers' open fix, #28904 at `66e24d0c57`: only `DesktopShellEnvironment.ts`, where `installIntoProcess` reports prepared only when it applied a matching cache. Its test edits stay in upstream's test file; they failed four cases before and passed all 21 after. #28719 is an earlier version of the same fix. Drop this section when upstream merges either.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
 - Exception: the two Pi adapter cases (OMP todo list, usage kept on Stop) stay in `packages/provider-pi/src/server/adapter.test.ts`, because copying upstream's FakePi harness would take about 520 lines for two tests.
-- Exception: `agentContextBudget.json` holds the fork's sizes: its MCP tool list is 47,566 bytes against upstream's 46,007, from the fork's extra tools. Upstream's `AgentContextBudget.test.ts` (#25785) still mocks `ProviderUsage` from before section 19 read it optionally. When a merge touches either file, run the test and copy the measured values it prints.
+- Exception: `agentContextBudget.json` holds the fork's sizes: its MCP tool list is 49,097 bytes against upstream's 47,538, from the fork's extra tools. Upstream's `AgentContextBudget.test.ts` (#25785) still mocks `ProviderUsage` from before section 19 read it optionally. When a merge touches either file, run the test and copy the measured values it prints.
 - Exception: upstream's mobile `ConnectionsNewRouteScreen.test.tsx` mocks `./TailnetServerSection` (one line), because patch 7's add-screen section loads the connection runtime, which needs Expo's `__DEV__`.
 - A copied harness does not follow upstream. When upstream changes the code under test, the fork file fails to compile or its test fails; fix it there.
 
