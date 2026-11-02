@@ -4,7 +4,7 @@ import * as DateTime from "effect/DateTime";
 import { DEFAULT_SNOOZE_PRESETS, type SnoozePresetSetting } from "@t3tools/contracts/settings";
 
 import type { EnvironmentThreadShell, PendingSubagentRequest } from "./models.ts";
-import { localizedSnoozeWeekday } from "./snoozeWeekdayText.ts";
+import { localizedSnoozeDuration, localizedSnoozeWeekday } from "./snoozeWeekdayText.ts";
 
 interface SettlementRunLike {
   readonly turnId?: unknown;
@@ -216,6 +216,8 @@ function pluralize(count: number, unit: string): string {
 
 /** "3 hours", "90 minutes", "2 days": the largest unit that divides evenly. */
 function formatSnoozeDuration(minutes: number): string {
+  const localized = localizedSnoozeDuration(minutes);
+  if (localized !== null) return localized;
   if (minutes % (24 * 60) === 0) return pluralize(minutes / (24 * 60), "day");
   if (minutes % 60 === 0) return pluralize(minutes / 60, "hour");
   return pluralize(minutes, "minute");
