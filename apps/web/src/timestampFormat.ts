@@ -127,6 +127,9 @@ export function formatChatTimestampTooltip(
   const date = parseTimestampDate(isoDate);
   if (!date) return "";
   const time = formatShortTimestamp(isoDate, timestampFormat);
+  if (useChinese) {
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${time}`;
+  }
   const day = date.getDate();
   const month = monthNameFormatter.format(date);
   const year = date.getFullYear();
@@ -165,7 +168,7 @@ export function formatDayAwareTimestamp(
   const dayDiff = Math.round((startOfToday - startOfMessageDay) / 86_400_000);
 
   if (dayDiff <= 0) return time;
-  if (dayDiff === 1) return `yesterday at ${time}`;
+  if (dayDiff === 1) return useChinese ? `昨天 ${time}` : `yesterday at ${time}`;
   const dateFormatter =
     date.getFullYear() === now.getFullYear() ? numericDateFormatter : numericDateWithYearFormatter;
   return `${dateFormatter.format(date)} ${time}`;
@@ -187,7 +190,7 @@ export function formatUpcomingTimestamp(
 
   if (dayDiff < 0) return formatDayAwareTimestamp(isoDate, timestampFormat, nowMs);
   if (dayDiff === 0) return time;
-  if (dayDiff === 1) return `tomorrow at ${time}`;
+  if (dayDiff === 1) return useChinese ? `明天 ${time}` : `tomorrow at ${time}`;
   const dateFormatter =
     date.getFullYear() === now.getFullYear() ? numericDateFormatter : numericDateWithYearFormatter;
   return `${dateFormatter.format(date)} ${time}`;

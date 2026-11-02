@@ -6,6 +6,7 @@ import {
   type UsageSummaryInput,
 } from "@t3tools/contracts";
 
+import { usesChineseDurations } from "./durationFormat.ts";
 import type { UsageContractMismatch } from "./usageMerge.ts";
 
 const CURRENCY = new Intl.NumberFormat("en-US", {
@@ -240,8 +241,9 @@ export function formatRelativeHourShort(
   const calendarDaysAgo = Math.round((referenceDay - instantDay) / (24 * HOUR_MS));
   const hour = formatHourShort(hourStart, timeZone, hour12);
 
-  if (calendarDaysAgo === 0) return `${hour} today`;
-  if (calendarDaysAgo === 1) return `${hour} yesterday`;
+  const chinese = usesChineseDurations();
+  if (calendarDaysAgo === 0) return chinese ? `今天 ${hour}` : `${hour} today`;
+  if (calendarDaysAgo === 1) return chinese ? `昨天 ${hour}` : `${hour} yesterday`;
   return formatDateTimeShort(hourStart, timeZone, hour12);
 }
 
