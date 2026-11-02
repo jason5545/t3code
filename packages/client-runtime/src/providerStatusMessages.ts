@@ -4,6 +4,8 @@
  * check; text without a matching pattern stays English.
  */
 
+import { translateBackgroundWorkSummary } from "./state/backgroundWorkText.ts";
+
 type Rule = readonly [pattern: RegExp, chinese: (match: RegExpExecArray) => string];
 
 const NAME = String.raw`(.+?)`;
@@ -183,7 +185,7 @@ export function translateProviderStatusMessage(message: string): string | null {
     const match = pattern.exec(message);
     if (match) return chinese(match);
   }
-  return null;
+  return translateBackgroundWorkSummary(message);
 }
 
 /**

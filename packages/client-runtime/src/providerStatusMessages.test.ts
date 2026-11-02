@@ -55,6 +55,31 @@ describe("translateProviderStatusMessage", () => {
     expect(translateProviderStatusMessage("Could not link agent-fr")).toBe("無法連結 agent-fr");
   });
 
+  it("translates background work notifications and keeps their labels", () => {
+    expect(translateProviderStatusMessage('Command "vp run typecheck" finished (exit 0)')).toBe(
+      "指令「vp run typecheck」已完成（結束代碼 0）",
+    );
+    expect(translateProviderStatusMessage("Command finished")).toBe("指令已完成");
+    expect(translateProviderStatusMessage('Subagent "Review" was stopped')).toBe(
+      "子代理程式「Review」已停止",
+    );
+    expect(translateProviderStatusMessage('Monitor "logs" reported new output')).toBe(
+      "監控器「logs」有新的輸出",
+    );
+    expect(translateProviderStatusMessage("4 commands failed")).toBe("4 個指令失敗");
+    expect(
+      translateProviderStatusMessage(
+        'Command "a" (exit 1), subagent "b" and monitor "c" were stopped',
+      ),
+    ).toBe("指令「a」（結束代碼 1）、子代理程式「b」和監控器「c」已停止");
+    expect(
+      translateProviderStatusMessage('Command "a", subagent "b" and monitor "c" finished'),
+    ).toBe("指令「a」、子代理程式「b」和監控器「c」已完成");
+    expect(translateProviderStatusMessage("Command and background task finished")).toBe(
+      "指令和背景工作已完成",
+    );
+  });
+
   it("returns null for unknown text", () => {
     expect(translateProviderStatusMessage("spawn omp ENOENT")).toBeNull();
   });
