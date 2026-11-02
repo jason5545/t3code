@@ -8170,5 +8170,9 @@
   "Could not resume thread": "無法繼續對話",
   "Provider not allowed": "不允許使用此供應商",
   "{0} Choose another model.": "{0}請選擇其他模型。",
-  "Enter the full owner/repository name.": "請輸入完整的擁有者/儲存庫名稱。"
+  "Enter the full owner/repository name.": "請輸入完整的擁有者/儲存庫名稱。",
+  "Folders can only be referenced on a server running on this computer": "只有在這台電腦上執行的伺服器才能參照資料夾",
+  "Voice input": "語音輸入",
+  "Not available on this device": "這台裝置無法使用",
+  "T3 Code's voice input uses Apple's on-device speech transcription, which needs iOS 26 or later on a device that supports it. Without it, the composer has no microphone button, and allowing microphone access won't add one. Apple keyboard dictation is separate and isn't affected.": "T3 Code 的語音輸入使用 Apple 的裝置端語音轉錄，需要 iOS 26 以上且裝置支援。沒有這項功能時，輸入框不會出現麥克風按鈕，允許麥克風存取也不會多出來。Apple 鍵盤的聽寫功能是分開的，不受影響。"
 }

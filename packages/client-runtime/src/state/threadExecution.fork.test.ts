@@ -33,8 +33,8 @@ describe("presentPendingBackgroundWork in zh-TW", () => {
   });
 
   it("names a single task and falls back to the Chinese noun", () => {
-    expect(titlesIn(true, [subagent("a", "Explore")])?.title).toBe("正在等待子代理程式：Explore");
-    expect(titlesIn(true, [command("c", "vp test")])?.title).toBe("執行中：vp test");
+    expect(titlesIn(true, [subagent("a", "Explore")])?.title).toBe("等待中 · Explore");
+    expect(titlesIn(true, [command("c", "vp test")])?.title).toBe("執行中 · vp test");
     const unnamed = titlesIn(true, [command("c")]);
     expect(unnamed?.title).toBe("正在執行指令");
     expect(unnamed?.items[0]?.label).toBe("指令");

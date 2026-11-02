@@ -62,7 +62,7 @@ export const threadUndoNoticeSeparator = useChinese ? "，" : ", ";
 /** The background work banner's verb before a single task's label. */
 export function backgroundWorkVerb(waiting: boolean): string {
   if (useChinese) return waiting ? "等待中" : "執行中";
-  return waiting ? "Waiting on" : "Running";
+  return waiting ? "Waiting" : "Running";
 }
 
 /** The undo notice's button, such as "⌘Z to undo". */

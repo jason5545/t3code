@@ -31,8 +31,7 @@ export function localizedBackgroundWorkTitle(
   if (items.length === 1 && only !== undefined) {
     const noun = NOUNS[only.kind];
     if (only.label === noun) return `${verb}${noun}`;
-    if (!waiting) return `執行中：${only.label}`;
-    return only.kind === "monitor" ? only.label : `${verb}${noun}：${only.label}`;
+    return `${waiting ? "等待中" : "執行中"} · ${only.label}`;
   }
   const counts = new Map<Kind, number>();
   for (const item of items) counts.set(item.kind, (counts.get(item.kind) ?? 0) + 1);
