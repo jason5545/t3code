@@ -254,7 +254,12 @@
     "apps/mobile/src/features/prompt-links/usePromptLinkResolver.ts": [
       "PR #{request.pullRequest.number}"
     ],
-    "apps/mobile/src/features/pull-requests/PullRequestMergeControls.tsx": ["merge", "squash"],
+    "apps/mobile/src/features/pull-requests/PullRequestMergeControls.tsx": [
+      "merge",
+      "squash",
+      "reopen",
+      "ready"
+    ],
     "apps/mobile/src/features/pull-requests/usePullRequestThreads.ts": ["Ask about #{pr.number}"],
     "apps/mobile/src/features/threads/ThreadFeed.tsx": ["text", "PDF"],
     "apps/mobile/src/widgets/AgentActivity.tsx": [

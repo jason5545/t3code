@@ -8174,5 +8174,21 @@
   "Folders can only be referenced on a server running on this computer": "只有在這台電腦上執行的伺服器才能參照資料夾",
   "Voice input": "語音輸入",
   "Not available on this device": "這台裝置無法使用",
-  "T3 Code's voice input uses Apple's on-device speech transcription, which needs iOS 26 or later on a device that supports it. Without it, the composer has no microphone button, and allowing microphone access won't add one. Apple keyboard dictation is separate and isn't affected.": "T3 Code 的語音輸入使用 Apple 的裝置端語音轉錄，需要 iOS 26 以上且裝置支援。沒有這項功能時，輸入框不會出現麥克風按鈕，允許麥克風存取也不會多出來。Apple 鍵盤的聽寫功能是分開的，不受影響。"
+  "T3 Code's voice input uses Apple's on-device speech transcription, which needs iOS 26 or later on a device that supports it. Without it, the composer has no microphone button, and allowing microphone access won't add one. Apple keyboard dictation is separate and isn't affected.": "T3 Code 的語音輸入使用 Apple 的裝置端語音轉錄，需要 iOS 26 以上且裝置支援。沒有這項功能時，輸入框不會出現麥克風按鈕，允許麥克風存取也不會多出來。Apple 鍵盤的聽寫功能是分開的，不受影響。",
+  "Subagent work": "子代理程式的工作",
+  "Read only. These subagents cannot take messages.": "唯讀。這些子代理程式無法接收訊息。",
+  "The provider has no record of which subagents this call started.": "供應商沒有記錄這次呼叫啟動了哪些子代理程式。",
+  "Earlier steps are not shown.": "較早的步驟未顯示。",
+  "No transcript yet.": "還沒有對話記錄。",
+  "The file could not be fetched (HTTP {status}).": "無法取得檔案（HTTP {status}）。",
+  "The file could not be fetched. Check the connection and try again.": "無法取得檔案。請檢查連線後再試一次。",
+  "{question}\nIts saved settings, including any custom binary path, will be removed.{consequence}": "{question}\n它已儲存的設定（包括自訂的執行檔路徑）都會移除。{consequence}",
+  "Remove the {0} provider instance?": "要移除 {0} 供應商執行個體嗎？",
+  "Reset the {0} provider to its defaults?": "要把 {0} 供應商重設為預設值嗎？",
+  "It will also be turned off.": "它也會被關閉。",
+  "{definition.label} token": "{definition.label} 權杖",
+  "Resolve conflicts to merge": "解決衝突才能合併",
+  "Auto-merge pending{0}": "等待自動合併{0}",
+  "Checking stack…": "正在確認堆疊…",
+  "Work": "工作內容"
 }
