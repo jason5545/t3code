@@ -30,7 +30,10 @@ export function localeStorageListener(startup: Locale, reload: () => void) {
 
 // Every translated module imports this file, so the page's language is set up here
 // rather than in a provider: the document names it, and other windows follow a change.
-if (typeof document !== "undefined") document.documentElement.lang = startupLocale;
+// Unit tests stub `document` without a root element.
+if (typeof document !== "undefined" && document.documentElement) {
+  document.documentElement.lang = startupLocale;
+}
 if (typeof window !== "undefined") {
   window.addEventListener(
     "storage",
