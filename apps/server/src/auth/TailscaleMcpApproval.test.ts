@@ -1,3 +1,4 @@
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import type { TailscalePeerIdentity } from "@t3tools/tailscale";
 import { expect, it } from "@effect/vitest";
@@ -152,79 +153,83 @@ const approvedSignIn = (request: HttpServerRequest.HttpServerRequest) =>
 
 const bearer = (token: string) => fakeRequest(MAC, { authorization: `Bearer ${token}` });
 
-it.layer(NodeServices.layer)("MCP sign-in for tagged tailnet nodes", (it) => {
-  it.effect(
-    "signs in an allowed tagged node to a loopback redirect without a person, at the configured access",
-    () =>
+it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))(
+  "MCP sign-in for tagged tailnet nodes",
+  (it) => {
+    it.effect(
+      "signs in an allowed tagged node to a loopback redirect without a person, at the configured access",
+      () =>
+        Effect.gen(function* () {
+          const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
+          const sessions = yield* SessionStore.SessionStore;
+          const served = yield* approvedSignIn(viaServe(GROK_BOT));
+          expect(served.redirect).toMatch(
+            /^http:\/\/localhost:51234\/callback\?code=.+&state=state-1/u,
+          );
+
+          const client = yield* environmentAuth.authenticateMcpClient(bearer(served.token));
+          expect(client.access).toBe("auto-accept-edits");
+          const session = yield* sessions.verify(served.token);
+          expect(session.subject).toBe("mcp-client:tailscale:nBotStable");
+          expect(session.client.label).toBe("mcp-remote (lisky-box-1)");
+          // Still an MCP-only token.
+          expect(
+            (yield* Effect.flip(environmentAuth.authenticateHttpRequest(bearer(served.token))))
+              ._tag,
+          ).toBe("ServerAuthInvalidCredentialError");
+
+          yield* approvedSignIn(fakeRequest(GROK_BOT));
+        }).pipe(Effect.provide(layerTest("tag:lisky=auto-accept-edits"))),
+    );
+
+    it.effect(
+      "leaves https redirects, other tags, untagged devices and local peers to a person",
+      () =>
+        Effect.gen(function* () {
+          expect(yield* signIn(viaServe(GROK_BOT), HTTPS_REDIRECT)).toEqual(Option.none());
+          expect(yield* signIn(viaServe(CI_BOX))).toEqual(Option.none());
+          expect(yield* signIn(fakeRequest(MAC))).toEqual(Option.none());
+          expect(yield* signIn(fakeRequest(HOST_ADDRESS))).toEqual(Option.none());
+          // A tagged node cannot borrow another node's address straight to the server.
+          expect(yield* signIn(fakeRequest(CI_BOX, { "x-forwarded-for": GROK_BOT }))).toEqual(
+            Option.none(),
+          );
+        }).pipe(Effect.provide(layerTest("tag:lisky=auto-accept-edits"))),
+    );
+
+    it.effect("approves nothing when no tag is listed", () =>
+      Effect.gen(function* () {
+        expect(yield* signIn(viaServe(GROK_BOT))).toEqual(Option.none());
+      }).pipe(Effect.provide(layerTest(undefined))),
+    );
+
+    it.effect("gives a node with several allowed tags the least access among them", () =>
       Effect.gen(function* () {
         const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
-        const sessions = yield* SessionStore.SessionStore;
-        const served = yield* approvedSignIn(viaServe(GROK_BOT));
-        expect(served.redirect).toMatch(
-          /^http:\/\/localhost:51234\/callback\?code=.+&state=state-1/u,
+        const signedIn = yield* approvedSignIn(viaServe(SHARED_BOX));
+        expect((yield* environmentAuth.authenticateMcpClient(bearer(signedIn.token))).access).toBe(
+          "read-only",
         );
+      }).pipe(Effect.provide(layerTest("tag:lisky=full-access, tag:ci=read-only, tag:x=bogus"))),
+    );
 
-        const client = yield* environmentAuth.authenticateMcpClient(bearer(served.token));
-        expect(client.access).toBe("auto-accept-edits");
-        const session = yield* sessions.verify(served.token);
-        expect(session.subject).toBe("mcp-client:tailscale:nBotStable");
-        expect(session.client.label).toBe("mcp-remote (lisky-box-1)");
-        // Still an MCP-only token.
-        expect(
-          (yield* Effect.flip(environmentAuth.authenticateHttpRequest(bearer(served.token))))._tag,
-        ).toBe("ServerAuthInvalidCredentialError");
-
-        yield* approvedSignIn(fakeRequest(GROK_BOT));
-      }).pipe(Effect.provide(layerTest("tag:lisky=auto-accept-edits"))),
-  );
-
-  it.effect(
-    "leaves https redirects, other tags, untagged devices and local peers to a person",
-    () =>
+    it.effect("asks a person again once the node's automatic sign-in is revoked", () =>
       Effect.gen(function* () {
-        expect(yield* signIn(viaServe(GROK_BOT), HTTPS_REDIRECT)).toEqual(Option.none());
-        expect(yield* signIn(viaServe(CI_BOX))).toEqual(Option.none());
-        expect(yield* signIn(fakeRequest(MAC))).toEqual(Option.none());
-        expect(yield* signIn(fakeRequest(HOST_ADDRESS))).toEqual(Option.none());
-        // A tagged node cannot borrow another node's address straight to the server.
-        expect(yield* signIn(fakeRequest(CI_BOX, { "x-forwarded-for": GROK_BOT }))).toEqual(
-          Option.none(),
-        );
+        const sessions = yield* SessionStore.SessionStore;
+        const blocks = yield* TailscalePairing.makeBlockStore;
+        const signedIn = yield* approvedSignIn(viaServe(GROK_BOT));
+        yield* TestClock.adjust(Duration.seconds(1));
+        yield* sessions.revoke((yield* sessions.verify(signedIn.token)).sessionId);
+
+        expect(yield* signIn(viaServe(GROK_BOT))).toEqual(Option.none());
+        const blocked = yield* blocks.listBlocked;
+        expect(blocked.map((entry) => [entry.kind, entry.stableNodeId])).toEqual([
+          ["mcp", "nBotStable"],
+        ]);
+        yield* TestClock.adjust(Duration.seconds(1));
+        yield* blocks.unblock(blocked[0]!);
+        yield* approvedSignIn(viaServe(GROK_BOT));
       }).pipe(Effect.provide(layerTest("tag:lisky=auto-accept-edits"))),
-  );
-
-  it.effect("approves nothing when no tag is listed", () =>
-    Effect.gen(function* () {
-      expect(yield* signIn(viaServe(GROK_BOT))).toEqual(Option.none());
-    }).pipe(Effect.provide(layerTest(undefined))),
-  );
-
-  it.effect("gives a node with several allowed tags the least access among them", () =>
-    Effect.gen(function* () {
-      const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
-      const signedIn = yield* approvedSignIn(viaServe(SHARED_BOX));
-      expect((yield* environmentAuth.authenticateMcpClient(bearer(signedIn.token))).access).toBe(
-        "read-only",
-      );
-    }).pipe(Effect.provide(layerTest("tag:lisky=full-access, tag:ci=read-only, tag:x=bogus"))),
-  );
-
-  it.effect("asks a person again once the node's automatic sign-in is revoked", () =>
-    Effect.gen(function* () {
-      const sessions = yield* SessionStore.SessionStore;
-      const blocks = yield* TailscalePairing.makeBlockStore;
-      const signedIn = yield* approvedSignIn(viaServe(GROK_BOT));
-      yield* TestClock.adjust(Duration.seconds(1));
-      yield* sessions.revoke((yield* sessions.verify(signedIn.token)).sessionId);
-
-      expect(yield* signIn(viaServe(GROK_BOT))).toEqual(Option.none());
-      const blocked = yield* blocks.listBlocked;
-      expect(blocked.map((entry) => [entry.kind, entry.stableNodeId])).toEqual([
-        ["mcp", "nBotStable"],
-      ]);
-      yield* TestClock.adjust(Duration.seconds(1));
-      yield* blocks.unblock(blocked[0]!);
-      yield* approvedSignIn(viaServe(GROK_BOT));
-    }).pipe(Effect.provide(layerTest("tag:lisky=auto-accept-edits"))),
-  );
-});
+    );
+  },
+);

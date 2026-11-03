@@ -19,7 +19,7 @@ import {
 } from "@t3tools/tailscale";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
-import * as Crypto from "effect/Crypto";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -361,7 +361,7 @@ const isBlocked = (
 export const makeBlockStore = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const authSessions = yield* AuthSessions.AuthSessionRepository;
-  const crypto = yield* Crypto.Crypto;
+  const random = yield* SecureRandom.SecureRandom;
 
   const nodeStateRows = SqlSchema.findAll({
     Request: Schema.Struct({ subject: Schema.NullOr(Schema.String) }),
@@ -433,7 +433,7 @@ export const makeBlockStore = Effect.gen(function* () {
     function* (node: BlockedTailscaleNode) {
       const now = yield* DateTime.now;
       yield* authSessions.create({
-        sessionId: AuthSessionId.make(yield* crypto.randomUUIDv4()),
+        sessionId: AuthSessionId.make(yield* random.uuidV4()),
         subject: node.subject,
         scopes: [],
         method: "bearer-access-token",

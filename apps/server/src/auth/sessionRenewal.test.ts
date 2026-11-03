@@ -1,9 +1,11 @@
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { AuthSessionId, EnvironmentHttpApi, EnvironmentId } from "@t3tools/contracts";
 import { expect, it } from "@effect/vitest";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
-import * as Crypto from "effect/Crypto";
+import * as Digest from "effect/crypto/Digest";
+import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
@@ -79,7 +81,7 @@ const reconnect = (
     .markConnected(sessionId, check)
     .pipe(Effect.andThen(sessions.markDisconnected(sessionId)));
 
-it.layer(NodeServices.layer)("session renewal", (it) => {
+it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("session renewal", (it) => {
   it.effect.each(["bearer-access-token", "browser-session-cookie"] as const)(
     "extends a %s device session to 30 days when it connects from its device, past its token's own deadline",
     (method) =>
@@ -368,14 +370,18 @@ const withAuthRoutes = (
       Layer.provide(layerConfig),
       Layer.provideMerge(
         HttpPlatform.layer.pipe(
-          Layer.provideMerge(NodeServices.layer),
+          Layer.provideMerge(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
           Layer.provideMerge(Etag.layerWeak),
         ),
       ),
-      Layer.provide(NodeServices.layer),
+      Layer.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)),
       Layer.provide(Layer.succeed(Clock.Clock, shiftedClock)),
     );
-    const requestContext = Context.make(Crypto.Crypto, yield* Crypto.Crypto).pipe(
+    const requestContext = Context.make(
+      SecureRandom.SecureRandom,
+      yield* SecureRandom.SecureRandom,
+    ).pipe(
+      Context.add(Digest.Digest, yield* Digest.Digest),
       Context.add(
         ServerSecretStore.ServerSecretStore,
         ServerSecretStore.ServerSecretStore.of({
@@ -415,7 +421,7 @@ const withAuthRoutes = (
         }),
       (environment) => Effect.promise(() => environment.dispose()),
     );
-  }).pipe(Effect.provide(NodeServices.layer));
+  }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer)));
 
 it.effect("resets the browser cookie's deadline when a socket ticket renews its session", () =>
   withAuthRoutes(async ({ handle, pairingCredential, advance, now }) => {
@@ -446,37 +452,40 @@ const layerAuth = EnvironmentAuth.layer.pipe(
   Layer.provideMerge(TestClock.layer()),
 );
 
-it.layer(NodeServices.layer)("refused session credentials", (it) => {
-  it.effect("tell the client whether the session expired or was signed out", () =>
-    Effect.gen(function* () {
-      const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
-      const sessions = yield* SessionStore.SessionStore;
-      const reasonFor = (token: string) =>
-        environmentAuth
-          .authenticateHttpRequest(
-            HttpServerRequest.fromWeb(
-              new Request("http://127.0.0.1/api/orchestration/shell", {
-                headers: { authorization: `Bearer ${token}` },
-              }),
-            ),
-          )
-          .pipe(
-            Effect.flip,
-            Effect.map((error) =>
-              EnvironmentAuth.isServerAuthCredentialError(error)
-                ? EnvironmentAuth.serverAuthCredentialReason(error)
-                : error._tag,
-            ),
-          );
-      const revoked = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
-      const expired = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))(
+  "refused session credentials",
+  (it) => {
+    it.effect("tell the client whether the session expired or was signed out", () =>
+      Effect.gen(function* () {
+        const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
+        const sessions = yield* SessionStore.SessionStore;
+        const reasonFor = (token: string) =>
+          environmentAuth
+            .authenticateHttpRequest(
+              HttpServerRequest.fromWeb(
+                new Request("http://127.0.0.1/api/orchestration/shell", {
+                  headers: { authorization: `Bearer ${token}` },
+                }),
+              ),
+            )
+            .pipe(
+              Effect.flip,
+              Effect.map((error) =>
+                EnvironmentAuth.isServerAuthCredentialError(error)
+                  ? EnvironmentAuth.serverAuthCredentialReason(error)
+                  : error._tag,
+              ),
+            );
+        const revoked = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
+        const expired = yield* sessions.issue({ subject: "tailscale:nPhoneStable" });
 
-      yield* sessions.revoke(revoked.sessionId);
-      yield* TestClock.adjust(Duration.days(31));
+        yield* sessions.revoke(revoked.sessionId);
+        yield* TestClock.adjust(Duration.days(31));
 
-      expect(yield* reasonFor(revoked.token)).toBe("session_revoked");
-      expect(yield* reasonFor(expired.token)).toBe("session_expired");
-      expect(yield* reasonFor(`${expired.token}x`)).toBe("invalid_credential");
-    }).pipe(Effect.provide(layerAuth)),
-  );
-});
+        expect(yield* reasonFor(revoked.token)).toBe("session_revoked");
+        expect(yield* reasonFor(expired.token)).toBe("session_expired");
+        expect(yield* reasonFor(`${expired.token}x`)).toBe("invalid_credential");
+      }).pipe(Effect.provide(layerAuth)),
+    );
+  },
+);

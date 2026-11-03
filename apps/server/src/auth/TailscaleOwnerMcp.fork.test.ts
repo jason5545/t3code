@@ -1,3 +1,4 @@
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { AuthSessionId, EnvironmentId } from "@t3tools/contracts";
 import type { TailscalePeerIdentity, TailscaleStatusPeer } from "@t3tools/tailscale";
@@ -138,52 +139,61 @@ const callerOf = (request: HttpServerRequest.HttpServerRequest) =>
     clients.authenticate(request),
   ).pipe(Effect.map((scope) => scope?.client));
 
-it.layer(NodeServices.layer)("MCP calls from the owner's own tailnet machines", (it) => {
-  it.effect("lets the owner's untagged machine call without a token, and no one else", () =>
-    Effect.gen(function* () {
-      const mac = yield* callerOf(fakeRequest(MAC));
-      expect(mac).toMatchObject({ label: "macbook-pro (Tailscale)", access: "full-access" });
-      expect((yield* callerOf(fakeRequest(MAC)))?.sessionId).toBe(mac?.sessionId);
-
-      // Tagged nodes keep T3CODE_TAILSCALE_MCP_TAGS; this host's own traffic carries no peer.
-      expect(yield* callerOf(fakeRequest(GROK_BOT))).toBeUndefined();
-      expect(yield* callerOf(fakeRequest(FRIEND))).toBeUndefined();
-      expect(yield* callerOf(fakeRequest(HOST_ADDRESS))).toBeUndefined();
-      expect(yield* callerOf(fakeRequest("127.0.0.1"))).toBeUndefined();
-    }).pipe(Effect.provide(layerTest("full-access"))),
-  );
-
-  it.effect("keeps every machine on sign-in while owner access is unset", () =>
-    Effect.gen(function* () {
-      expect(yield* callerOf(fakeRequest(MAC))).toBeUndefined();
-    }).pipe(Effect.provide(layerTest(undefined))),
-  );
-
-  it.effect("stops a machine once its session is revoked in Connections", () =>
-    Effect.gen(function* () {
-      const sessions = yield* SessionStore.SessionStore;
-      const mac = yield* callerOf(fakeRequest(MAC));
-      yield* TestClock.adjust(Duration.seconds(1));
-      yield* sessions.revoke(AuthSessionId.make(mac!.sessionId));
-      expect(yield* callerOf(fakeRequest(MAC))).toBeUndefined();
-    }).pipe(Effect.provide(layerTest("auto"))),
-  );
-
-  it.effect(
-    "lists the owner's other computers, their tailnet IPv4 and when an offline one was last seen",
-    () =>
+it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))(
+  "MCP calls from the owner's own tailnet machines",
+  (it) => {
+    it.effect("lets the owner's untagged machine call without a token, and no one else", () =>
       Effect.gen(function* () {
-        const pairing = yield* TailscalePairing.TailscalePairing;
-        expect(Option.getOrThrow(yield* pairing.ownerMachines())).toEqual([
-          {
-            name: "macbook-pro",
-            os: "macOS",
-            online: false,
-            lastSeen: "2026-10-26T18:13:05Z",
-            address: MAC,
-          },
-          { name: "agent-fr", os: "linux", online: true, lastSeen: null, address: "100.112.49.26" },
-        ]);
+        const mac = yield* callerOf(fakeRequest(MAC));
+        expect(mac).toMatchObject({ label: "macbook-pro (Tailscale)", access: "full-access" });
+        expect((yield* callerOf(fakeRequest(MAC)))?.sessionId).toBe(mac?.sessionId);
+
+        // Tagged nodes keep T3CODE_TAILSCALE_MCP_TAGS; this host's own traffic carries no peer.
+        expect(yield* callerOf(fakeRequest(GROK_BOT))).toBeUndefined();
+        expect(yield* callerOf(fakeRequest(FRIEND))).toBeUndefined();
+        expect(yield* callerOf(fakeRequest(HOST_ADDRESS))).toBeUndefined();
+        expect(yield* callerOf(fakeRequest("127.0.0.1"))).toBeUndefined();
+      }).pipe(Effect.provide(layerTest("full-access"))),
+    );
+
+    it.effect("keeps every machine on sign-in while owner access is unset", () =>
+      Effect.gen(function* () {
+        expect(yield* callerOf(fakeRequest(MAC))).toBeUndefined();
       }).pipe(Effect.provide(layerTest(undefined))),
-  );
-});
+    );
+
+    it.effect("stops a machine once its session is revoked in Connections", () =>
+      Effect.gen(function* () {
+        const sessions = yield* SessionStore.SessionStore;
+        const mac = yield* callerOf(fakeRequest(MAC));
+        yield* TestClock.adjust(Duration.seconds(1));
+        yield* sessions.revoke(AuthSessionId.make(mac!.sessionId));
+        expect(yield* callerOf(fakeRequest(MAC))).toBeUndefined();
+      }).pipe(Effect.provide(layerTest("auto"))),
+    );
+
+    it.effect(
+      "lists the owner's other computers, their tailnet IPv4 and when an offline one was last seen",
+      () =>
+        Effect.gen(function* () {
+          const pairing = yield* TailscalePairing.TailscalePairing;
+          expect(Option.getOrThrow(yield* pairing.ownerMachines())).toEqual([
+            {
+              name: "macbook-pro",
+              os: "macOS",
+              online: false,
+              lastSeen: "2026-10-26T18:13:05Z",
+              address: MAC,
+            },
+            {
+              name: "agent-fr",
+              os: "linux",
+              online: true,
+              lastSeen: null,
+              address: "100.112.49.26",
+            },
+          ]);
+        }).pipe(Effect.provide(layerTest(undefined))),
+    );
+  },
+);

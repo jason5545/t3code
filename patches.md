@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `a036489016` (merged 2026-11-03).
+Upstream baseline: `61c3794c32` (merged 2026-11-03).
 
 ## 1. OMP provider
 
@@ -183,12 +183,6 @@ Upstream baseline: `a036489016` (merged 2026-11-03).
 - Idle compaction's "When you return" mode lived only in web's composer, so a message from the phone into a Claude thread idle past its prompt cache re-read the whole context uncompacted: on 2026-10-31 07:03 the owner returned from Android to a 293,611-token Mac thread after 8h40m and Claude wrote 282,954 tokens to the cache (agent-channel #77, upstream issue #27911).
 - The fork carries the maintainers' open fix, #27935 at `c3c2f919fb`, as is, its test edits included: it moves web's rule to `client-runtime/src/state/contextWindow.ts` (`shouldCompactBeforeSend`) and changes web's imports and tests with it, so leaving the tests out would not compile. An eligible mobile send is queued with `compactBeforeSend`, and outbox delivery sends `/compact` first with ids derived from the message's. Busy threads, the setting turned off and provider handoffs send as before.
 - It replaced the fork's own version on 2026-10-31. Mobile has no Compact/Full chip: a send that qualifies always compacts first. Messages from MCP (`t3_thread_send`) and scheduled tasks still skip it. Drop this section when upstream merges #27935.
-
-## 27. Native Claude updates compare against Claude's own release channel
-
-- A native Claude Code install (`~/.local/bin/claude`) updates with `claude update`, which installs the version `https://downloads.claude.ai/claude-code-releases/<channel>` names, with the channel from `autoUpdatesChannel` in the server's Claude `settings.json` (`stable`, otherwise `latest`). Upstream compares it against npm's `latest` dist-tag, which runs ahead of that bucket during a release (2026-10-31: npm 2.1.316, bucket 2.1.314) and differs on stable (npm 2.1.309, bucket 2.1.308). Every **Update now** then ended in "Update command completed, but T3 Code still detects an outdated provider version." on all three hosts.
-- `ClaudeNativeRelease.ts` reads that bucket; the driver hands it to provider-core as `nativeUpdate.lookupLatestVersion`, which the native capabilities use with `latestVersion: null`, so a failed lookup reports an unknown latest instead of falling back to npm. npm, pnpm, bun and Homebrew installs are unchanged. Managed settings are not read.
-- Upstream issue #26400 covers the stable half; its open PR #26518 adds the same `lookupLatestVersion` field but reads npm's `stable` dist-tag, which does not match the bucket either. The owner had the bucket evidence posted there on 2026-10-31 ([comment](https://github.com/pingdotgg/t3code/pull/26518#issuecomment-6537674658)); replies reach only the jason5545 account. When upstream merges a fix that compares native installs against the bucket, take upstream's version and drop this section. `maintenanceResolver.fork.test.ts` and `ClaudeNativeRelease.fork.test.ts` cover it.
 
 ## 28. A desktop launch without a shell cache hydrates PATH itself (upstream PR #28904)
 
