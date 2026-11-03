@@ -161,6 +161,7 @@ const RULES: ReadonlyArray<Rule> = [
   rule(`T3 Code restarted and resumed this turn`, () => "T3 Code 重新啟動了，已接續這一輪"),
   rule(`T3 Code restarted and stopped background work`, () => "T3 Code 重新啟動了，背景工作已停止"),
   rule(`Continue where you left off\\.`, () => "從中斷的地方繼續。"),
+  rule(`Background activity updated`, () => "背景活動已更新"),
   rule(`Delegated task "${NAME}" has a question`, (m) => `委派的工作「${m[1]}」有問題要問`),
   rule(`Delegated task has a question`, () => "委派的工作有問題要問"),
   rule(`#(\\d+): closed, stopped watching`, (m) => `#${m[1]}：已關閉，停止監看`),

@@ -46,6 +46,7 @@ describe("translateProviderStatusMessage", () => {
     expect(translateProviderStatusMessage("Continue where you left off.")).toBe(
       "從中斷的地方繼續。",
     );
+    expect(translateProviderStatusMessage("Background activity updated")).toBe("背景活動已更新");
     expect(translateProviderStatusMessage('Delegated task "Fix CI" has a question')).toBe(
       "委派的工作「Fix CI」有問題要問",
     );
