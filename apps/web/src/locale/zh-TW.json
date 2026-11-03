@@ -8203,6 +8203,7 @@
   "T3 Code's voice input uses Google's on-device speech recognition, which needs Android 12 or later with compatible Google speech services for the device language. Without it, the composer has no microphone button, and allowing microphone access won't add one. Keyboard voice typing is separate and isn't affected.": "T3 Code 的語音輸入使用 Google 的裝置端語音辨識，需要 Android 12 以上，並有支援裝置語言的 Google 語音服務。沒有這項功能時，輸入框不會出現麥克風按鈕，允許麥克風存取也不會多出來。鍵盤的語音輸入是分開的，不受影響。",
   "Android may use another input when the preferred microphone cannot be routed.": "偏好的麥克風無法使用時，Android 可能改用其他輸入來源。",
   "Voice input prefers the first connected microphone in this list. Wired and Bluetooth devices are added by name after you use voice input with them connected; until then, the Other row ranks them. Swipe a device left to forget it.{0}": "語音輸入會優先使用這份清單中第一個已連接的麥克風。有線和藍牙裝置要在連接狀態下用過語音輸入後，才會以名稱加入；在那之前由「其他」這一列決定順序。向左滑動裝置即可移除。{0}",
+  "Drag to resize sidebar": "拖曳以調整側邊欄寬度",
   "Open this thread": "開啟這個對話",
   "It opens in T3 Code if you're connected to the machine it runs on.": "如果你已連上執行它的電腦，會在 T3 Code 裡開啟。"
 }

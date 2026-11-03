@@ -233,6 +233,7 @@
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
     "apps/web/src/components/GitActionsControl.logic.ts": ["Commit", "Push"],
+    "apps/web/src/components/ui/sidebar.tsx": ["left", "none", "default"],
     "apps/web/src/components/RightPanelTabs.tsx": [
       "none",
       "muted",
