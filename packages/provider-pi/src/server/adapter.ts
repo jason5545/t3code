@@ -3274,6 +3274,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
               environment: options.environment,
               mcpSession: undefined,
               extensionPath: undefined,
+              shortLived: true,
               disableExtensions: true,
               disableTools: true,
             });

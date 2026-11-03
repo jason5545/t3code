@@ -5,7 +5,7 @@ import { BackgroundThreadContext } from "./backgroundThread";
 import {
   resolveCompatibleRuntimeMode,
   runtimeModeConfig,
-  runtimeModeOptions as runtimeModes,
+  resolveRuntimeModeOptions,
 } from "./runtimeModeConfig";
 import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 import { usePrimaryEnvironmentId } from "../../state/environments";
@@ -288,8 +288,6 @@ function consumePasteAsTextShortcut(deadline: { current: number }): boolean {
   deadline.current = 0;
   return armed;
 }
-
-const runtimeModeOptions = runtimeModes.map((mode) => ({ mode, ...runtimeModeConfig[mode] }));
 
 export interface ChatComposerHandle {
   focusAtEnd: () => void;
@@ -939,12 +937,10 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   );
   // Modes above an administrator's ceiling stay listed, disabled with the reason.
   const managedPolicy = useManagedPolicy(environmentId);
-  const providerRuntimeModeOptions = runtimeModeOptions
-    .filter((option) => compatibleRuntimeModes.includes(option.mode))
-    .map((option) => {
-      const disabledReason = managedRuntimeModeDenial(managedPolicy, option.mode);
-      return disabledReason === undefined ? option : { ...option, disabledReason };
-    });
+  const providerRuntimeModeOptions = resolveRuntimeModeOptions(
+    compatibleRuntimeModes,
+    managedPolicy,
+  );
   // Fork patch 11: an ephemeral thread keeps the runtime mode it started with.
   const ephemeralThread = isEphemeralThreadShell(props.activeThreadShell);
   const compatibleRuntimeModeOptions = ephemeralThread

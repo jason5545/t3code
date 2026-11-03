@@ -27,6 +27,7 @@
     "Azure DevOps",
     "base64",
     "check GitHub star",
+    "star on GitHub",
     "Bash",
     "bg-[color-mix(in_srgb,var(--label)_8%,transparent)] text-[color-mix(in_srgb,var(--label)_30%,var(--color-foreground))] dark:bg-[color-mix(in_srgb,var(--label)_12%,transparent)] dark:text-[color-mix(in_srgb,var(--label)_45%,var(--color-foreground))]",
     "Bitbucket",
@@ -413,6 +414,7 @@
       "Remove review request from",
       "Request review from"
     ],
+    "apps/mobile/src/features/pull-requests/usePullRequestAction.ts": ["close"],
     "apps/mobile/src/features/pull-requests/PullRequestStatusRows.tsx": [
       "ready",
       "draft",
