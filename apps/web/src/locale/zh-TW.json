@@ -8207,5 +8207,7 @@
   "Open this thread": "開啟這個對話",
   "It opens in T3 Code if you're connected to the machine it runs on.": "如果你已連上執行它的電腦，會在 T3 Code 裡開啟。",
   "Close inspector": "關閉檢查器",
-  "Hide sidebar": "隱藏側邊欄"
+  "Hide sidebar": "隱藏側邊欄",
+  "Showing tracked changes. Untracked changes could not be loaded. Refresh to retry.": "目前顯示已追蹤檔案的變更。未追蹤的變更無法載入，請重新整理再試一次。",
+  "Showing tracked changes. Checking untracked files...": "目前顯示已追蹤檔案的變更。正在檢查未追蹤的檔案…"
 }

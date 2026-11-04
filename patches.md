@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `647bd148b3` (merged 2026-11-04).
+Upstream baseline: `df70f505a3` (merged 2026-11-05).
 
 ## 1. OMP provider
 
@@ -188,7 +188,7 @@ Upstream baseline: `647bd148b3` (merged 2026-11-04).
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
 - Exception: the two Pi adapter cases (OMP todo list, usage kept on Stop) stay in `packages/provider-pi/src/server/adapter.test.ts`, because copying upstream's FakePi harness would take about 520 lines for two tests.
-- Exception: `agentContextBudget.json` holds the fork's sizes: its MCP tool list is 49,097 bytes against upstream's 47,538, from the fork's extra tools. Upstream's `AgentContextBudget.test.ts` (#25785) still mocks `ProviderUsage` from before section 19 read it optionally. When a merge touches either file, run the test and copy the measured values it prints.
+- Exception: `agentContextBudget.json` holds the fork's sizes: its MCP tool list is 49,057 bytes against upstream's 47,498, from the fork's extra tools. Upstream's `AgentContextBudget.test.ts` (#25785) still mocks `ProviderUsage` from before section 19 read it optionally. When a merge touches either file, run the test and copy the measured values it prints.
 - Exception: upstream's mobile `ConnectionsNewRouteScreen.test.tsx` mocks `./TailnetServerSection` (one line), because patch 7's add-screen section loads the connection runtime, which needs Expo's `__DEV__`.
 - A copied harness does not follow upstream. When upstream changes the code under test, the fork file fails to compile or its test fails; fix it there.
 
