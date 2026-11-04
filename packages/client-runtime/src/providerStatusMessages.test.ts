@@ -54,6 +54,10 @@ describe("translateProviderStatusMessage", () => {
       "#42：已關閉，停止監看",
     );
     expect(translateProviderStatusMessage("Could not link agent-fr")).toBe("無法連結 agent-fr");
+    expect(translateProviderStatusMessage("Stopped by user")).toBe("使用者已停止");
+    expect(translateProviderStatusMessage("Run interrupted before provider start")).toBe(
+      "供應商啟動前就已中斷",
+    );
   });
 
   it("translates background work notifications and keeps their labels", () => {

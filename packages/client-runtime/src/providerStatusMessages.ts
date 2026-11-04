@@ -169,6 +169,9 @@ const RULES: ReadonlyArray<Rule> = [
   rule(`Linked ${NAME}`, (m) => `已連結 ${m[1]}`),
   rule(`Could not link ${NAME}`, (m) => `無法連結 ${m[1]}`),
   rule(`Declined to link ${NAME}`, (m) => `已拒絕連結 ${m[1]}`),
+  // The server's own run interrupt reasons; a reason an agent passes to Stop stays as written.
+  rule(`Stopped by user`, () => "使用者已停止"),
+  rule(`Run interrupted before provider start`, () => "供應商啟動前就已中斷"),
   // Approval option labels that adapters send with an approval request.
   rule(`Approve`, () => "核准"),
   rule(`Decline`, () => "拒絕"),

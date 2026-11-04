@@ -672,6 +672,7 @@ function itemPreview(item: OrchestrationV2TurnItem): string | null {
         : `${item.files.length} changed files`;
     case "run_interrupt_request":
     case "run_interrupt_result":
+      return localizeServerMessage(item.message) || null;
     case "system_notice":
       return item.message || null;
     case "error":

@@ -60,6 +60,7 @@ import { getTriggerDisplayModelName } from "./providerIconUtils";
 import { ProviderInstanceIcon, providerTextColor } from "./ProviderInstanceIcon";
 import { cn } from "~/lib/utils";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
+import { localizeServerMessage } from "../../locale/serverMessages";
 import { subagentResumedSince } from "./V2LifecycleRow.logic";
 import { Button, InlineButton } from "../ui/button";
 import { T3Wordmark } from "../T3Wordmark";
@@ -78,7 +79,7 @@ export function V2LifecycleRow(props: {
     return (
       <TimelineSystemDivider
         label="Run interrupted"
-        detail={item.message}
+        detail={localizeServerMessage(item.message)}
         icon={CircleStopIcon}
         wrapDetail
       />
