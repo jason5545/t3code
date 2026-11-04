@@ -284,6 +284,9 @@ it.effect(
           yield* createScratchProject(`${baseDir}/scratch`);
           yield* projections.apply(threadCreated(ephemeral, { ephemeral: true }));
           yield* projections.apply(threadCreated(kept, { ephemeral: false }));
+          // The relay hides an ephemeral thread's title only if awareness reads carry the flag.
+          const awareness = yield* projections.getAgentAwarenessSnapshot(ephemeral);
+          assert.isTrue(awareness.threads[0]?.ephemeral);
           yield* seedEveryReference(ephemeral, "ephemeral");
           yield* seedEveryReference(kept, "kept");
           const keptBefore = yield* countReferences(kept);

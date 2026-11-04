@@ -207,7 +207,7 @@ function sanitizeRelayAgentActivityState(
 
 /** Fork patch 11: an ephemeral thread's title is its first message, so pushes carry fixed text. */
 function withoutEphemeralText(
-  thread: OrchestrationV2ThreadShell,
+  thread: AgentAwarenessThread,
   state: RelayAgentActivityState | null,
 ): RelayAgentActivityState | null {
   if (state === null || thread.ephemeral !== true) return state;

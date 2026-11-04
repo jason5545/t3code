@@ -1005,6 +1005,8 @@ export type AgentAwarenessThread = ProjectThreadAwarenessV2Input["thread"] &
     | "activeRunId"
     | "latestRunId"
     | "hasActionableProposedPlan"
+    // Fork patch 11: the relay replaces an ephemeral thread's text.
+    | "ephemeral"
   >;
 
 type ShellThreadRow = {
@@ -7108,6 +7110,7 @@ export const layer: Layer.Layer<ProjectionStoreV2, never, SqlClient.SqlClient> =
               latestRunStopRequested: state.latestRunStopRequested,
               pendingRuntimeRequest: state.pendingRuntimeRequest,
               pendingBackgroundTasks: state.pendingBackgroundTasks,
+              ...(state.thread.ephemeral === true ? { ephemeral: true } : {}),
             })),
           ),
         );
