@@ -233,7 +233,16 @@
   "files": {
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
     "apps/web/src/components/GitActionsControl.logic.ts": ["Commit", "Push"],
-    "apps/web/src/components/ui/sidebar.tsx": ["left", "none", "default"],
+    "apps/web/src/components/ui/sidebar.tsx": [
+      "left",
+      "none",
+      "default",
+      "16rem",
+      "calc(100vw - var(--spacing(3)))",
+      "3rem",
+      "(max-width: 767px)",
+      "Could not persist sidebar width."
+    ],
     "apps/web/src/components/RightPanelTabs.tsx": [
       "none",
       "muted",
@@ -512,6 +521,9 @@
       "Opens the thread. Swipe left for {0} and snooze actions."
     ],
     "apps/mobile/src/features/threads/thread-work-log.tsx": [
+      "html",
+      "typescript",
+      "json",
       "accent-foreground",
       "work-shimmer-{0}",
       "computer",

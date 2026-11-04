@@ -8205,5 +8205,7 @@
   "Voice input prefers the first connected microphone in this list. Wired and Bluetooth devices are added by name after you use voice input with them connected; until then, the Other row ranks them. Swipe a device left to forget it.{0}": "語音輸入會優先使用這份清單中第一個已連接的麥克風。有線和藍牙裝置要在連接狀態下用過語音輸入後，才會以名稱加入；在那之前由「其他」這一列決定順序。向左滑動裝置即可移除。{0}",
   "Drag to resize sidebar": "拖曳以調整側邊欄寬度",
   "Open this thread": "開啟這個對話",
-  "It opens in T3 Code if you're connected to the machine it runs on.": "如果你已連上執行它的電腦，會在 T3 Code 裡開啟。"
+  "It opens in T3 Code if you're connected to the machine it runs on.": "如果你已連上執行它的電腦，會在 T3 Code 裡開啟。",
+  "Close inspector": "關閉檢查器",
+  "Hide sidebar": "隱藏側邊欄"
 }
