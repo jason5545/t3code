@@ -397,7 +397,7 @@ const withAuthRoutes = (
     return yield* Effect.acquireUseRelease(
       Effect.sync(() => HttpRouter.toWebHandler(layerRoutes, { disableLogger: true })),
       (environment) =>
-        Effect.tryPromise(() => {
+        Effect.promise(() => {
           const handle = (request: Request) => environment.handler(request, requestContext);
           return use({
             handle,

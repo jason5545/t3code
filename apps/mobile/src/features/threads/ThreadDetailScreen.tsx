@@ -14,7 +14,6 @@ import { parseThreadKey, threadKey } from "@t3tools/client-runtime/state/entitie
 import { createThreadVisitTracker } from "@t3tools/client-runtime/state/thread-visits";
 import { useChildThreadInputs, useThreadReportedModelSelection } from "../../state/entities";
 import { UsageLimitRecoveryCard } from "./UsageLimitRecoveryCard";
-import { ChatGptUsageLimitNotice } from "./ChatGptUsageLimitNotice";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
   effectiveSnoozed,
@@ -131,7 +130,7 @@ import { useAppearancePreferences } from "../settings/appearance/AppearancePrefe
 import { collectProviderUsageLimits } from "@t3tools/shared/usageLimits";
 import type { ComposerEditorHandle } from "../../components/ComposerEditor";
 import type { StatusTone } from "../../components/StatusPill";
-import { getComposerDraftSnapshot } from "../../state/use-composer-drafts";
+import { getComposerDraftSnapshot, setFreshSessionPending } from "../../state/use-composer-drafts";
 import {
   appendAssistantCitation,
   assistantSelectionCitation,
@@ -181,6 +180,7 @@ import type {
 import { PendingApprovalCard } from "./PendingApprovalCard";
 import { ComposerErrorNotice } from "./ComposerErrorNotice";
 import { ManagedRuntimeModeNotice } from "./ManagedRuntimeModeNotice";
+import { FreshSessionNotice } from "./FreshSessionNotice";
 import { ComposerFeedback } from "./ComposerFeedback";
 import { ComposerUsageLimits } from "./ComposerUsageLimits";
 import { PendingUserInputCard } from "./PendingUserInputCard";
@@ -898,6 +898,15 @@ function ThreadDetailBody(
     jumpMessageLoaded,
     selectedThreadKey,
   ]);
+  // A queued-run edit, question or approval owns the composer, and its send carries no fresh session.
+  const freshSessionAvailable =
+    !props.draftMode &&
+    props.canOperateThread &&
+    props.queuedRunEdit === null &&
+    props.activePendingApproval === null &&
+    props.activePendingUserInput === null &&
+    props.selectedThread.latestRun != null &&
+    props.serverConfig?.environment.capabilities.freshContext === true;
   const hasCompactableConversation =
     selectedThreadFeed.some(
       (entry) =>
@@ -1665,10 +1674,6 @@ function ThreadDetailBody(
                       thread={props.selectedThread}
                       environmentId={props.environmentId}
                     />
-                    <ChatGptUsageLimitNotice
-                      key={`chatgpt-limit:${props.selectedThread.latestRun?.runId}`}
-                      thread={props.selectedThread}
-                    />
                     <ChildThreadApprovals
                       threadRef={props.selectedThreadDetailRef}
                       maxHeight={pendingUserInputMaxHeight}
@@ -1690,6 +1695,9 @@ function ThreadDetailBody(
                         onDismiss={() => props.onDismissFeedback(submission.id)}
                       />
                     ))}
+                    {freshSessionAvailable ? (
+                      <FreshSessionNotice threadKey={selectedThreadKey} />
+                    ) : null}
                     {props.canOperateThread ? (
                       <ManagedRuntimeModeNotice
                         threadKey={selectedThreadKey}
@@ -1855,6 +1863,11 @@ function ThreadDetailBody(
                         hasCompactableConversation={
                           hasCompactableConversation && !props.isCompacting
                         }
+                        {...(freshSessionAvailable
+                          ? {
+                              onFreshSession: () => setFreshSessionPending(selectedThreadKey, true),
+                            }
+                          : {})}
                         serverConfig={props.serverConfig}
                         queueCount={props.selectedThreadQueueCount}
                         activeThreadBusy={props.activeThreadBusy}

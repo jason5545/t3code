@@ -78,6 +78,15 @@ export interface SelectableMarkdownTextProps {
   readonly onImagePress?: (href: string) => void;
   /** Extra actions in the text selection menu. Keep the array stable; native reloads it on change. */
   readonly contextMenuItems?: import("react-native-enriched-markdown").TextContextMenuItem[];
+  /**
+   * Makes task checkboxes tappable. The renderer ticks the box itself; `index` counts checkboxes
+   * in document order and `checked` is the new state.
+   */
+  readonly onTaskListItemPress?: (event: {
+    readonly index: number;
+    readonly checked: boolean;
+    readonly text: string;
+  }) => void;
   readonly marginTop?: number;
   readonly marginBottom?: number;
   readonly writingDirection?: "ltr" | "rtl";

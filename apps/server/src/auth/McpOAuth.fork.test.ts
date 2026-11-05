@@ -188,7 +188,7 @@ it.live(
         const pairsClient = (code: string) =>
           auth
             .exchangeBootstrapCredentialForAccessToken(code, undefined, { deviceType: "desktop" })
-            .pipe(Effect.match({ onFailure: () => false, onSuccess: () => true }));
+            .pipe(Effect.isSuccess);
 
         const reusable = yield* auth.createPairingLink({
           ttl: Duration.days(7),

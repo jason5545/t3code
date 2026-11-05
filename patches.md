@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `df70f505a3` (merged 2026-11-05).
+Upstream baseline: `0ea3c0243f` (merged 2026-11-06).
 
 ## 1. OMP provider
 
@@ -171,13 +171,8 @@ Upstream baseline: `df70f505a3` (merged 2026-11-05).
 - Fork changes to the PR: its CI job needs upstream's macOS runners, so it is left out, and `knip.jsonc` lists `verify-background-preview.electron.cjs` instead (`vp run --filter @t3tools/desktop verify:background-preview` runs the check). `DesktopBrowserHost.attach` takes `background` as optional for upstream's newer tests. The PR's timeout message change was dropped, because upstream now reports the browser's own deadline. The check now exits 1 when Electron quits before it finishes. On this Mac (macOS 27.2, Electron 44.10.0) macOS quits it about two seconds after its app window hides, and the PR's version exited 0 after one capture, so the check cannot pass here; T3 itself keeps running when hidden.
 - Trade-offs: an agent tab in the panel is a stream, without DevTools, the desktop screenshot and recording buttons or native picture in picture; the mini player still works. An agent tab keeps painting for as long as it exists, as under the old section 9. On macOS a background window outlives a closed main window, so agents keep their tabs, but a tab closed while no main window is open keeps its window until the app quits.
 - Since upstream #19456, `layoutSize` reads every desktop tab's size from the page (`readDesktopViewport`), background windows included; that is already the zoomed CSS size the PR computed from `viewportSize()`, so the 2026-10-31 sync took upstream's line.
+- Upstream #24186 (2026-11-05) frees idle desktop agent tabs when the server's 32-tab limit is full, counting a desktop tab as visible until the renderer reports it hidden (`DesktopBrowserChannel.isShown`). A background window has no webview to report, so `ServerBrowser.ts` counts only streamed viewers for it (`isVisible` checks `inPanel`), and `closeIdleAgentTabs` closes idle background tabs as before (`!inPanel` instead of upstream's `desktop === null`). The desktop host's `attached` events carry `background` beside upstream's new `shown` events.
 - Only the desktop app hosts background windows, so agent-hub, agent-fr and Android do not need this patch; a headless server's `isBackground` is always false. Drop this section when upstream merges #22743.
-
-## 26. Mobile sends compact a stale Claude session first (upstream PR #27935)
-
-- Idle compaction's "When you return" mode lived only in web's composer, so a message from the phone into a Claude thread idle past its prompt cache re-read the whole context uncompacted: on 2026-10-31 07:03 the owner returned from Android to a 293,611-token Mac thread after 8h40m and Claude wrote 282,954 tokens to the cache (agent-channel #77, upstream issue #27911).
-- The fork carries the maintainers' open fix, #27935 at `c3c2f919fb`, as is, its test edits included: it moves web's rule to `client-runtime/src/state/contextWindow.ts` (`shouldCompactBeforeSend`) and changes web's imports and tests with it, so leaving the tests out would not compile. An eligible mobile send is queued with `compactBeforeSend`, and outbox delivery sends `/compact` first with ids derived from the message's. Busy threads, the setting turned off and provider handoffs send as before.
-- It replaced the fork's own version on 2026-10-31. Mobile has no Compact/Full chip: a send that qualifies always compacts first. Messages from MCP (`t3_thread_send`) and scheduled tasks still skip it. Drop this section when upstream merges #27935.
 
 ## 28. A desktop launch without a shell cache hydrates PATH itself (upstream PR #28904)
 

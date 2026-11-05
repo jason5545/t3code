@@ -207,6 +207,19 @@ const getDefaultArch = Effect.fn("getDefaultArch")(function* (platform: typeof B
   return yield* getDefaultBuildArch(platform, config);
 });
 
+export class DevelopmentSigningConfigurationError extends Schema.TaggedError<DevelopmentSigningConfigurationError>()(
+  "DevelopmentSigningConfigurationError",
+  {
+    cause: Schema.Defect(),
+  },
+) {
+  override get message(): string {
+    return `Invalid development signing configuration: ${
+      this.cause instanceof Error ? this.cause.message : String(this.cause)
+    }`;
+  }
+}
+
 export class MacPasskeySigningConfigurationResolutionError extends Schema.TaggedError<MacPasskeySigningConfigurationResolutionError>()(
   "MacPasskeySigningConfigurationResolutionError",
   {
@@ -683,6 +696,15 @@ export class DesktopBuildDistDirectoryMissingError extends Schema.TaggedError<De
 ) {
   override get message(): string {
     return `Build completed but dist directory was not found at ${this.distPath}`;
+  }
+}
+
+export class DesktopBuildArtifactCopyError extends Schema.TaggedError<DesktopBuildArtifactCopyError>()(
+  "DesktopBuildArtifactCopyError",
+  { from: Schema.String, to: Schema.String, cause: Schema.Defect() },
+) {
+  override get message(): string {
+    return `Failed to copy build artifact ${this.from} to ${this.to}.`;
   }
 }
 
@@ -2098,7 +2120,7 @@ const NativeMarkerManifest = Schema.Struct({
   dependencies: Schema.optional(Schema.Record(Schema.String, Schema.String)),
   optionalDependencies: Schema.optional(Schema.Record(Schema.String, Schema.String)),
 });
-const decodeNativeMarkerManifest = Schema.decodeUnknownSync(
+const decodeNativeMarkerManifest = Schema.decodeUnknownOption(
   Schema.fromJsonString(NativeMarkerManifest),
 );
 
@@ -2138,13 +2160,12 @@ const hasNativeLoaderMarkers = Effect.fn("hasNativeLoaderMarkers")(function* (pa
   if (!(yield* exists(manifestPath))) return false;
   const source = yield* fs.readFileString(manifestPath).pipe(Effect.orElseSucceed(() => ""));
   if (source === "") return false;
-  const manifest = yield* Effect.try(() => decodeNativeMarkerManifest(source)).pipe(
-    Effect.orElseSucceed(() => null),
-  );
-  if (manifest === null) return false;
-  return Object.keys({ ...manifest.dependencies, ...manifest.optionalDependencies }).some(
-    (dependency) => dependency.startsWith("node-gyp-build"),
-  );
+  const manifest = decodeNativeMarkerManifest(source);
+  if (Option.isNone(manifest)) return false;
+  return Object.keys({
+    ...manifest.value.dependencies,
+    ...manifest.value.optionalDependencies,
+  }).some((dependency) => dependency.startsWith("node-gyp-build"));
 });
 
 export const copyDirectoryPreservingSymlinks = Effect.fn("copyDirectoryPreservingSymlinks")(
@@ -2778,9 +2799,10 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     identity: Config.String("T3CODE_MACOS_DEVELOPMENT_IDENTITY").pipe(Config.withDefault("")),
     repository: Config.String("T3CODE_DESKTOP_UPDATE_REPOSITORY").pipe(Config.withDefault("")),
   });
-  const developmentSigning = yield* Effect.try(() =>
-    resolveDevelopmentSigningConfig({ ...developmentEnv, platform, version, signed }),
-  );
+  const developmentSigning = yield* Effect.try({
+    try: () => resolveDevelopmentSigningConfig({ ...developmentEnv, platform, version, signed }),
+    catch: (cause) => new DevelopmentSigningConfigurationError({ cause }),
+  });
   const buildConfig: Record<string, unknown> = {
     afterPack: (yield* Path.Path).join(yield* RepoRoot, "scripts/prepare-server-compile-cache.cjs"),
     appId: developmentSigning?.appId ?? DESKTOP_APP_ID,
@@ -4136,13 +4158,15 @@ export const copyDesktopBuildArtifacts = Effect.fn("copyDesktopBuildArtifacts")(
     // overwrite a directory with a file or a file with a directory, and only merges into
     // an existing directory, so a stale entry of either type must go first.
     yield* fs.remove(to, { recursive: true, force: true });
-    yield* Effect.tryPromise(() =>
-      NodeFSP.cp(from, to, {
-        recursive: true,
-        force: true,
-        verbatimSymlinks: true,
-      }),
-    );
+    yield* Effect.tryPromise({
+      try: () =>
+        NodeFSP.cp(from, to, {
+          recursive: true,
+          force: true,
+          verbatimSymlinks: true,
+        }),
+      catch: (cause) => new DesktopBuildArtifactCopyError({ from, to, cause }),
+    });
     copiedArtifacts.push(to);
   }
 
