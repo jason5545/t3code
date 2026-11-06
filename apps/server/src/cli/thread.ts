@@ -1,10 +1,12 @@
 import {
   OrchestratorMcpFailure,
+  OrchestratorMcpThreadInterruptResult,
   OrchestratorMcpThreadListResult,
   OrchestratorMcpThreadReadResult,
   OrchestratorMcpThreadSendResult,
   OrchestratorMcpThreadWaitResult,
   ProjectId,
+  ProviderUserInputAnswers,
   RunId,
   ThreadId,
   TrimmedNonEmptyString,
@@ -674,15 +676,37 @@ const threadStartCommand = Command.make("start", {
   ),
 );
 
+export type ThreadSendMode = "auto" | "queue" | "steer" | "restart";
+
+const SEND_DELIVERY_TEXT = {
+  started: "Sent.",
+  queued: "Queued.",
+  steered: "Steered.",
+  restarted: "Restarted.",
+} as const;
+
+export const sendToThread = (
+  tools: ThreadTools,
+  input: { readonly threadId: ThreadId; readonly message: string; readonly mode: ThreadSendMode },
+) => tools.call("t3_thread_send", input, OrchestratorMcpThreadSendResult);
+
+const sendModeFlag = Flag.Literals("mode", ["queue", "steer", "restart", "auto"]).pipe(
+  Flag.withDescription(
+    "queue: a new turn after the running one. steer: add the message to the running turn. restart: interrupt the running turn and start it again with the message. auto: start, steer or queue, whichever fits. steer and restart fail when nothing is running.",
+  ),
+  Flag.withDefault("queue"),
+);
+
 const threadSendCommand = Command.make("send", {
   ...projectLocationFlags,
   thread: threadArgument,
   message: messageArgument,
+  mode: sendModeFlag,
   wait: waitFlag,
   json: jsonFlag,
 }).pipe(
   Command.withDescription(
-    "Send a message to a thread. A busy thread gets it as its next turn; nothing is interrupted.",
+    "Send a message to a thread. By default a busy thread gets it as its next turn and nothing is interrupted; --mode steer or restart reaches the running turn.",
   ),
   Command.withHandler((flags) =>
     Effect.gen(function* () {
@@ -691,17 +715,163 @@ const threadSendCommand = Command.make("send", {
       yield* withThreadTools(
         flags,
         Effect.fn("cli.thread.send")(function* (tools) {
-          const sent = yield* tools.call(
-            "t3_thread_send",
-            { threadId, message, mode: "queue" },
-            OrchestratorMcpThreadSendResult,
-          );
+          const sent = yield* sendToThread(tools, { threadId, message, mode: flags.mode });
           if (flags.wait) {
             return yield* finishRun(tools, { threadId, runId: sent.runId, json: flags.json });
           }
-          yield* flags.json
-            ? printJson(sent)
-            : Console.log(sent.delivery === "queued" ? "Queued." : "Sent.");
+          yield* flags.json ? printJson(sent) : Console.log(SEND_DELIVERY_TEXT[sent.delivery]);
+        }),
+      );
+    }).pipe(reportThreadErrors),
+  ),
+);
+
+const threadInterruptCommand = Command.make("interrupt", {
+  ...projectLocationFlags,
+  thread: threadArgument,
+  stop: Flag.Boolean("stop").pipe(
+    Flag.withDescription(
+      "Stop the thread as its Stop button does: also hold its queued messages and stop the tasks it delegated.",
+    ),
+    Flag.withDefault(false),
+  ),
+  json: jsonFlag,
+}).pipe(
+  Command.withDescription(
+    "Interrupt a thread's running turn. Does nothing when the thread is idle.",
+  ),
+  Command.withHandler((flags) =>
+    Effect.gen(function* () {
+      const threadId = yield* decodeThreadId(flags.thread);
+      yield* withThreadTools(
+        flags,
+        Effect.fn("cli.thread.interrupt")(function* (tools) {
+          const result = yield* tools.call(
+            "t3_thread_interrupt",
+            { threadId, ...(flags.stop ? { stop: true } : {}) },
+            OrchestratorMcpThreadInterruptResult,
+          );
+          if (flags.json) return yield* printJson(result);
+          yield* Console.log(
+            result.status === "no_active_run"
+              ? "Nothing was running."
+              : result.status === "interrupt_requested"
+                ? "Interrupt requested."
+                : `The turn already ended (${result.status}).`,
+          );
+        }),
+      );
+    }).pipe(reportThreadErrors),
+  ),
+);
+
+const PendingRequestIds = Schema.Struct({ requestIds: Schema.Array(Schema.String) });
+const PendingQuestions = Schema.Struct({
+  requestId: Schema.String,
+  questions: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      header: Schema.String,
+      question: Schema.String,
+      options: Schema.Array(
+        Schema.Struct({
+          label: Schema.String,
+          description: Schema.String,
+          value: Schema.optional(Schema.String),
+        }),
+      ),
+      multiSelect: Schema.optional(Schema.Boolean),
+      allowCustomAnswer: Schema.optional(Schema.Boolean),
+    }),
+  ),
+});
+
+/** Questions an agent asked the user. Permission approvals are not listed and cannot be answered here. */
+export const readPendingQuestions = Effect.fn("cli.thread.readPendingQuestions")(function* (
+  tools: ThreadTools,
+  threadId: ThreadId,
+) {
+  const { requestIds } = yield* tools.call(
+    "t3_pending_request",
+    { action: "list", threadId },
+    PendingRequestIds,
+  );
+  return yield* Effect.forEach(requestIds, (requestId) =>
+    tools.call("t3_pending_request", { action: "read", threadId, requestId }, PendingQuestions),
+  );
+});
+
+const decodeAnswers = Schema.decodeUnknownEffect(Schema.fromJsonString(ProviderUserInputAnswers));
+export const parseAnswers = (text: string) =>
+  decodeAnswers(text).pipe(
+    Effect.mapError(
+      () =>
+        new ThreadUsageError({
+          detail: 'Answers must be a JSON object keyed by question id, such as {"q1":"Yes"}.',
+        }),
+    ),
+  );
+
+const threadQuestionsCommand = Command.make("questions", {
+  ...projectLocationFlags,
+  thread: threadArgument,
+  json: jsonFlag,
+}).pipe(
+  Command.withDescription(
+    "List the questions a thread is waiting for you to answer. Permission approvals are not listed.",
+  ),
+  Command.withHandler((flags) =>
+    Effect.gen(function* () {
+      const threadId = yield* decodeThreadId(flags.thread);
+      yield* withThreadTools(
+        flags,
+        Effect.fn("cli.thread.questions")(function* (tools) {
+          const pending = yield* readPendingQuestions(tools, threadId);
+          if (flags.json) return yield* printJson(pending);
+          if (pending.length === 0) return yield* Console.log("No questions are waiting.");
+          for (const request of pending) {
+            yield* Console.log(request.requestId);
+            for (const question of request.questions) {
+              yield* Console.log(`  ${question.id}  ${question.header}: ${question.question}`);
+              for (const option of question.options) {
+                yield* Console.log(`    - ${option.label}: ${option.description}`);
+              }
+            }
+          }
+        }),
+      );
+    }).pipe(reportThreadErrors),
+  ),
+);
+
+const threadAnswerCommand = Command.make("answer", {
+  ...projectLocationFlags,
+  thread: threadArgument,
+  request: Argument.String("request").pipe(
+    Argument.withDescription("Request id from `t3 thread questions`."),
+  ),
+  answers: Argument.String("answers").pipe(
+    Argument.withDescription(
+      'Answers as a JSON object keyed by question id, such as {"q1":"Yes"}, or - to read them from stdin.',
+    ),
+  ),
+}).pipe(
+  Command.withDescription(
+    "Answer a question a thread is waiting on. Permission approvals cannot be answered here.",
+  ),
+  Command.withHandler((flags) =>
+    Effect.gen(function* () {
+      const threadId = yield* decodeThreadId(flags.thread);
+      const answers = yield* parseAnswers(yield* readMessageArgument(flags.answers));
+      yield* withThreadTools(
+        flags,
+        Effect.fn("cli.thread.answer")(function* (tools) {
+          yield* tools.call(
+            "t3_pending_request",
+            { action: "respond", threadId, requestId: flags.request.trim(), answers },
+            Schema.Unknown,
+          );
+          yield* Console.log("Answered.");
         }),
       );
     }).pipe(reportThreadErrors),
@@ -763,11 +933,16 @@ const threadShowCommand = Command.make("show", {
 );
 
 export const threadCommand = Command.make("thread").pipe(
-  Command.withDescription("Start, message, and read threads on the running server."),
+  Command.withDescription(
+    "Start, message, interrupt, answer and read threads on the running server.",
+  ),
   Command.withSubcommands([
     threadListCommand,
     threadStartCommand,
     threadSendCommand,
+    threadInterruptCommand,
+    threadQuestionsCommand,
+    threadAnswerCommand,
     threadShowCommand,
   ]),
 );

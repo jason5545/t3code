@@ -180,6 +180,13 @@ Upstream baseline: `79ee39fdcb` (merged 2026-11-06).
 - Upstream #28556 made desktop startup skip the login shell, but `installIntoProcess` told the server the environment was prepared even when no cache matched, so the first launch after updating to it started the server with launchd's `PATH=/usr/bin:/bin:/usr/sbin:/sbin` and every provider CLI read "not found on PATH" until a relaunch (upstream issues #28714 and #28890).
 - The fork carries the maintainers' open fix, #28904 at `66e24d0c57`: only `DesktopShellEnvironment.ts`, where `installIntoProcess` reports prepared only when it applied a matching cache. Its test edits stay in upstream's test file; they failed four cases before and passed all 21 after. #28719 is an earlier version of the same fix. Drop this section when upstream merges either.
 
+## 29. The `t3 thread` CLI steers, interrupts and answers
+
+- Upstream's `t3 thread send` always queues (`mode: "queue"`), so a script cannot reach a running turn even though `t3_thread_send` already takes `steer` and `restart`. The owner's ATC board drives threads through this CLI and needs a HOLD or a hand-off to land in the running turn.
+- `send` takes `--mode <queue|steer|restart|auto>`, default `queue`. steer and restart on an idle thread fail with the server's "no running turn" error and exit 1; they never fall back to queue. Over the Replay provider (ACP), steer is an interrupt and restart, and the message still lands in the same run.
+- `interrupt [--stop]` calls `t3_thread_interrupt`; an idle thread prints "Nothing was running." and exits 0. `questions` and `answer <request> <json|->` call `t3_pending_request`, which only reaches questions an agent asked: permission approvals are neither listed nor answerable over MCP, and the CLI does not add a way around that.
+- Covered by `apps/server/src/cli/thread.fork.test.ts`. Not proposed upstream yet.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
