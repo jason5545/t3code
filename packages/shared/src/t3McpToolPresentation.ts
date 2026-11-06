@@ -1,4 +1,5 @@
 import { localizedT3McpToolName } from "./t3McpToolText.ts";
+import { asT3CodeServerName } from "./t3OwnerMachineServers.ts";
 
 export type T3McpToolLogo = "t3-code";
 
@@ -404,7 +405,7 @@ function resolveT3McpToolName(value: string): string | null {
 
 // ACP tool prefixes vary; match loosely but require a known display-name entry.
 function parseT3McpToolName(value: string): string | null {
-  const label = normalizeT3McpToolLabel(value);
+  const label = asT3CodeServerName(normalizeT3McpToolLabel(value));
   const mcpMatch = /^mcp__(?<server>.+?)__(?<tool>.+)$/i.exec(label);
   if (mcpMatch?.groups) {
     const { server, tool } = mcpMatch.groups;
