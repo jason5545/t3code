@@ -119,3 +119,31 @@ export function scrollToEndSummaryText(
   const parts = [waitingLabel, queued];
   return parts.filter((part) => part !== null).join(" · ") || null;
 }
+
+/*
+ * client-runtime's voice controller is a display file, so its errors reach the composer's
+ * error pill already in Chinese, while upstream's pill keys its short labels and retry
+ * button by the English text. `voiceErrorText.fork.test.ts` keeps this table in step with
+ * the catalog.
+ */
+export const VOICE_ERRORS_IN_CHINESE: Readonly<Record<string, string>> = {
+  "語音輸入需要麥克風存取權。": "Microphone access is required for voice input.",
+  "此草稿已無法使用。": "This draft is no longer available.",
+  "已有另一段語音錄音正在進行。": "Another voice recording is already active.",
+  "無法使用語音轉錄。": "Voice transcription is not available.",
+  "語音轉錄仍在完成中，請稍後再試。": "Voice transcription is still finishing. Try again shortly.",
+  "此語言無法使用語音轉錄。": "Voice transcription is not available for this language.",
+  "無法準備語音轉錄。": "Could not prepare voice transcription.",
+  "無法開始語音錄音。": "Could not start voice recording.",
+  "語音錄音已中斷。": "Voice recording was interrupted.",
+  "無法完成語音錄音。": "Could not finish voice recording.",
+  "無法轉錄此錄音。": "Could not transcribe this recording.",
+  "語音輸入期間草稿有變更，轉錄文字沒有加入。":
+    "The draft changed while voice input was running. The transcript was not added.",
+  "沒有偵測到語音。": "No speech was detected.",
+};
+
+/** The English text of a voice input error, for code that compares it. */
+export function englishVoiceError(error: string | null): string | null {
+  return (error && VOICE_ERRORS_IN_CHINESE[error]) || error;
+}

@@ -60,7 +60,9 @@ vi.mock("../settings/settings-navigation", () => ({
   leaveSettingsPage: vi.fn(),
   openSettings: vi.fn(),
 }));
-vi.mock("../workspace/workspace-selection-store", () => ({ workspaceHasColumns: () => false }));
+vi.mock("../layout/workspace/workspace-selection-store", () => ({
+  workspaceHasColumns: () => false,
+}));
 vi.mock("../cloud/publicConfig", () => ({ hasCloudPublicConfig: () => false }));
 vi.mock("./CloudEnvironmentRows", () => ({ CloudEnvironmentRows: () => null }));
 // Fork patch 7: the tailnet section loads the connection runtime.

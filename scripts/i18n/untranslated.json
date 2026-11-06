@@ -1,5 +1,6 @@
 {
   "everywhere": [
+    "Esc",
     "Bing",
     "Brave Search",
     "Ecosia",
@@ -231,6 +232,7 @@
     "Simlock"
   ],
   "files": {
+    "apps/web/src/components/settings/VoiceSettingsPanel.tsx": ["sorry"],
     "apps/web/src/components/ChatView.logic.ts": ["New thread"],
     "apps/web/src/components/GitActionsControl.logic.ts": ["Commit", "Push"],
     "apps/web/src/components/ui/sidebar.tsx": [
