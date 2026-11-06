@@ -45,7 +45,10 @@ const PREPARED: PreparedConnection = {
 function session(client: WsRpcProtocolClient): RpcSession.RpcSession {
   return {
     client,
-    initialConfig: Effect.succeed({ shellResumeCompletionMarker: true } as never),
+    initialConfig: Effect.succeed({
+      shellResumeCompletionMarker: true,
+      environment: { serverVersion: "1.0.0" },
+    } as never),
     subscribeServerConfig: (input = {}) => client.subscribeServerConfig(input),
     ready: Effect.void,
     probe: Effect.void,
