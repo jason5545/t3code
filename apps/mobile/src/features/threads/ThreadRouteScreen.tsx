@@ -803,6 +803,7 @@ function ThreadRouteContent(
         worktreePath: preferredWorktreePath,
         env,
         initialInput: projectScriptTerminalInput(script.command),
+        stopOnSettle: script.stopOnSettle ?? false,
       },
     });
 
@@ -1027,6 +1028,7 @@ function ThreadRouteContent(
           }
           isCompacting={composer.isCompacting}
           runlessWorkActive={composer.runlessWorkActive}
+          extensionStatuses={composer.extensionStatuses}
           providerSubagentStatus={composer.providerSubagentStatus}
           creationState={creationState}
           setupWorkingStartedAt={
