@@ -8491,5 +8491,11 @@
   "Beta: Tool calls in chat": "Beta：對話中的工具呼叫",
   "Usage limit reached. {resetText}": "已達用量上限。{resetText}",
   "Usage limit reached. The provider did not report a reset time. Retry manually when your limit is available.": "已達用量上限。供應商沒有回報重設時間，額度恢復後請手動重試。",
-  "Shows the full Pi status": "顯示完整的 Pi 狀態"
+  "Shows the full Pi status": "顯示完整的 Pi 狀態",
+  "Smallest download": "下載量最小",
+  "Best {0} accuracy": "{0} 準確度最高",
+  "Fastest transcription": "轉錄最快",
+  "Sort and filter models: {0}{1}": "排序與篩選模型：{0}{1}",
+  "Sort by": "排序方式",
+  "Downloaded only": "只顯示已下載"
 }
