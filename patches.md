@@ -192,7 +192,7 @@ Upstream baseline: `b90e554e0a` (merged 2026-11-07).
 
 - `VcsProcess` reads Git failures with English patterns: the checkpoint retry on a held `.lock`, `GIT_INDEX_LOCKED_DETAIL`, and `GitVcsDriverCore`'s config and ref lock classifiers. With `LANG` unset, as in a Finder-launched app or an agent's shell, Homebrew Git on macOS follows the system language (`AppleLanguages`), so on the owner's Mac a held lock read `致命錯誤: 無法建立「….lock」：File exists。`: checkpoint capture failed on the first lock instead of retrying, and the five lock-recovery cases in `GitVcsDriver.test.ts` waited out the 120 s ceiling.
 - Every Git process `VcsProcess` spawns now gets `LANGUAGE=C` unless the caller sets its own. `LANGUAGE` changes only message catalogs, not `LC_CTYPE`, which hooks inherit; upstream's `executeGitWithStableDiagnostics` makes the same choice for single commands.
-- Covered by `apps/server/src/vcs/VcsProcess.fork.test.ts`. Not proposed upstream yet.
+- Covered by `apps/server/src/vcs/VcsProcess.fork.test.ts`. Proposed upstream as issue #32251 and PR #32252 (2026-11-07, branch `fix/git-language-c`); drop this section when upstream merges it.
 
 ## Fork tests
 
