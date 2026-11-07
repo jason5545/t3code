@@ -188,6 +188,12 @@ Upstream baseline: `b90e554e0a` (merged 2026-11-07).
 - `interrupt [--stop]` calls `t3_thread_interrupt`; an idle thread prints "Nothing was running." and exits 0. `questions` and `answer <request> <json|->` call `t3_pending_request`, which only reaches questions an agent asked: permission approvals are neither listed nor answerable over MCP, and the CLI does not add a way around that.
 - Covered by `apps/server/src/cli/thread.fork.test.ts`. Not proposed upstream yet.
 
+## 30. Git speaks English to the server
+
+- `VcsProcess` reads Git failures with English patterns: the checkpoint retry on a held `.lock`, `GIT_INDEX_LOCKED_DETAIL`, and `GitVcsDriverCore`'s config and ref lock classifiers. With `LANG` unset, as in a Finder-launched app or an agent's shell, Homebrew Git on macOS follows the system language (`AppleLanguages`), so on the owner's Mac a held lock read `致命錯誤: 無法建立「….lock」：File exists。`: checkpoint capture failed on the first lock instead of retrying, and the five lock-recovery cases in `GitVcsDriver.test.ts` waited out the 120 s ceiling.
+- Every Git process `VcsProcess` spawns now gets `LANGUAGE=C` unless the caller sets its own. `LANGUAGE` changes only message catalogs, not `LC_CTYPE`, which hooks inherit; upstream's `executeGitWithStableDiagnostics` makes the same choice for single commands.
+- Covered by `apps/server/src/vcs/VcsProcess.fork.test.ts`. Not proposed upstream yet.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
