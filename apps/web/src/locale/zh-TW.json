@@ -8589,7 +8589,5 @@
   "Started by the first run": "由第一次執行建立",
   "Destination thread": "目的地對話",
   "Search all threads...": "搜尋所有對話…",
-  "No threads found.": "找不到對話。",
-  "{0}{1} Deleting it also deletes this task.": "{0}{1}刪除對話也會刪除這個排程工作。",
-  "The first run starts the thread.": "第一次執行時會建立這個對話。"
+  "No threads found.": "找不到對話。"
 }

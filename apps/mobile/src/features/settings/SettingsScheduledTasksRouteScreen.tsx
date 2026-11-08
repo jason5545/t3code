@@ -7,6 +7,7 @@ import {
   resolveProjectProviderInstanceEnabled,
 } from "@t3tools/contracts";
 import { readEnvironmentScope } from "../../state/session";
+import { scheduledTaskDestinationFooter } from "../../locale/assembledText";
 import type {
   EnvironmentId,
   ProjectId,
@@ -913,13 +914,10 @@ function TaskForm({
           footer={
             draft.threadMode === "new_thread"
               ? "Each run starts a new thread."
-              : `${
-                  draft.threadMode === "continue"
-                    ? "Runs continue one conversation."
-                    : "Runs share one thread, each in a fresh session without earlier runs' context."
-                }${
-                  draft.threadId === null ? " The first run starts the thread." : ""
-                } Deleting it also deletes this task.`
+              : scheduledTaskDestinationFooter(
+                  draft.threadMode === "continue",
+                  draft.threadId === null,
+                )
           }
         >
           {offersThreadModes ? (
