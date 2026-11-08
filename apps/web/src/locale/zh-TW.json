@@ -8580,5 +8580,11 @@
   "Remove key from environment": "從環境移除金鑰",
   "Remove the {label} key from {environment.label}?": "要從 {environment.label} 移除 {label} 金鑰嗎？",
   "Everyone using it for dictation will lose access.": "用它聽寫的每個人都會失去使用權。",
-  "Back to providers": "返回供應商"
+  "Back to providers": "返回供應商",
+  "Remove connection": "移除連線",
+  "Settled thread": "已結束的對話",
+  "Settled threads": "已結束的對話",
+  "Settled: {child.title}": "已結束：{child.title}",
+  "Remove incomplete connection": "移除未完成的連線",
+  "Fast and Ultrafast are unavailable with this ChatGPT connection. Use an existing Codex CLI login for speed options your account supports.": "這個 ChatGPT 連線無法使用快速和超快速。要使用你帳號支援的速度選項，請改用現有的 Codex CLI 登入。"
 }

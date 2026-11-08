@@ -244,7 +244,8 @@
       "calc(100vw - var(--spacing(3)))",
       "3rem",
       "(max-width: 767px)",
-      "Could not persist sidebar width."
+      "Could not persist sidebar width.",
+      "Could not restore persisted sidebar state."
     ],
     "apps/web/src/components/RightPanelTabs.tsx": [
       "none",
