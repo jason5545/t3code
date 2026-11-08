@@ -241,7 +241,7 @@
       "none",
       "default",
       "16rem",
-      "calc(100vw - var(--spacing(3)))",
+      "calc(100vw - var(--spacing) * 3)",
       "3rem",
       "(max-width: 767px)",
       "Could not persist sidebar width.",

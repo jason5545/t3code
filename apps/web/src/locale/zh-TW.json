@@ -8237,7 +8237,6 @@
   "One thread, same conversation": "同一個對話，接續內容",
   "One thread, fresh session": "同一個對話，新的工作階段",
   "Each run starts a new thread.": "每次執行都會建立新對話。",
-  "{0} The first run starts the thread. Deleting it also deletes this task.": "{0}第一次執行時會建立這個對話。刪除對話也會刪除這個排程工作。",
   "Runs continue one conversation.": "每次執行都接續同一段對話。",
   "Runs share one thread, each in a fresh session without earlier runs' context.": "每次執行都在同一個對話裡，各自開新的工作階段，不帶先前執行的脈絡。",
   "Runs go to": "執行位置",
@@ -8586,5 +8585,11 @@
   "Settled threads": "已結束的對話",
   "Settled: {child.title}": "已結束：{child.title}",
   "Remove incomplete connection": "移除未完成的連線",
-  "Fast and Ultrafast are unavailable with this ChatGPT connection. Use an existing Codex CLI login for speed options your account supports.": "這個 ChatGPT 連線無法使用快速和超快速。要使用你帳號支援的速度選項，請改用現有的 Codex CLI 登入。"
+  "Fast and Ultrafast are unavailable with this ChatGPT connection. Use an existing Codex CLI login for speed options your account supports.": "這個 ChatGPT 連線無法使用快速和超快速。要使用你帳號支援的速度選項，請改用現有的 Codex CLI 登入。",
+  "Started by the first run": "由第一次執行建立",
+  "Destination thread": "目的地對話",
+  "Search all threads...": "搜尋所有對話…",
+  "No threads found.": "找不到對話。",
+  "{0}{1} Deleting it also deletes this task.": "{0}{1}刪除對話也會刪除這個排程工作。",
+  "The first run starts the thread.": "第一次執行時會建立這個對話。"
 }
