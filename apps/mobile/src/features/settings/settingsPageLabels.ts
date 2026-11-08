@@ -8,7 +8,7 @@ export const SETTINGS_PAGE_LABELS: Readonly<Record<string, string>> = {
   Chat: "Chat",
   "Navigation tabs": "Navigation tabs",
   Keyboard: "Keyboard",
-  Microphone: "Microphone",
+  Voice: "Voice",
   Providers: "Providers",
   Threads: "Threads",
   "Scheduled tasks": "Scheduled tasks",
