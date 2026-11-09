@@ -31,12 +31,13 @@ async function loadInputHook(commands: ReadonlyArray<SkillCommand>) {
     ),
   );
   await NodeVM.runInNewContext(`${source}\nt3McpExtension(pi)`, {
-    process: { env: {} },
+    process: { env: {}, argv: [] },
     NodeFSP,
     NodePath,
     stripFrontmatter: (content: string) => content,
     pi: {
       on: (name: string, handler: unknown) => handlers.set(name, handler),
+      registerCommand: () => {},
       getCommands: () => commands,
     },
   });

@@ -15,6 +15,7 @@ import {
   AuthOrchestrationReadScope,
   MCP_PEER_LINK_SOFTWARE_ID,
   mcpClientScopes,
+  parseMcpApprovalCode,
   type RuntimeMode,
 } from "@t3tools/contracts";
 import { DEFAULT_HOSTED_APP_URL } from "@t3tools/shared/connectAuth";
@@ -460,21 +461,32 @@ const make = Effect.gen(function* () {
 
   const approve: McpOAuth["Service"]["approve"] = Effect.fn("McpOAuth.approve")(function* (input) {
     const { decision } = input;
+    let access = decision.access;
     let granted: McpClientSessionOptions | undefined;
     if (decision._tag === "pairing-code") {
-      granted = yield* environmentAuth.consumeMcpApprovalCode(decision.code, decision.access).pipe(
-        Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (cause) =>
-          Effect.logError("MCP approval code check failed.", { cause }).pipe(
-            Effect.andThen(
-              Effect.fail(
-                new McpOAuthPageError({
-                  description: "The code could not be checked. Try again.",
-                }),
+      // An approval code is for one app's sign-in, never for linking another environment.
+      if (input.authorization.client.peerLink && parseMcpApprovalCode(decision.code)) {
+        return yield* new McpOAuthPageError({
+          description: "Linking needs a plain pairing code, not an app approval code.",
+        });
+      }
+      const approved = yield* environmentAuth
+        .consumeMcpApprovalCode(decision.code, decision.access)
+        .pipe(
+          Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (cause) =>
+            Effect.logError("MCP approval code check failed.", { cause }).pipe(
+              Effect.andThen(
+                Effect.fail(
+                  new McpOAuthPageError({
+                    description: "The code could not be checked. Try again.",
+                  }),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
+      access = approved.access;
+      granted = approved.ttl === undefined ? undefined : { ttl: approved.ttl };
     } else {
       const session = yield* approvingBrowserSession(input.request, input.authorization);
       if (
@@ -487,10 +499,10 @@ const make = Effect.gen(function* () {
         });
       }
     }
-    const code = yield* mintCode(input.authorization, decision.access, granted);
+    const code = yield* mintCode(input.authorization, access, granted);
     yield* Effect.logInfo("Approved an MCP client sign-in.", {
       client: input.authorization.client.name,
-      access: decision.access,
+      access,
       method: decision._tag,
     });
     return redirectWith(input.authorization.redirectUri, {

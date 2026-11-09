@@ -230,7 +230,10 @@
     "behavior probe",
     "linked environments beta update",
     "T3 Chat",
-    "Simlock"
+    "Simlock",
+    "change model",
+    "Anthropic",
+    "Mermaid"
   ],
   "files": {
     "apps/web/src/components/settings/VoiceSettingsPanel.tsx": ["sorry"],
@@ -586,7 +589,10 @@
     ],
     "apps/web/src/components/chat/DraftHeroHeadline.tsx": ["add-project"],
     "apps/web/src/components/chat/ChatHeader.tsx": ["none"],
-    "apps/web/src/components/settings/ProviderInstanceCard.tsx": ["{0}, view details"],
+    "apps/web/src/components/settings/ProviderInstanceCard.tsx": [
+      "{0}, view details",
+      "provider-env-"
+    ],
     "apps/mobile/src/features/threads/DraftEnvironmentControl.tsx": [
       "Choose environment, {props.label}, {0}"
     ],
@@ -620,6 +626,7 @@
       "denied"
     ],
     "packages/client-runtime/src/state/threadShell.ts": ["side chat", "subagent"],
-    "apps/web/src/components/chat/TraitsPicker.tsx": ["body", "none", "prefix", "ultrathink"]
+    "apps/web/src/components/chat/TraitsPicker.tsx": ["body", "none", "prefix", "ultrathink"],
+    "apps/web/src/components/settings/TextGeneratorsSettings.tsx": ["model", "models"]
   }
 }

@@ -114,6 +114,7 @@ const makeDependencies = (options: {
         authorizeDpop: () => Effect.die("unused"),
         authorizeDpopHttp: () => Effect.die("unused"),
         renewDpopBeforeExpiry: () => Effect.die("unused"),
+        rememberCheckedDescriptor: () => Effect.void,
       }),
     ),
     Layer.succeed(
