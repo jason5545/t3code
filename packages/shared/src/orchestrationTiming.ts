@@ -34,6 +34,6 @@ export function formatDuration(durationMs: number): string {
   const parts: Array<[number, DurationUnit]> = [];
   if (hours > 0) parts.push([hours, "h"]);
   if (minutes > 0) parts.push([minutes, "m"]);
-  if (seconds > 0) parts.push([seconds, "s"]);
+  if (seconds > 0 || minutes > 0) parts.push([seconds, "s"]);
   return formatDurationUnits(...parts);
 }

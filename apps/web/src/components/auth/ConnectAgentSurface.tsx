@@ -20,7 +20,11 @@ import { PrimaryEnvironmentHttpClient } from "~/environments/primary/httpClient"
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { runPrimaryHttp } from "~/lib/runtime";
 import { cn } from "~/lib/utils";
-import { resolveApprovalDecision, resolveMcpAccess } from "./ConnectAgentSurface.logic";
+import {
+  agentRedirectUrl,
+  resolveApprovalDecision,
+  resolveMcpAccess,
+} from "./ConnectAgentSurface.logic";
 import { runtimeModeConfig } from "../chat/runtimeModeConfig";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
@@ -41,6 +45,15 @@ export const accessConfig: Record<
   ...runtimeModeConfig,
 };
 
+const ARM_DELAY_MS = 700;
+const UNSAFE_REDIRECT = "The environment returned an address this page will not open.";
+
+function followRedirect(url: string): boolean {
+  const safe = agentRedirectUrl(url);
+  if (safe !== null) window.location.replace(safe);
+  return safe !== null;
+}
+
 function redirectsToThisComputer(redirectHost: string): boolean {
   return isLoopbackHost(new URL(`http://${redirectHost}`).hostname);
 }
@@ -53,50 +66,98 @@ type Loaded =
 const UNREACHABLE = "Could not reach this environment. Try again.";
 const isApprovalError = Schema.is(AuthMcpApprovalError);
 
-type Answer<A> =
+export type McpApprovalAnswer<A> =
   | { readonly kind: "ok"; readonly value: A }
   | { readonly kind: "redirect"; readonly url: string }
   | { readonly kind: "error"; readonly message: string };
+
+/** Where the consent page reads the sign-in request and sends the decision. */
+export interface McpApprovalTransport {
+  readonly load: (
+    authorization: AuthMcpAuthorizationRequest,
+  ) => Promise<McpApprovalAnswer<AuthMcpApprovalDetails>>;
+  readonly decide: (
+    authorization: AuthMcpAuthorizationRequest,
+    decision: AuthMcpApprovalDecision,
+  ) => Promise<McpApprovalAnswer<unknown>>;
+}
 
 function runApproval<A>(
   call: (
     client: Context.Service.Shape<typeof PrimaryEnvironmentHttpClient>,
   ) => Effect.Effect<A | { readonly redirectTo: string }, unknown>,
-): Promise<Answer<A>> {
+): Promise<McpApprovalAnswer<A>> {
   return runPrimaryHttp(
     PrimaryEnvironmentHttpClient.pipe(
       Effect.flatMap(call),
-      Effect.map((value): Answer<A> =>
+      Effect.map((value): McpApprovalAnswer<A> =>
         typeof value === "object" && value !== null && "redirectTo" in value
           ? { kind: "redirect", url: value.redirectTo }
           : { kind: "ok", value: value as A },
       ),
       Effect.catch((error) =>
-        Effect.succeed<Answer<A>>({
+        Effect.succeed<McpApprovalAnswer<A>>({
           kind: "error",
           message: isApprovalError(error) ? error.message : UNREACHABLE,
         }),
       ),
     ),
-  ).catch((): Answer<A> => ({ kind: "error", message: UNREACHABLE }));
+  ).catch((): McpApprovalAnswer<A> => ({ kind: "error", message: UNREACHABLE }));
 }
+
+/** This environment's own page, approving with a code or this browser's session. */
+const primaryTransport: McpApprovalTransport = {
+  load: (authorization) =>
+    runApproval((client) => client.mcpOAuth.approval({ headers: {}, payload: authorization })),
+  decide: (authorization, decision) =>
+    runApproval((client) =>
+      client.mcpOAuth.decision({ headers: {}, payload: { authorization, decision } }),
+    ),
+};
 
 const decodeAuthorizationRequest = Schema.decodeSync(AuthMcpAuthorizationRequest);
 
-function readAuthorizationRequest(): AuthMcpAuthorizationRequest {
+/** The agent's OAuth request from this page's query; other parameters are ignored. */
+export function readAuthorizationRequest(): AuthMcpAuthorizationRequest {
   return decodeAuthorizationRequest(Object.fromEntries(new URL(window.location.href).searchParams));
 }
 
 export function ConnectAgentSurface() {
   const [authorization] = useState(readAuthorizationRequest);
+  return <McpConsent authorization={authorization} transport={primaryTransport} acceptsCode />;
+}
+
+/**
+ * The consent screen for one agent sign-in. `acceptsCode` shows the sign-in code field;
+ * `requireLevelChoice` starts with no level picked; `footer` sits under the actions.
+ */
+export function McpConsent({
+  authorization,
+  transport,
+  acceptsCode = false,
+  requireLevelChoice = false,
+  environmentLabel,
+  footer,
+}: {
+  readonly authorization: AuthMcpAuthorizationRequest;
+  readonly transport: McpApprovalTransport;
+  readonly acceptsCode?: boolean;
+  readonly requireLevelChoice?: boolean;
+  readonly environmentLabel?: string | undefined;
+  readonly footer?: ReactNode;
+}) {
   const [loaded, setLoaded] = useState<Loaded>({ status: "loading" });
   const [requestedAccess, setAccess] = useState<AuthMcpClientAccess | null>(null);
   const [pairingCode, setPairingCode] = useState("");
-  const access = resolveMcpAccess(
-    requestedAccess,
-    loaded.status === "ready" ? loaded.details.runtimeModeCeiling : undefined,
-    pairingCode.trim().length > 0,
-  );
+  const [armed, setArmed] = useState(false);
+  const access =
+    requireLevelChoice && requestedAccess === null
+      ? null
+      : resolveMcpAccess(
+          requestedAccess,
+          loaded.status === "ready" ? loaded.details.runtimeModeCeiling : undefined,
+          pairingCode.trim().length > 0,
+        );
   const [errorMessage, setErrorMessage] = useState("");
   const [pending, setPending] = useState<"approve" | "deny" | null>(null);
   const [handoffUrl, setHandoffUrl] = useState<string | null>(null);
@@ -105,49 +166,70 @@ export function ConnectAgentSurface() {
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- fetches the MCP OAuth approval and redirects the window or stores details, ignoring stale answers
   useEffect(() => {
     let cancelled = false;
-    void runApproval((client) => client.mcpOAuth.approval({ payload: authorization })).then(
-      (answer) => {
-        if (cancelled) return;
-        if (answer.kind === "redirect") {
-          window.location.replace(answer.url);
-          return;
-        }
-        setLoaded(
-          answer.kind === "error"
-            ? { status: "invalid", message: answer.message }
-            : { status: "ready", details: answer.value },
-        );
-      },
-    );
+    void transport.load(authorization).then((answer) => {
+      if (cancelled) return;
+      if (answer.kind === "redirect") {
+        if (!followRedirect(answer.url)) setLoaded({ status: "invalid", message: UNSAFE_REDIRECT });
+        return;
+      }
+      setLoaded(
+        answer.kind === "error"
+          ? { status: "invalid", message: answer.message }
+          : { status: "ready", details: answer.value },
+      );
+    });
     return () => {
       cancelled = true;
     };
-  }, [authorization]);
+  }, [authorization, transport]);
 
-  const decide = async (choice: "approve" | "deny") => {
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- keeps Approve off briefly after the page shows or regains focus, so a click aimed at another window cannot land on it
+  useEffect(() => {
     if (loaded.status !== "ready") return;
+    let timer = window.setTimeout(() => setArmed(true), ARM_DELAY_MS);
+    const rearm = () => {
+      setArmed(false);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setArmed(true), ARM_DELAY_MS);
+    };
+    window.addEventListener("focus", rearm);
+    document.addEventListener("visibilitychange", rearm);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", rearm);
+      document.removeEventListener("visibilitychange", rearm);
+    };
+  }, [loaded.status]);
+
+  const decide = async (choice: "approve" | "deny", details: AuthMcpApprovalDetails) => {
     const decision: AuthMcpApprovalDecision | null =
       choice === "deny"
         ? { _tag: "deny" }
-        : resolveApprovalDecision({ code: pairingCode, access, details: loaded.details });
+        : access === null
+          ? null
+          : resolveApprovalDecision({ code: pairingCode, access, details });
     if (decision === null) return;
     setPending(choice);
     setErrorMessage("");
-    const answer = await runApproval((client) =>
-      client.mcpOAuth.decision({ payload: { authorization, decision } }),
-    );
+    const answer = await transport.decide(authorization, decision);
     if (answer.kind === "redirect") {
       // Fork: a loopback callback only reaches an agent on this computer, and
       // the agent may run elsewhere, so let the user pick before leaving.
-      if (choice === "approve" && redirectsToThisComputer(loaded.details.redirectHost)) {
-        setHandoffUrl(answer.url);
+      const safe = agentRedirectUrl(answer.url);
+      if (safe !== null && choice === "approve" && redirectsToThisComputer(details.redirectHost)) {
+        setHandoffUrl(safe);
         return;
       }
-      window.location.replace(answer.url);
-      return;
+      if (followRedirect(answer.url)) return;
     }
     setPending(null);
-    setErrorMessage(answer.kind === "error" ? answer.message : "The sign-in could not continue.");
+    setErrorMessage(
+      answer.kind === "error"
+        ? answer.message
+        : answer.kind === "redirect"
+          ? UNSAFE_REDIRECT
+          : "The sign-in could not continue.",
+    );
   };
 
   if (loaded.status === "loading") {
@@ -169,6 +251,7 @@ export function ConnectAgentSurface() {
         <p className="mt-4 text-sm text-muted-foreground">
           Close this page and start the sign-in again from your agent.
         </p>
+        {footer}
       </StandalonePage>
     );
   }
@@ -202,9 +285,13 @@ export function ConnectAgentSurface() {
 
   const { details } = loaded;
   const canApprove =
-    pending === null && resolveApprovalDecision({ code: pairingCode, access, details }) !== null;
+    armed &&
+    pending === null &&
+    access !== null &&
+    resolveApprovalDecision({ code: pairingCode, access, details }) !== null;
   // A code from "Use T3 Code in another app" names its level, so the page does not ask again.
   const codeAccess = parseMcpApprovalCode(pairingCode)?.access;
+  const approveLevel = codeAccess ?? access;
 
   return (
     <StandalonePage>
@@ -213,7 +300,10 @@ export function ConnectAgentSurface() {
         description={
           <>
             This agent wants to use the threads in every project on{" "}
-            <span className="font-medium text-foreground">{details.environmentHost}</span>.
+            <span className="font-medium text-foreground">
+              {environmentLabel ?? details.environmentHost}
+            </span>
+            {environmentLabel ? ` (${details.environmentHost})` : null}.
           </>
         }
       />
@@ -223,7 +313,16 @@ export function ConnectAgentSurface() {
           {details.clientName} <span className="text-muted-foreground">· name set by the app</span>
         </dd>
         <dt className="text-muted-foreground">Access goes to</dt>
-        <dd className="min-w-0 break-words font-medium">{details.redirectHost}</dd>
+        <dd className="min-w-0 break-words font-medium">
+          {details.redirectHost}
+          {/* Fork patch 5: a loopback callback can belong to another machine; the note below says so. */}
+          {redirectsToThisComputer(details.redirectHost) ? null : (
+            <span className="font-normal text-muted-foreground">
+              {" "}
+              · whoever runs it gets this access
+            </span>
+          )}
+        </dd>
       </dl>
       {/* Fork patch 5: a loopback callback can belong to an agent on another machine. */}
       <p className="mt-2 text-xs text-muted-foreground">
@@ -236,30 +335,32 @@ export function ConnectAgentSurface() {
         className="mt-6 space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
-          if (canApprove) void decide("approve");
+          if (canApprove) void decide("approve", details);
         }}
       >
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="connect-agent-pairing-code">
-            Sign-in code
-          </label>
-          <Input
-            id="connect-agent-pairing-code"
-            autoCapitalize="none"
-            autoComplete="one-time-code"
-            autoCorrect="off"
-            disabled={pending !== null}
-            nativeInput
-            onChange={(event) => setPairingCode(event.currentTarget.value)}
-            placeholder="Paste a code"
-            spellCheck={false}
-            value={pairingCode}
-          />
-          <p className="text-xs text-muted-foreground">
-            Get one from Use T3 Code in another app (MCP), Settings → Sharing & access, or{" "}
-            <code>t3 auth pairing create</code> on this machine.
-          </p>
-        </div>
+        {acceptsCode ? (
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="connect-agent-pairing-code">
+              Sign-in code
+            </label>
+            <Input
+              id="connect-agent-pairing-code"
+              autoCapitalize="none"
+              autoComplete="one-time-code"
+              autoCorrect="off"
+              disabled={pending !== null}
+              nativeInput
+              onChange={(event) => setPairingCode(event.currentTarget.value)}
+              placeholder="Paste a code"
+              spellCheck={false}
+              value={pairingCode}
+            />
+            <p className="text-xs text-muted-foreground">
+              Get one from Use T3 Code in another app (MCP), Settings → Sharing & access, or{" "}
+              <code>t3 auth pairing create</code> on this machine.
+            </p>
+          </div>
+        ) : null}
 
         {codeAccess ? (
           <p className="text-sm">
@@ -302,13 +403,13 @@ export function ConnectAgentSurface() {
           <Button disabled={!canApprove} type="submit">
             {pending === "approve"
               ? "Approving…"
-              : codeAccess
-                ? `Approve ${accessConfig[codeAccess].label}`
-                : "Approve"}
+              : approveLevel === null
+                ? "Choose what it may do"
+                : `Approve ${accessConfig[approveLevel].label}`}
           </Button>
           <Button
             disabled={pending !== null}
-            onClick={() => void decide("deny")}
+            onClick={() => void decide("deny", details)}
             type="button"
             variant="outline"
           >
@@ -316,6 +417,7 @@ export function ConnectAgentSurface() {
           </Button>
         </div>
       </form>
+      {footer}
     </StandalonePage>
   );
 }

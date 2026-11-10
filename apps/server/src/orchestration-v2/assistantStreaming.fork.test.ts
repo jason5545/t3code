@@ -30,7 +30,7 @@ const reasoning = (text: string, streaming = true): ProviderAdapter.ProviderAdap
 
 describe("V2 assistant streaming (fork)", () => {
   it("streams reasoning without waiting for a paragraph boundary", () => {
-    const filter = makeAssistantStreamingFilter("paragraph");
+    const { filter } = makeAssistantStreamingFilter("paragraph");
     expect(filter(reasoning("Checking the"), 0)).toMatchObject({
       turnItem: { text: "Checking the", streaming: true, type: "reasoning" },
     });
@@ -42,7 +42,7 @@ describe("V2 assistant streaming (fork)", () => {
     const final = reasoning("Checking the adapter first.", false);
     expect(filter(final, 910)).toBe(final);
 
-    const buffered = makeAssistantStreamingFilter("turn");
+    const { filter: buffered } = makeAssistantStreamingFilter("turn");
     expect(buffered(reasoning("Checking the"), 0)).toBeNull();
     expect(buffered(final, 1)).toBe(final);
   });

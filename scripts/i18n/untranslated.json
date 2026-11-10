@@ -528,6 +528,7 @@
       "Opens the thread. Swipe left for {0} and snooze actions."
     ],
     "apps/mobile/src/features/threads/thread-work-log.tsx": [
+      "robot",
       "html",
       "typescript",
       "json",
