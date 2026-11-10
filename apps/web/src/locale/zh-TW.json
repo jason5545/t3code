@@ -8800,5 +8800,16 @@
   "Open {app.name} on the web": "在網頁上開啟 {app.name}",
   "Restarts T3 Code there. It will be offline for about {minutes} min.": "會重新啟動那裡的 T3 Code，約離線 {minutes} 分鐘。",
   "T3 Code on {label} stops, rebuilds its database, and starts again. It will be offline for about {minutes} min. Running agents stop when it restarts.": "{label} 上的 T3 Code 會停止、重建資料庫再啟動，約離線 {minutes} 分鐘。重新啟動時，執行中的代理程式會停止。",
-  "Steer waiting for the agent to read it after the running command finishes": "引導訊息正在等待代理程式在執行中的指令結束後讀取"
+  "Steer waiting for the agent to read it after the running command finishes": "引導訊息正在等待代理程式在執行中的指令結束後讀取",
+  "Image attachment": "圖片附件",
+  "Cloud provider": "雲端供應商",
+  "Use your own API key": "使用你自己的 API 金鑰",
+  "API key saved": "已儲存 API 金鑰",
+  "{0} Select This device to stop sharing.": "{0} 選擇「這部裝置」即可停止分享。",
+  "Method on {environment.label}": "{environment.label} 上的方式",
+  "Local model": "本機模型",
+  "Not available on this environment": "這個環境無法使用",
+  "Local model · {0}": "本機模型 · {0}",
+  "No model installed · Choose one to download": "尚未安裝模型 · 選一個下載",
+  "No model installed · Add one using T3 Code on {props.label}": "尚未安裝模型 · 請在 {props.label} 上用 T3 Code 新增"
 }
