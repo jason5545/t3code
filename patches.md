@@ -188,6 +188,11 @@ Upstream baseline: `44ebb2fe57` (merged 2026-11-11).
 - `interrupt [--stop]` calls `t3_thread_interrupt`; an idle thread prints "Nothing was running." and exits 0. `questions` and `answer <request> <json|->` call `t3_pending_request`, which only reaches questions an agent asked: permission approvals are neither listed nor answerable over MCP, and the CLI does not add a way around that.
 - Covered by `apps/server/src/cli/thread.fork.test.ts`. Not proposed upstream yet.
 
+## 30. Pi and OMP rewind after their runtime was released (upstream PR #26322)
+
+- Edit from here on a Pi or OMP thread failed with "The provider could not roll back this conversation" whenever its Pi runtime had been released first (server or app restart, idle release, crash), and the retries failed the same way. Checkpoint rollback opens a fresh runtime and calls `rollbackThread` without `resumeThread`, so the adapter stopped at `Pi session has no registered thread` before any RPC (upstream issue #26312). Without a restart the rewind worked, which is why it looked intermittent.
+- The fork carries the maintainers' open fix, #26322: only `packages/provider-pi/src/server/adapter.ts`, where `rollbackThread` on a runtime with no registered thread loads the persisted session through `registerThread` (`switch_session`, unpublished) and then forks as before. Its new case stays in upstream's test file; it failed before and passed with the other 123 after. Reproduced and checked end to end on 2026-11-11 with OMP `18.18.3` against a local fake model in an isolated dev home: two UI turns, restart, Edit from here failed before and rewound after, and the next turn's OMP session held only the surviving messages. Drop this section when upstream merges #26322.
+
 ## Fork tests
 
 - Fork test cases live in `*.fork.test.ts` beside the file they cover, each with a copy of the small harness it needs, so upstream can rewrite or delete its own tests without conflicts. Upstream test files carry no fork edits.
