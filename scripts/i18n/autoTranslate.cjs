@@ -510,6 +510,9 @@ module.exports = function autoTranslate(babel, options) {
         translateValue(state, args[1], "alert:message");
       } else if (/^(?:window\.)?(?:confirm|alert)$/.test(callee)) {
         translateValue(state, args[0], "dialog");
+      } else if (callee === "announce") {
+        // Web's screen reader live region (`apps/web/src/lib/announce.ts`).
+        translateValue(state, args[0], "announce");
       } else if (state.displayFile && !path.node._t3i18n) {
         for (const arg of args) translateSentences(state, arg, "argument");
       }

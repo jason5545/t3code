@@ -57,6 +57,16 @@ export function threadUndoNoticeShortText(notice: {
   return notice.count === 1 ? notice.action : `${notice.action} ${notice.count}`;
 }
 
+/** What a screen reader hears after Undo, such as "Undid settle of 2 threads". */
+export function threadUndoneText(
+  action: keyof typeof UNDO_ACTIONS,
+  count: number,
+  english: string,
+): string {
+  if (!useChinese) return english;
+  return `已復原 ${count} ${action === "Discarded" ? "份草稿" : "個對話"}（原本${UNDO_ACTIONS[action]}）`;
+}
+
 export const threadUndoNoticeSeparator = useChinese ? "，" : ", ";
 
 /** The background work banner's verb before a single task's label. */

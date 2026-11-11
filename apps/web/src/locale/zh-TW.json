@@ -8845,5 +8845,10 @@
   "Time, {0}{1}": "時間，{0}{1}",
   "File contents": "檔案內容",
   "Your next message compacts {0} tokens of history first.": "下次傳送前會先壓縮 {0} 個 token 的歷史紀錄。",
-  "Keep the full history": "保留完整歷史紀錄"
+  "Keep the full history": "保留完整歷史紀錄",
+  "Terminal output can't be added to a question answer.": "終端機輸出無法加入問題的回答。",
+  "Answer or dismiss the question first, then add it to chat.": "請先回答或關閉這個問題，再加入對話。",
+  "Model: {0}": "模型：{0}",
+  "Opened in {label}": "已在 {label} 開啟",
+  "Pinned 1 thread": "已釘選 1 個對話"
 }

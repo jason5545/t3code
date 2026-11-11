@@ -630,6 +630,8 @@
     "packages/client-runtime/src/state/threadShell.ts": ["side chat", "subagent"],
     "apps/web/src/components/chat/TraitsPicker.tsx": ["body", "none", "prefix", "ultrathink"],
     "apps/web/src/components/settings/TextGeneratorsSettings.tsx": ["model", "models"],
-    "packages/client-runtime/src/scheduledTaskTimeZone.ts": ["UTC"]
+    "packages/client-runtime/src/scheduledTaskTimeZone.ts": ["UTC"],
+    "apps/web/src/hooks/showThreadUndoNotice.ts": ["draft", "thread"],
+    "apps/web/src/lib/bootError.ts": ["Copied to clipboard."]
   }
 }
