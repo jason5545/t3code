@@ -22,6 +22,7 @@ import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { SettingsRow } from "./settingsLayout";
 import { ProviderAuthenticationSection } from "./ProviderAuthenticationSection";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 interface ProviderSetupSectionProps {
   readonly environmentId: EnvironmentId;
@@ -169,7 +170,11 @@ function ProviderSetupActions({
     if (result._tag === "Failure") {
       if (!isAtomCommandInterrupted(result)) {
         const failure = squashAtomCommandFailure(result);
-        setError(failure instanceof Error ? failure.message : "Provider setup failed.");
+        setError(
+          failure instanceof Error
+            ? localizeServerMessage(failure.message)
+            : "Provider setup failed.",
+        );
       }
       return false;
     }
@@ -233,9 +238,9 @@ function ProviderSetupActions({
             </div>
             {!installActive &&
             installation?.message &&
-            installation.message !== installationStatusMessage ? (
+            localizeServerMessage(installation.message) !== installationStatusMessage ? (
               <p className="text-muted-foreground [overflow-wrap:anywhere]">
-                {installation.message}
+                {localizeServerMessage(installation.message)}
               </p>
             ) : null}
             <div className="grid min-h-7 grid-cols-[1.75rem_minmax(0,1fr)] gap-2">

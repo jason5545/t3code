@@ -24,6 +24,7 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { SettingsRow } from "./settingsLayout";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 const ProviderAuthTerminal = lazy(() => import("./ProviderAuthTerminal"));
 
@@ -78,7 +79,8 @@ export function ProviderAuthenticationSection({
     (provider.auth.type === "gemini-api-key" || provider.auth.type === "agent-platform");
   const accountDescription = active
     ? auth?.phase === "starting"
-      ? (auth.message ?? (usesCredentials ? "Connecting…" : "Starting sign-in…"))
+      ? (localizeServerMessage(auth.message) ??
+        (usesCredentials ? "Connecting…" : "Starting sign-in…"))
       : auth?.phase === "verifying"
         ? usesCredentials
           ? "Checking credentials and loading models…"
@@ -97,7 +99,7 @@ export function ProviderAuthenticationSection({
           : usesCredentials
             ? `Connect on ${environmentLabel} to load models.`
             : `Sign in on ${environmentLabel}.`;
-  const statusMessage = auth?.phase === "failed" ? auth.message : null;
+  const statusMessage = auth?.phase === "failed" ? localizeServerMessage(auth.message) : null;
   const disabled = readOnly || pending || query.error !== null || isDiscovering;
   const draftId = `${auth?.flowId ?? ""}:${interaction?.id ?? ""}`;
   const values = draft.id === draftId ? draft.values : {};
@@ -118,7 +120,9 @@ export function ProviderAuthenticationSection({
       else if (!isAtomCommandInterrupted(result)) {
         const failure = squashAtomCommandFailure(result);
         setError(
-          failure instanceof Error ? failure.message : "Provider sign-in failed. Try again.",
+          failure instanceof Error
+            ? localizeServerMessage(failure.message)
+            : "Provider sign-in failed. Try again.",
         );
       }
     } catch {

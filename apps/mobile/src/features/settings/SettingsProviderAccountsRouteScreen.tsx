@@ -34,6 +34,7 @@ import { SettingsSection } from "./components/SettingsSection";
 import { AddClaudeAccount, ClaudeAccount } from "./ClaudeAccounts";
 import { CLAUDE_DRIVER } from "./claude-accounts";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 export function SettingsProviderAccountsRouteScreen() {
   const environmentMenu = useSettingsEnvironmentMenu();
@@ -245,7 +246,7 @@ function ProviderAccount({
     (provider.auth.type === "gemini-api-key" || provider.auth.type === "agent-platform");
   const status =
     active || state?.phase === "failed" || state?.phase === "cancelled"
-      ? state.message
+      ? localizeServerMessage(state.message)
       : !provider.enabled
         ? "Turned off"
         : signedIn

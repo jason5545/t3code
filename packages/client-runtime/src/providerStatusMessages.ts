@@ -4,6 +4,7 @@
  * check; text without a matching pattern stays English.
  */
 
+import { translateProviderSetupMessage } from "./providerSetupMessages.ts";
 import { translateBackgroundWorkSummary } from "./state/backgroundWorkText.ts";
 
 type Rule = readonly [pattern: RegExp, chinese: (match: RegExpExecArray) => string];
@@ -185,6 +186,8 @@ const RULES: ReadonlyArray<Rule> = [
 
 /** The zh-TW text for a known server provider status message, or null. */
 export function translateProviderStatusMessage(message: string): string | null {
+  const setup = translateProviderSetupMessage(message);
+  if (setup !== null) return setup;
   for (const [pattern, chinese] of RULES) {
     const match = pattern.exec(message);
     if (match) return chinese(match);

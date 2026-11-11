@@ -54,6 +54,7 @@ import {
   settleHandoffAuthorizationPage,
   settleProviderInstall,
 } from "./CodexSetupSection.logic";
+import { localizeServerMessage } from "../../locale/serverMessages";
 
 const noop = () => undefined;
 
@@ -398,7 +399,11 @@ function ManagedCodexSetup({
       if (result._tag === "Failure") {
         if (!isAtomCommandInterrupted(result)) {
           const failure = squashAtomCommandFailure(result);
-          setError(failure instanceof Error ? failure.message : "Codex setup failed. Try again.");
+          setError(
+            failure instanceof Error
+              ? localizeServerMessage(failure.message)
+              : "Codex setup failed. Try again.",
+          );
         }
       } else {
         succeeded = true;
@@ -445,7 +450,8 @@ function ManagedCodexSetup({
   ) {
     setError(
       handoffQuery.data?.phase === "auth"
-        ? (handoffQuery.data.state.message ?? "ChatGPT sign-in could not finish. Try again.")
+        ? (localizeServerMessage(handoffQuery.data.state.message) ??
+            "ChatGPT sign-in could not finish. Try again.")
         : "ChatGPT sign-in on the primary environment was interrupted. Try again.",
     );
     setHandoff(null);
@@ -811,7 +817,7 @@ function ManagedCodexSetup({
       (authQuery.error || installQuery.error
         ? "Could not read setup status. Reconnect and try again."
         : installation?.phase === "failed"
-          ? installation.message
+          ? localizeServerMessage(installation.message)
           : null);
     return (
       <>
@@ -1060,7 +1066,7 @@ function ManagedCodexSetup({
         <p role="alert" className="px-3 py-2 text-xs text-destructive sm:px-4">
           {error ??
             (installation?.phase === "failed"
-              ? installation.message
+              ? localizeServerMessage(installation.message)
               : "Could not read Codex setup status. Reconnect and try again.")}
         </p>
       ) : null}

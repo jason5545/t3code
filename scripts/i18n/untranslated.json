@@ -310,7 +310,7 @@
     "apps/web/src/lib/snapShotShortcut.ts": ["Alt", "Ctrl", "Super"],
     "apps/mobile/src/state/pending-new-tasks-model.ts": ["1 attachment", "{count} attachments"],
     "apps/web/src/appearanceFonts.ts": ["SF Mono", "SF Pro"],
-    "apps/web/src/branding.logic.ts": ["Nightly"],
+    "apps/web/src/branding.logic.ts": ["Nightly", "Dev"],
     "apps/web/src/components/SidebarStageBackdrop.tsx": ["Dev", "Nightly"],
     "apps/web/src/components/clerk/MobileClientsUserProfilePage.logic.ts": [
       "iOS {device.iosMajorVersion}"
@@ -604,7 +604,8 @@
       "command",
       "calc(100vh - 18rem)",
       "min({naturalHeight}px, {TIMELINE_MINIMAP_MAX_HEIGHT_CSS})",
-      "22rem"
+      "22rem",
+      "max(4rem, calc(100% - 14.75rem))"
     ],
     "apps/mobile/src/features/threads/ThreadDetailScreen.tsx": [
       "compact",
@@ -628,6 +629,7 @@
     ],
     "packages/client-runtime/src/state/threadShell.ts": ["side chat", "subagent"],
     "apps/web/src/components/chat/TraitsPicker.tsx": ["body", "none", "prefix", "ultrathink"],
-    "apps/web/src/components/settings/TextGeneratorsSettings.tsx": ["model", "models"]
+    "apps/web/src/components/settings/TextGeneratorsSettings.tsx": ["model", "models"],
+    "packages/client-runtime/src/scheduledTaskTimeZone.ts": ["UTC"]
   }
 }
