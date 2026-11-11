@@ -60,8 +60,9 @@ export const make = Effect.fn("AcpLocalCommandUpdates.make")(function* (input: {
   /** The last provider the background probe cached, if any. */
   readonly probedProvider: Effect.Effect<ServerProvider | undefined>;
 }) {
-  const httpClient = yield* HttpClient.HttpClient;
-  const latestVersions = yield* ProviderLatestVersions.ProviderLatestVersions;
+  // Read as optional so upstream's driver harnesses need neither; the server provides both.
+  const httpClient = yield* Effect.serviceOption(HttpClient.HttpClient);
+  const latestVersions = yield* Effect.serviceOption(ProviderLatestVersions.ProviderLatestVersions);
   const maintenance = acpRegistryMaintenanceCapabilities(input);
 
   /**
@@ -86,14 +87,20 @@ export const make = Effect.fn("AcpLocalCommandUpdates.make")(function* (input: {
   const adviseProbe =
     (enableProviderUpdateChecks: boolean) =>
     <A extends { readonly provider: ServerProvider }>(probe: Option.Option<A>) =>
-      maintenance === null || Option.isNone(probe)
+      maintenance === null ||
+      Option.isNone(probe) ||
+      Option.isNone(httpClient) ||
+      Option.isNone(latestVersions)
         ? Effect.succeed(probe)
         : enrichProviderSnapshotWithVersionAdvisory(probe.value.provider, maintenance, {
             enableProviderUpdateChecks,
           }).pipe(
             Effect.map((provider) => Option.some({ ...probe.value, provider })),
-            Effect.provideService(HttpClient.HttpClient, httpClient),
-            Effect.provideService(ProviderLatestVersions.ProviderLatestVersions, latestVersions),
+            Effect.provideService(HttpClient.HttpClient, httpClient.value),
+            Effect.provideService(
+              ProviderLatestVersions.ProviderLatestVersions,
+              latestVersions.value,
+            ),
           );
 
   return { maintenance, withProbedVersion, adviseProbe };

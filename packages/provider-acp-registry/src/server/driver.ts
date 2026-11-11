@@ -20,11 +20,9 @@ import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
-import type * as HttpClient from "effect/http/HttpClient";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
-import type * as ProviderLatestVersions from "@t3tools/provider-core/server/ProviderLatestVersions";
 import { AcpRegistryAdapterV2Driver, type AcpRegistryAdapterV2DriverEnv } from "./adapter.ts";
 import type { ProviderTextGeneration } from "@t3tools/provider-core/server/textGeneration";
 import { ProviderDriverError } from "@t3tools/provider-core/server/errors";
@@ -474,9 +472,7 @@ export const checkAcpRegistryProviderReadiness = Effect.fn(
 export type AcpRegistryDriverEnv =
   | AcpRegistryAdapterV2DriverEnv
   | Digest.Digest
-  | ProviderHost.ProviderHost
-  | HttpClient.HttpClient
-  | ProviderLatestVersions.ProviderLatestVersions;
+  | ProviderHost.ProviderHost;
 
 export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryDriverEnv> = {
   driverKind: DRIVER_KIND,
@@ -837,7 +833,6 @@ export const AcpRegistryDriver: ProviderDriver<AcpRegistrySettings, AcpRegistryD
       accentColor,
       enabled,
       auth,
-      invalidateCaches: liveSnapshotSemaphore.withPermit(invalidateEnrichmentCache),
       snapshot: {
         ...snapshot,
         refresh: snapshot.refresh.pipe(Effect.tap(() => controller.refreshMethods ?? Effect.void)),
