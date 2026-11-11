@@ -251,6 +251,95 @@ const EXACT: Readonly<Record<string, string>> = {
   "Antigravity did not return usable quota information.": "Antigravity 沒有回傳可用的配額資訊。",
   "Could not read Antigravity limits. Refresh provider status to retry.":
     "無法讀取 Antigravity 用量上限，請重新整理供應商狀態再試。",
+
+  // Settings form text from provider and source control settings schemas (contracts and
+  // provider packages), which the build-time pass does not reach. ProviderSettingsForm.fork.test.ts
+  // fails when a schema gains text missing here.
+  "Binary path": "執行檔路徑",
+  "Path to the Codex binary used by this instance.": "這個執行個體使用的 Codex 執行檔路徑。",
+  "CODEX_HOME path": "CODEX_HOME 路徑",
+  "Custom Codex home and config directory.": "自訂的 Codex 主目錄與設定目錄。",
+  "Shadow home path": "影子主目錄路徑",
+  "Account-specific Codex home. Keeps auth.json separate while sharing state from CODEX_HOME.":
+    "帳號專屬的 Codex 主目錄。auth.json 分開存放，其他狀態與 CODEX_HOME 共用。",
+  "Launch arguments": "啟動參數",
+  "Additional CLI arguments passed to codex app-server on session start.":
+    "工作階段開始時，額外傳給 codex app-server 的 CLI 參數。",
+  "Path to the Claude binary used by this instance.": "這個執行個體使用的 Claude 執行檔路徑。",
+  "CLAUDE_CONFIG_DIR path": "CLAUDE_CONFIG_DIR 路徑",
+  "Custom Claude home and config directory. Keeps .claude.json and .claude separate.":
+    "自訂的 Claude 主目錄與設定目錄。.claude.json 和 .claude 分開存放。",
+  "Auto-compact after": "自動壓縮門檻",
+  "Compact after 100,000 to 1,000,000 tokens. Leave empty to use Claude's default.":
+    "超過 100,000 到 1,000,000 個 token 後壓縮。留空則使用 Claude 的預設值。",
+  "e.g. 300000": "例如：300000",
+  "Compact idle threads": "壓縮閒置對話",
+  "When to compact an idle thread over 200,000 tokens: after you return, just before its prompt cache expires, or never. Overrides the default in Providers > Advanced.":
+    "閒置且超過 200,000 個 token 的對話何時壓縮：你回來之後、提示快取到期前，或永不壓縮。會覆寫「供應商 > 進階」裡的預設值。",
+  "Use default": "使用預設值",
+  "When you return": "你回來之後",
+  "Before the cache expires (beta)": "快取到期前（Beta）",
+  Never: "永不",
+  "Additional CLI arguments passed on session start.": "工作階段開始時額外傳入的 CLI 參數。",
+  "e.g. --chrome": "例如：--chrome",
+  "Path to the Grok CLI binary.": "Grok CLI 執行檔路徑。",
+  "Path to the fx binary. All fx instances on this machine share its fx login.":
+    "fx 執行檔路徑。這台電腦上所有 fx 執行個體共用它的 fx 登入。",
+  "Path to the OpenCode binary.": "OpenCode 執行檔路徑。",
+  "Server URL": "伺服器網址",
+  "Leave blank to let T3 Code spawn the server when needed.":
+    "留空則由 T3 Code 在需要時自行啟動伺服器。",
+  "Server password": "伺服器密碼",
+  "Stored separately on the host.": "另外存放在主機上。",
+  Optional: "選填",
+  "Sign-in method": "登入方式",
+  "Google accounts use your subscription; API keys and Agent Platform bill usage.":
+    "Google 帳號使用你的訂閱；API 金鑰和 Agent Platform 依用量計費。",
+  "Google account": "Google 帳號",
+  "Gemini API key": "Gemini API 金鑰",
+  "API key": "API 金鑰",
+  "Gemini or Vertex AI express key. Stored separately on the host.":
+    "Gemini 或 Vertex AI 快速金鑰，另外存放在主機上。",
+  "GCP project": "GCP 專案",
+  "Required for Gemini Enterprise. Agent Platform uses it when no API key is set.":
+    "Gemini Enterprise 必填。沒有設定 API 金鑰時，Agent Platform 會使用它。",
+  "GCP location": "GCP 區域",
+  "Region for Gemini Enterprise or Agent Platform.": "Gemini Enterprise 或 Agent Platform 的區域。",
+  "Custom ACP executable. Leave empty to select automatically.":
+    "自訂的 ACP 執行檔。留空則自動選擇。",
+  Automatic: "自動",
+  "Path to the Kiro CLI binary.": "Kiro CLI 執行檔路徑。",
+  "Path to the Muse Code binary on this environment. Sign in with muse login on that host.":
+    "此環境上的 Muse Code 執行檔路徑。請在那台主機上用 muse login 登入。",
+  "Path to the Pi coding agent binary.": "Pi 程式設計代理程式的執行檔路徑。",
+  "Additional CLI arguments passed to pi --mode rpc on session start.":
+    "工作階段開始時，額外傳給 pi --mode rpc 的 CLI 參數。",
+  "ACP source": "ACP 來源",
+  "Local command": "本機指令",
+  "Registry agent ID": "Registry 代理程式 ID",
+  "Agent identifier from the official ACP Registry, for example 'devin'.":
+    "官方 ACP Registry 裡的代理程式 ID，例如「devin」。",
+  "Executable override": "覆寫執行檔",
+  "Executable on this environment. For registry agents, this overrides the distribution executable while keeping its arguments and environment.":
+    "此環境上的執行檔。對 Registry 代理程式來說，這會取代發行版的執行檔，但保留它的參數和環境變數。",
+  "Registry default": "Registry 預設值",
+  "Authentication method": "驗證方式",
+  "Optional ACP authentication method ID. By default, the first agent-managed method is selected.":
+    "選填的 ACP 驗證方式 ID。預設會選第一個由代理程式管理的方式。",
+  Executable: "執行檔",
+  "Executable name or path on this environment.": "此環境上的執行檔名稱或路徑。",
+  "e.g. dsh": "例如：dsh",
+  Token: "權杖",
+  "A git.cafe token, used before CAFE_TOKEN and the cafe login, so GitCafe works without the CLI signed in.":
+    "git.cafe 權杖，優先於 CAFE_TOKEN 和 cafe 登入使用，所以 CLI 沒登入也能使用 GitCafe。",
+  "Access token": "存取權杖",
+  "Scoped to one repository, project, or workspace. Create it in that item's Bitbucket settings.":
+    "範圍限於一個存放庫、專案或工作區。請在該項目的 Bitbucket 設定中建立。",
+  "Atlassian account email": "Atlassian 帳號電子郵件",
+  "With an API token instead of an access token.": "搭配 API 權杖使用，取代存取權杖。",
+  "API token": "API 權杖",
+  "Reaches every repository your Atlassian account can. Give it read and write access to repositories and pull requests, and read:user:bitbucket.":
+    "可存取你的 Atlassian 帳號能存取的所有存放庫。請給它存放庫和提取請求的讀寫權限，以及 read:user:bitbucket。",
 };
 
 const RULES: ReadonlyArray<readonly [RegExp, (match: RegExpExecArray) => string]> = [

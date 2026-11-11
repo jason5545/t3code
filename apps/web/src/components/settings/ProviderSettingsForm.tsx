@@ -15,6 +15,7 @@ import {
 import { PlusIcon, XIcon } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import { localizeServerMessage } from "../../locale/serverMessages";
 import { Button } from "../ui/button";
 import { DraftInput } from "../ui/draft-input";
 import { Input } from "../ui/input";
@@ -116,8 +117,11 @@ export function deriveProviderSettingsFields(
       if (formAnnotation.hidden) return [];
       if (isLocalAcp && key !== "source" && key !== "commandPath") return [];
 
-      const annotatedTitle = readFieldAnnotationString(fieldSchema, "title");
-      const annotatedDescription = readFieldAnnotationString(fieldSchema, "description");
+      // Fork: schema text is English data the build-time translation does not reach.
+      const annotatedTitle =
+        localizeServerMessage(readFieldAnnotationString(fieldSchema, "title")) ?? undefined;
+      const annotatedDescription =
+        localizeServerMessage(readFieldAnnotationString(fieldSchema, "description")) ?? undefined;
       return [
         {
           key,
@@ -134,7 +138,7 @@ export function deriveProviderSettingsFields(
           ...(isLocalAcp && key === "commandPath"
             ? { placeholder: "e.g. dsh" }
             : formAnnotation.placeholder !== undefined
-              ? { placeholder: formAnnotation.placeholder }
+              ? { placeholder: localizeServerMessage(formAnnotation.placeholder) }
               : {}),
           clearWhenEmpty: formAnnotation.clearWhenEmpty ?? "omit",
           ...(isSecretSetting(fieldSchema) ? { secret: true } : {}),
@@ -143,7 +147,12 @@ export function deriveProviderSettingsFields(
             ? { defaultBooleanValue: readFieldBooleanDefault(fieldSchema) }
             : {}),
           ...(formAnnotation.control === "select" && formAnnotation.options
-            ? { options: formAnnotation.options }
+            ? {
+                options: formAnnotation.options.map((option) => ({
+                  ...option,
+                  label: localizeServerMessage(option.label),
+                })),
+              }
             : {}),
         } satisfies ProviderSettingsFieldModel,
       ];

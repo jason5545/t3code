@@ -46,6 +46,7 @@ import {
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
 import { TraitsPicker } from "../chat/TraitsPicker";
 import { isElectron } from "../../env";
+import { localizeServerMessage } from "../../locale/serverMessages";
 import { buildHostedChannelSelectionUrl, type HostedAppChannel } from "../../hostedPairing";
 import {
   readAppearanceModePreference,
@@ -1567,7 +1568,9 @@ function ScopedCompactIdleThreadsRow() {
               {(value: string | null) =>
                 value === null
                   ? "Mixed"
-                  : IDLE_COMPACTION_MODES.find((mode) => mode.value === value)?.label
+                  : localizeServerMessage(
+                      IDLE_COMPACTION_MODES.find((mode) => mode.value === value)?.label,
+                    )
               }
             </SelectValue>
           </SelectTrigger>
@@ -1580,7 +1583,7 @@ function ScopedCompactIdleThreadsRow() {
                 // A server from before modes has only the on/off switch, so it cannot store "Never".
                 disabled={mode.value === "off" && !idleCompaction.neverAvailable}
               >
-                {mode.label}
+                {localizeServerMessage(mode.label)}
               </SelectItem>
             ))}
           </SelectPopup>

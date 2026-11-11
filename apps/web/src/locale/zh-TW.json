@@ -8842,5 +8842,8 @@
   "Looking for \"{props.searchQuery}\" in messages.": "正在訊息中尋找「{props.searchQuery}」。",
   "Open {0} discussion in {1}": "開啟 {1} 的討論（{0}）",
   "{days} at {0}{1}": "{days} {0}{1}",
-  "Time, {0}{1}": "時間，{0}{1}"
+  "Time, {0}{1}": "時間，{0}{1}",
+  "File contents": "檔案內容",
+  "Your next message compacts {0} tokens of history first.": "下次傳送前會先壓縮 {0} 個 token 的歷史紀錄。",
+  "Keep the full history": "保留完整歷史紀錄"
 }
