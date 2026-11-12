@@ -52,6 +52,8 @@ export const SETTINGS_DEVICE_ONLY_PATHS: ReadonlySet<string> = new Set([
   // Access picks its environment on the page itself.
   "/settings/access",
   "/settings/about",
+  // Fork patch 30: the page lists the extensions of the server this app is served from.
+  "/settings/extensions",
 ]);
 
 interface SettingsScopeMenuProps {

@@ -10,7 +10,7 @@ import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
-import { SettingsRow, SettingsSection } from "./settingsLayout";
+import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
 
 const UNREACHABLE = "The server could not be reached.";
 
@@ -18,10 +18,10 @@ const answered = (result: AtomCommandResult<Option.Option<ExtensionsSnapshot>, u
   result._tag === "Success" ? Option.getOrNull(result.value) : null;
 
 /**
- * Fork patch 30: the extensions of the server this app is served from. Built-in ones can be
- * turned off; ones from the marketplace can also be removed.
+ * Fork patch 30: Settings → Extensions, the extensions of the server this app is served from.
+ * Built-in ones can be turned off; ones from the marketplace can also be removed.
  */
-export function ExtensionsSettings() {
+export function ExtensionsSettingsPanel() {
   const environmentId = usePrimaryEnvironmentId();
   const request = useAtomCommand(requestExtensions, { reportFailure: false });
   const [snapshot, setSnapshot] = useState<ExtensionsSnapshot | null>(null);
@@ -66,8 +66,8 @@ export function ExtensionsSettings() {
   const problem = failure ?? snapshot?.error ?? null;
 
   return (
-    <>
-      <SettingsSection id="extensions" title="Extensions">
+    <SettingsPageContainer>
+      <SettingsSection id="extensions" title="Installed">
         {problem === null ? null : (
           <p role="alert" className="px-1 pb-2 text-xs text-destructive">
             {localizeServerMessage(problem)}
@@ -107,7 +107,7 @@ export function ExtensionsSettings() {
           />
         ))}
       </SettingsSection>
-      <SettingsSection id="extension-marketplace" title="Extension marketplace">
+      <SettingsSection id="extension-marketplace" title="Marketplace">
         {snapshot !== null && offered.length === 0 ? (
           <SettingsRow
             title="Nothing new to install"
@@ -142,6 +142,6 @@ export function ExtensionsSettings() {
           />
         ))}
       </SettingsSection>
-    </>
+    </SettingsPageContainer>
   );
 }

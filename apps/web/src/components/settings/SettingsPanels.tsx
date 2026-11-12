@@ -2108,7 +2108,6 @@ export function MaintenanceSettingsPanel() {
 
   return (
     <SettingsPageContainer>
-      <SettingsSlot name="settings.maintenance" />
       <SettingsSection id="updates" title="Updates">
         <SettingsRow
           serverScoped

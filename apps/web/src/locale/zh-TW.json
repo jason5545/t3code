@@ -8852,9 +8852,10 @@
   "Opened in {label}": "已在 {label} 開啟",
   "Pinned 1 thread": "已釘選 1 個對話",
   "Extensions": "擴充功能",
-  "Extension marketplace": "擴充功能市集",
   "Nothing new to install": "沒有可安裝的新擴充功能",
   "language": "語言",
   "Your next message keeps all {0} tokens of history.": "下次傳送會保留全部 {0} 個 token 的歷史紀錄。",
-  "Compact first": "先壓縮"
+  "Compact first": "先壓縮",
+  "Saved drafts could not be loaded. Try again.": "無法載入已儲存的草稿，請再試一次。",
+  "Marketplace": "市集"
 }
