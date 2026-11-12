@@ -8857,5 +8857,7 @@
   "Your next message keeps all {0} tokens of history.": "下次傳送會保留全部 {0} 個 token 的歷史紀錄。",
   "Compact first": "先壓縮",
   "Saved drafts could not be loaded. Try again.": "無法載入已儲存的草稿，請再試一次。",
-  "Marketplace": "市集"
+  "Marketplace": "市集",
+  "Checking the marketplace…": "正在讀取市集…",
+  "The marketplace could not be read": "無法讀取市集"
 }

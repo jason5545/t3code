@@ -13,3 +13,14 @@ it("gt-react's zh-TW catalogs cover every upstream string and are up to date", (
     expect(NodeFS.readFileSync(file, "utf8"), file).toBe(contents);
   }
 });
+
+// Mobile cannot import a catalog by name at run time, so `I18nProvider.tsx` lists each one. On
+// 2026-11-12 zh-TW was a locale with a catalog file the list lacked, and its text stayed English.
+it("the mobile provider loads the zh-TW catalog", () => {
+  const provider = NodeFS.readFileSync(
+    new URL("../../apps/mobile/src/i18n/I18nProvider.tsx", import.meta.url),
+    "utf8",
+  );
+  expect(provider).toContain('import zhTW from "./translations/zh-TW.json";');
+  expect(provider).toContain('"zh-TW": zhTW,');
+});

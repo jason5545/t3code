@@ -23,6 +23,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "The server could not be reached.": "無法連到伺服器。",
   "A built-in extension can be turned off, not removed.": "內建的擴充功能只能停用，不能移除。",
   "This extension cannot be turned off.": "這個擴充功能不能停用。",
+  "The marketplace did not answer in time.": "市集沒有在時限內回應。",
   "The marketplace index is not in the expected format.": "市集索引的格式不符預期。",
   "This server does not manage extensions.": "這台伺服器不管理擴充功能。",
   "The extension list could not be saved.": "無法儲存擴充功能清單。",

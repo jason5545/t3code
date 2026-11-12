@@ -13,6 +13,7 @@ import { writeFileStringAtomically } from "@t3tools/shared/atomicWrite";
 import { BUILT_IN_EXTENSIONS } from "@t3tools/shared/builtInExtensions";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
@@ -36,6 +37,8 @@ const MarketplaceUrl = Config.String("T3CODE_EXTENSION_MARKETPLACE_URL").pipe(
 );
 
 const MAX_MODULE_BYTES = 2 * 1024 * 1024;
+// Below the 10 seconds a connect attempt may hang, so the person hears back sooner.
+const FETCH_TIMEOUT = Duration.seconds(6);
 const EXTENSION_ID = /^[a-z][a-z0-9-]{1,63}$/;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
@@ -140,9 +143,13 @@ const make = Effect.gen(function* () {
     );
 
   const fetchText = Effect.fn("ExtensionStore.fetchText")(function* (url: URL) {
-    const response = yield* http
-      .get(url.href)
-      .pipe(Effect.mapError(() => refuse(`${url.href} could not be reached.`)));
+    const response = yield* http.get(url.href).pipe(
+      Effect.mapError(() => refuse(`${url.href} could not be reached.`)),
+      Effect.timeoutOrElse({
+        duration: FETCH_TIMEOUT,
+        orElse: () => Effect.fail(refuse("The marketplace did not answer in time.")),
+      }),
+    );
     if (response.status !== 200) {
       return yield* refuse(`${url.href} answered ${response.status}.`);
     }
@@ -299,8 +306,9 @@ const make = Effect.gen(function* () {
           Effect.as(null),
           Effect.catchTags({ ExtensionError: (error) => Effect.succeed(error.detail) }),
         );
-      // The list changed, so the marketplace view that offered the action is refreshed with it.
-      const wantsMarketplace = request.action !== "read" || request.marketplace === true;
+      // Only when asked: the marketplace is another server, and a change to the list must not
+      // wait for it.
+      const wantsMarketplace = request.action === "read" && request.marketplace === true;
       const marketplace: {
         readonly offered: ReadonlyArray<ExtensionMarketplaceEntry> | null;
         readonly error: string | null;

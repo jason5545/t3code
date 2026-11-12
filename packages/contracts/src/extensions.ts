@@ -48,7 +48,7 @@ export type ExtensionsRequest = typeof ExtensionsRequest.Type;
 export const ExtensionsSnapshot = Schema.Struct({
   extensions: Schema.Array(ExtensionEntry),
   marketplaceUrl: Schema.String,
-  /** Null unless the request asked for it. */
+  /** What the marketplace offers; null unless a read asked for it or when it could not be read. */
   marketplace: Schema.NullOr(Schema.Array(ExtensionMarketplaceEntry)),
   /** Enabled installed extensions' web parts; null unless the request asked for them. */
   webModules: Schema.NullOr(Schema.Array(ExtensionWebModule)),

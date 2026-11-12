@@ -1,5 +1,10 @@
 import type { AtomCommandResult } from "@t3tools/client-runtime/state/runtime";
-import type { ExtensionsRequest, ExtensionsSnapshot } from "@t3tools/contracts";
+import type {
+  ExtensionEntry,
+  ExtensionMarketplaceEntry,
+  ExtensionsRequest,
+  ExtensionsSnapshot,
+} from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import { useEffect, useState } from "react";
 
@@ -17,6 +22,22 @@ const UNREACHABLE = "The server could not be reached.";
 const answered = (result: AtomCommandResult<Option.Option<ExtensionsSnapshot>, unknown>) =>
   result._tag === "Success" ? Option.getOrNull(result.value) : null;
 
+type Marketplace =
+  | { readonly state: "loading" }
+  | { readonly state: "failed"; readonly reason: string }
+  | {
+      readonly state: "ready";
+      readonly url: string;
+      readonly offered: ReadonlyArray<ExtensionMarketplaceEntry>;
+    };
+
+const marketplaceOf = (snapshot: ExtensionsSnapshot | null): Marketplace =>
+  snapshot === null
+    ? { state: "failed", reason: UNREACHABLE }
+    : snapshot.marketplace === null
+      ? { state: "failed", reason: snapshot.error ?? UNREACHABLE }
+      : { state: "ready", url: snapshot.marketplaceUrl, offered: snapshot.marketplace };
+
 /**
  * Fork patch 30: Settings → Extensions, the extensions of the server this app is served from.
  * Built-in ones can be turned off; ones from the marketplace can also be removed.
@@ -24,31 +45,43 @@ const answered = (result: AtomCommandResult<Option.Option<ExtensionsSnapshot>, u
 export function ExtensionsSettingsPanel() {
   const environmentId = usePrimaryEnvironmentId();
   const request = useAtomCommand(requestExtensions, { reportFailure: false });
-  const [snapshot, setSnapshot] = useState<ExtensionsSnapshot | null>(null);
+  const [extensions, setExtensions] = useState<ReadonlyArray<ExtensionEntry> | null>(null);
+  const [marketplace, setMarketplace] = useState<Marketplace>({ state: "loading" });
   const [busy, setBusy] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
-  const run = async (action: ExtensionsRequest) => {
+  const change = async (action: ExtensionsRequest) => {
     if (environmentId === null) return;
     setBusy(true);
     const next = answered(await request({ environmentId, request: action }));
     setBusy(false);
-    setFailure(next === null ? UNREACHABLE : null);
+    setProblem(next === null ? UNREACHABLE : next.error);
     if (next === null) return;
-    setSnapshot(next);
-    if (action.action !== "read") applyExtensionsSnapshot(next);
+    setExtensions(next.extensions);
+    applyExtensionsSnapshot(next);
+  };
+
+  const checkMarketplace = async () => {
+    if (environmentId === null) return;
+    setMarketplace({ state: "loading" });
+    const next = await request({ environmentId, request: { action: "read", marketplace: true } });
+    setMarketplace(marketplaceOf(answered(next)));
   };
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- reads the list from the server when the page opens
   useEffect(() => {
     if (environmentId === null) return;
     let stale = false;
+    // The list first: the marketplace is another server and may be slow or out of reach.
+    void request({ environmentId, request: { action: "read" } }).then((result) => {
+      if (stale) return;
+      const next = answered(result);
+      setProblem(next === null ? UNREACHABLE : next.error);
+      if (next !== null) setExtensions(next.extensions);
+    });
     void request({ environmentId, request: { action: "read", marketplace: true } }).then(
       (result) => {
-        if (stale) return;
-        const next = answered(result);
-        setFailure(next === null ? UNREACHABLE : null);
-        if (next !== null) setSnapshot(next);
+        if (!stale) setMarketplace(marketplaceOf(answered(result)));
       },
     );
     return () => {
@@ -56,14 +89,20 @@ export function ExtensionsSettingsPanel() {
     };
   }, [environmentId, request]);
 
-  const extensions = snapshot?.extensions ?? [];
   const installed = new Map(
-    extensions.flatMap(({ id, builtIn, version }) => (builtIn ? [] : [[id, version] as const])),
+    (extensions ?? []).flatMap(({ id, builtIn, version }) =>
+      builtIn ? [] : [[id, version] as const],
+    ),
   );
-  const offered = (snapshot?.marketplace ?? []).filter(
-    ({ id, version }) => installed.get(id) !== version,
+  const offered =
+    marketplace.state === "ready"
+      ? marketplace.offered.filter(({ id, version }) => installed.get(id) !== version)
+      : [];
+  const checkAgain = (
+    <Button size="sm" variant="outline" disabled={busy} onClick={() => void checkMarketplace()}>
+      Check again
+    </Button>
   );
-  const problem = failure ?? snapshot?.error ?? null;
 
   return (
     <SettingsPageContainer>
@@ -73,7 +112,8 @@ export function ExtensionsSettingsPanel() {
             {localizeServerMessage(problem)}
           </p>
         )}
-        {extensions.map((extension) => (
+        {extensions === null && problem === null ? <SettingsRow title="Loading…" /> : null}
+        {(extensions ?? []).map((extension) => (
           <SettingsRow
             key={extension.id}
             title={
@@ -89,7 +129,7 @@ export function ExtensionsSettingsPanel() {
                     size="sm"
                     variant="outline"
                     disabled={busy}
-                    onClick={() => void run({ action: "remove", id: extension.id })}
+                    onClick={() => void change({ action: "remove", id: extension.id })}
                   >
                     Remove
                   </Button>
@@ -99,7 +139,7 @@ export function ExtensionsSettingsPanel() {
                   disabled={busy || extension.required}
                   aria-label={localizeServerMessage(extension.title)}
                   onCheckedChange={(enabled) =>
-                    void run({ action: "setEnabled", id: extension.id, enabled })
+                    void change({ action: "setEnabled", id: extension.id, enabled })
                   }
                 />
               </div>
@@ -108,20 +148,19 @@ export function ExtensionsSettingsPanel() {
         ))}
       </SettingsSection>
       <SettingsSection id="extension-marketplace" title="Marketplace">
-        {snapshot !== null && offered.length === 0 ? (
+        {marketplace.state === "loading" ? <SettingsRow title="Checking the marketplace…" /> : null}
+        {marketplace.state === "failed" ? (
+          <SettingsRow
+            title="The marketplace could not be read"
+            description={localizeServerMessage(marketplace.reason)}
+            control={checkAgain}
+          />
+        ) : null}
+        {marketplace.state === "ready" && offered.length === 0 ? (
           <SettingsRow
             title="Nothing new to install"
-            description={snapshot.marketplaceUrl}
-            control={
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => void run({ action: "read", marketplace: true })}
-              >
-                Check again
-              </Button>
-            }
+            description={marketplace.url}
+            control={checkAgain}
           />
         ) : null}
         {offered.map((extension) => (
@@ -134,7 +173,7 @@ export function ExtensionsSettingsPanel() {
                 size="sm"
                 variant="outline"
                 disabled={busy}
-                onClick={() => void run({ action: "install", id: extension.id })}
+                onClick={() => void change({ action: "install", id: extension.id })}
               >
                 {installed.has(extension.id) ? "Update" : "Install"}
               </Button>

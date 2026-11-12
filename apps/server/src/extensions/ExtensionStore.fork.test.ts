@@ -123,7 +123,8 @@ it.effect("turns a built-in extension off but never removes it or a required one
       off.extensions.filter(({ enabled }) => !enabled).map(({ id }) => id),
       ["summarized-update-badge"],
     );
-  }).pipe(Effect.provide(layerTest(marketplace()))),
+    // The marketplace answers nothing here: a change to the list never waits for it.
+  }).pipe(Effect.provide(layerTest({}))),
 );
 
 it("keeps only an installed extension's own tool names", () => {
