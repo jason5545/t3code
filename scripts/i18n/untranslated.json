@@ -639,6 +639,10 @@
     "apps/web/src/components/settings/TextGeneratorsSettings.tsx": ["model", "models"],
     "packages/client-runtime/src/scheduledTaskTimeZone.ts": ["UTC"],
     "apps/web/src/hooks/showThreadUndoNotice.ts": ["draft", "thread"],
-    "apps/web/src/lib/bootError.ts": ["Copied to clipboard."]
+    "apps/web/src/lib/bootError.ts": ["Copied to clipboard."],
+    "apps/web/src/components/chat/VoiceInputErrorPill.tsx": [
+      "Could not transcribe this recording.",
+      "Voice transcription on this environment failed."
+    ]
   }
 }
