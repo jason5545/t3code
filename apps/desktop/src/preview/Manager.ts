@@ -572,9 +572,11 @@ const makeNativeOperations = Effect.fn("PreviewManager.makeOperations")(function
   const random = yield* SecureRandom.SecureRandom;
   const parentScope = yield* Scope.Scope;
   const browserHost = yield* DesktopBrowserHost.DesktopBrowserHost;
+  const browserSession = yield* BrowserSession.BrowserSession;
   const passkeys = yield* PreviewPasskeys.PreviewPasskeys;
   const context = yield* Effect.context<never>();
   const runFork = Effect.runForkWith(context);
+  const runPromise = Effect.runPromiseWith(context);
   const resolvedArtifactDirectory = path.resolve(artifactDirectory);
 
   let forwardedShortcuts: ReadonlyArray<PreviewForwardedShortcut> = [];
@@ -2548,7 +2550,11 @@ const makeNativeOperations = Effect.fn("PreviewManager.makeOperations")(function
         yield* listenToBrowserHost;
         browserHost.attach(
           afterAttach.serverTab,
-          { webContents: wc, debugger: control.debugger },
+          {
+            webContents: wc,
+            debugger: control.debugger,
+            cookiesCleared: () => runPromise(browserSession.cookiesCleared(wc.session)),
+          },
           backgroundWindows.get(tabId)?.webContents === wc,
         );
         // CDP cannot recover a failure that happened before it attached.

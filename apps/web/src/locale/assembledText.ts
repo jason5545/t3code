@@ -90,6 +90,20 @@ export function deleteThreadsConfirmation(count: number): string {
   ].join("\n");
 }
 
+/** The sidebar's empty state while project filters hide every thread. */
+export function scopedProjectsEmptyText(input: {
+  readonly anySettled: boolean;
+  readonly projectName: string | null;
+}): string {
+  if (useChinese) {
+    const where = input.projectName === null ? "這些專案" : input.projectName;
+    return input.anySettled ? `${where}沒有進行中的對話` : `${where}尚無對話`;
+  }
+  return `No ${input.anySettled ? "active threads" : "threads"} in ${
+    input.projectName ?? "these projects"
+  }${input.anySettled ? "" : " yet"}`;
+}
+
 export function runningThreadsText(running: number): string {
   if (useChinese) return `${running} 個執行中的對話`;
   return `${running} running ${running === 1 ? "thread" : "threads"}`;
