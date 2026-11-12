@@ -51,7 +51,7 @@ import { useEnvironmentQuery } from "~/state/query";
 import { desktopSshHostsStateAtom, filterDiscoveredSshHosts } from "~/state/desktopSshHosts";
 import { type EnvironmentPresentation, useRelayEnvironmentDiscovery } from "~/state/environments";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { TailnetServerSuggestions } from "./TailnetServerSuggestions";
+import { SettingsSlot } from "../../extensions/settings";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 import {
   resolveShortcutCommand,
@@ -476,7 +476,8 @@ export function AddEnvironmentDialog({
         </div>
       ) : null}
       {routeTarget ? null : (
-        <TailnetServerSuggestions
+        <SettingsSlot
+          name="addEnvironment.suggestions"
           disabled={isAddingSavedBackend}
           onAdd={(httpBaseUrl) => void handleAddSavedBackend({ httpBaseUrl })}
         />

@@ -14,7 +14,6 @@ import * as ThreadCommandExecutor from "../../../orchestration-v2/ThreadCommandE
 import * as ThreadManagementService from "../../../orchestration-v2/ThreadManagementService.ts";
 import * as Settings from "../../../serverSettings.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
-import { MachineCallParameters, MachineCallResult } from "./machineRelay.ts";
 import { MachineState, TailnetMachines } from "./machineState.ts";
 
 const PreferenceFields = {
@@ -72,15 +71,4 @@ const EnvironmentPreferencesTool = Tool.make("t3_environment_preferences_update"
   }),
   success: Schema.Struct(PreferenceFields),
 }).annotate(Tool.Destructive, true);
-const MachineCallTool = Tool.make("t3_machine_call", {
-  ...shared,
-  description:
-    "Call a T3 tool on another of the owner's machines (`tailnet` names in `t3_environment_read`). An offline machine answers at once with when it was last seen. That machine sees an outside client, not your thread: pass projectId or threadId. Calls end after 2 minutes. Full-access caller only.",
-  parameters: MachineCallParameters,
-  success: MachineCallResult,
-}).annotate(Tool.Destructive, true);
-export const EnvironmentToolkit = Toolkit.make(
-  EnvironmentReadTool,
-  EnvironmentPreferencesTool,
-  MachineCallTool,
-);
+export const EnvironmentToolkit = Toolkit.make(EnvironmentReadTool, EnvironmentPreferencesTool);

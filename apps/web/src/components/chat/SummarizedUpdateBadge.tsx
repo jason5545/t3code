@@ -1,7 +1,9 @@
 import { Badge } from "../ui/badge";
+import type { TimelineSlots } from "../../extensions/timeline";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
-export function SummarizedUpdateBadge() {
+export function SummarizedUpdateBadge({ message }: TimelineSlots["timeline.assistantMessage"]) {
+  if (message.summarized !== true) return null;
   return (
     <div className="mb-1">
       <Tooltip>

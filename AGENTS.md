@@ -216,6 +216,10 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 
 This checkout is `jason5545/t3code`. Upstream owns everything above; keep fork notes in this last section so upstream merges do not conflict with them. Fork patches, build recipes and the deployment record live in [patches.md](patches.md). Commit and push straight to `origin main`; this fork does not use PRs or feature branches.
 
+### New fork features use extension points
+
+A fork feature that adds something to a surface (an MCP tool, a settings section, a row, a badge, a watcher) goes through an extension point, not a new import in an upstream file. Read "Extension system" in [patches.md](patches.md) first: it lists the points, how to add one, the load-order trap, and what deliberately stays a patch. Fork services stay optional Effect services and never add to an upstream service's requirements.
+
 ### Every change starts with a sync
 
 Any change to the fork, whether a bug fix, a translation or an update, starts by syncing upstream: steps 1 and 2 below, before reading the code you will change (owner decision, 2026-10-31). It is required every time, not only when upstream might already have fixed the problem; the change then lands on the code that will ship. Deploy the sync and the change together, then carry on as usual.

@@ -1,4 +1,4 @@
-import { LanguageSettings } from "./LanguageSettings";
+import { SettingsSlot } from "../../extensions/settings";
 import { useAtomValue } from "@effect/atom-react";
 import { NotificationSettings } from "./NotificationSettings";
 import { PRIVACY_POLICY_URL } from "../../legalLinks";
@@ -771,7 +771,7 @@ export function GeneralSettingsPanel() {
 
   return (
     <SettingsPageContainer>
-      <LanguageSettings />
+      <SettingsSlot name="settings.general" />
       <SettingsSection id="notifications" title="Notifications">
         <NotificationSettings />
         <SettingsRow

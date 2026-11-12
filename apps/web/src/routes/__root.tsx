@@ -39,7 +39,7 @@ import { Button } from "../components/ui/button";
 import { StandalonePage, StandalonePageHeader } from "../components/ui/standalone-page";
 import { AnchoredToastProvider, ToastProvider } from "../components/ui/toast";
 import { isElectron } from "../env";
-import { EphemeralThreadsWatcher } from "../components/EphemeralThreads";
+import { AppSlot } from "../extensions/app";
 import { useClientSettings } from "../hooks/useSettings";
 import {
   deriveLogicalProjectKeyFromSettings,
@@ -209,7 +209,7 @@ function RootRouteBranch() {
   return (
     <>
       <ChatGptWelcomeCoordinator />
-      <EphemeralThreadsWatcher />
+      <AppSlot name="app.root" />
       {isWelcome ? (
         <>
           {appHosts}

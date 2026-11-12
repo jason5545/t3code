@@ -90,7 +90,7 @@ import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-sw
 import { useFabScroll } from "./FabScrollContext";
 import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
 import { ThreadListFilters } from "./ThreadListFilters";
-import { TailnetServerHomeRows } from "../connection/TailnetServerSection";
+import { EnvironmentSlot } from "../../extensions/environments";
 
 interface HomeScreenProps {
   readonly projects: ReadonlyArray<EnvironmentProject>;
@@ -692,7 +692,7 @@ export function HomeScreen(props: HomeScreenProps) {
             }}
           >
             <View className="w-full max-w-[430px]">
-              <TailnetServerHomeRows />
+              <EnvironmentSlot name="home.environments" />
               <EmptyState
                 title={emptyState.title}
                 detail={emptyState.detail}
@@ -732,7 +732,7 @@ export function HomeScreen(props: HomeScreenProps) {
   const v2ListHeader = (
     <>
       {listHeader}
-      <TailnetServerHomeRows />
+      <EnvironmentSlot name="home.environments" />
       {Platform.OS === "ios" && workspace ? (
         <ThreadListFilters
           gutter={sidebarSurface ? 8 : 0}
@@ -791,7 +791,7 @@ export function HomeScreen(props: HomeScreenProps) {
           style={{ paddingBottom: insets.bottom }}
         >
           <View className="w-full max-w-[430px]">
-            <TailnetServerHomeRows />
+            <EnvironmentSlot name="home.environments" />
           </View>
           {v2ListEmpty}
         </View>

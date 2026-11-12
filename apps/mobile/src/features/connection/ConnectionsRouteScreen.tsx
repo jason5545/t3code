@@ -10,7 +10,7 @@ import { AppBar } from "../../components/ui/AppBar";
 import { useRemoteConnections } from "../../state/use-remote-environment-registry";
 import { LocalEnvironmentList } from "./LocalEnvironmentList";
 import { PullRequestRoutingSettings } from "./PullRequestRoutingSettings";
-import { TailnetServerSuggestions } from "./TailnetServerSection";
+import { EnvironmentSlot } from "../../extensions/environments";
 import { LinkedEnvironmentsSection } from "./LinkedEnvironmentsSection";
 
 export function ConnectionsRouteScreen() {
@@ -61,7 +61,7 @@ export function ConnectionsRouteScreen() {
           onSetEnabled={onSetEnvironmentEnabled}
           onUpdate={onUpdateEnvironment}
         />
-        <TailnetServerSuggestions />
+        <EnvironmentSlot name="environments.suggestions" />
         {connectedEnvironments
           .filter((environment) => environment.connectionState === "connected")
           .map((environment) => (

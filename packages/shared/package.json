@@ -431,6 +431,10 @@
       "types": "./src/t3McpToolText.ts",
       "import": "./src/t3McpToolText.ts"
     },
+    "./extensions": {
+      "types": "./src/extensions.ts",
+      "import": "./src/extensions.ts"
+    },
     "./Array": {
       "types": "./src/Array.ts",
       "import": "./src/Array.ts"

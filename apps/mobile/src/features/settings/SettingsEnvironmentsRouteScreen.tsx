@@ -11,7 +11,7 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { CloudEnvironmentRows } from "../connection/CloudEnvironmentRows";
 import { LocalEnvironmentList } from "../connection/LocalEnvironmentList";
 import { PullRequestRoutingSettings } from "../connection/PullRequestRoutingSettings";
-import { TailnetServerSuggestions } from "../connection/TailnetServerSection";
+import { EnvironmentSlot } from "../../extensions/environments";
 import { splitEnvironmentSections } from "../connection/environmentSections";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
 import { useRemoteConnections } from "../../state/use-remote-environment-registry";
@@ -139,7 +139,7 @@ export function SettingsEnvironmentsRouteScreen() {
           onSetEnabled={onSetEnvironmentEnabled}
           onUpdate={handleUpdateEnvironment}
         />
-        <TailnetServerSuggestions />
+        <EnvironmentSlot name="environments.suggestions" />
 
         {/* Keep connected relays visible and removable without cloud config or sign-in; this component gates discovery. */}
         <CloudEnvironmentRows
