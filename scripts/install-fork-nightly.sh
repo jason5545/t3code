@@ -56,6 +56,7 @@ if ! ditto "$new" "$APP"; then
   rm -rf "$APP" && mv "$old" "$APP"
 fi
 codesign --verify --deep --strict "$APP" && say "installed: $(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")"
+# This process does not outlive the relaunch, so log first; the resumed turn deletes stage/,
+# including the previous bundle kept there.
+say "relaunching by path"
 env -i HOME="$HOME" USER="$USER" PATH=/usr/bin:/bin:/usr/sbin:/sbin /usr/bin/open "$APP"
-say "relaunched by path"
-rm -rf "$old"

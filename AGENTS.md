@@ -237,7 +237,7 @@ A sync is finished only when the agent-hub server runs the synced commit, the re
 
 ### Installing on the Mac
 
-A thread inside the Mac app installs the build itself; no hand-off to Claude desktop is needed (first done 2026-11-12). Build with `scripts/build-fork-nightly.sh`, then run `scripts/install-fork-nightly.sh release/fork-nightly/<version>` as the turn's last step before checking. It verifies the build and swaps the app from its own session, so quitting T3 cuts the calling turn off; T3's restart continuation resumes that turn, which reads `release/fork-nightly/<version>/install.log` and checks the new server. Check for other running threads first, as for agent-hub. Details are under "Local Mac deployment" in [patches.md](patches.md).
+A thread inside the Mac app installs the build itself; no hand-off to Claude desktop is needed (first done 2026-11-12). Build with `scripts/build-fork-nightly.sh`, then run `scripts/install-fork-nightly.sh release/fork-nightly/<version>` as the turn's last step before checking. It verifies the build and swaps the app from its own session, so quitting T3 cuts the calling turn off; T3's restart continuation resumes that turn, which reads `release/fork-nightly/<version>/install.log`, checks the new server and deletes `<version>/stage`, where the previous bundle is kept. Check for other running threads first, as for agent-hub. Details are under "Local Mac deployment" in [patches.md](patches.md).
 
 ### Reporting upstream
 
