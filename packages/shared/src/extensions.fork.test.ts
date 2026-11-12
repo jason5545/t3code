@@ -22,8 +22,12 @@ describe("createExtensionHost", () => {
       extension("third", { words: ["c"] }),
     ]);
 
-    expect(host.list("words")).toEqual(["a", "b", "c"]);
-    expect(host.list("numbers")).toEqual([1]);
+    expect(host.list("words")).toEqual([
+      { id: "first", contribution: "a" },
+      { id: "first", contribution: "b" },
+      { id: "third", contribution: "c" },
+    ]);
+    expect(host.list("numbers")).toEqual([{ id: "second", contribution: 1 }]);
     expect(host.list("words")).toBe(host.list("words"));
     expect(host.extensions.map(({ id }) => id)).toEqual(["first", "second", "third"]);
   });

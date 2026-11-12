@@ -15,10 +15,18 @@ export interface Extension<Points> extends ExtensionInfo {
   readonly contributes: { readonly [Point in keyof Points]?: ReadonlyArray<Points[Point]> };
 }
 
+export interface ExtensionContribution<Contribution> {
+  /** The extension it comes from, so a host can leave out a disabled one. */
+  readonly id: string;
+  readonly contribution: Contribution;
+}
+
 export interface ExtensionHost<Points> {
   readonly extensions: ReadonlyArray<ExtensionInfo>;
   /** A point's contributions in manifest order. The array is the same one on every call. */
-  readonly list: <Point extends keyof Points>(point: Point) => ReadonlyArray<Points[Point]>;
+  readonly list: <Point extends keyof Points>(
+    point: Point,
+  ) => ReadonlyArray<ExtensionContribution<Points[Point]>>;
 }
 
 export function createExtensionHost<Points>(
@@ -29,10 +37,14 @@ export function createExtensionHost<Points>(
     if (ids.has(id)) throw new Error(`Extension "${id}" is listed twice.`);
     ids.add(id);
   }
-  const lists: { [Point in keyof Points]?: ReadonlyArray<Points[Point]> } = {};
+  const lists: {
+    [Point in keyof Points]?: ReadonlyArray<ExtensionContribution<Points[Point]>>;
+  } = {};
   return {
     extensions,
     list: (point) =>
-      (lists[point] ??= extensions.flatMap((extension) => extension.contributes[point] ?? [])),
+      (lists[point] ??= extensions.flatMap(({ id, contributes }) =>
+        (contributes[point] ?? []).map((contribution) => ({ id, contribution })),
+      )),
   };
 }

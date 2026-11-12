@@ -67,6 +67,7 @@ import {
   EnvironmentSpeechTranscriptionResult,
 } from "./speech.ts";
 import { SecretReference } from "./secretReference.ts";
+import { ExtensionsRequest, ExtensionsSnapshot } from "./extensions.ts";
 import {
   OrchestrationV2ShellSnapshot,
   OrchestrationV2ThreadBoundedSnapshot,
@@ -660,6 +661,15 @@ class EnvironmentAuthHttpApi extends HttpApiGroup.make("auth")
     HttpApiEndpoint.get("tailnetServers", "/api/tailnet/servers", {
       headers: OptionalBearerHeaders,
       success: Schema.Array(TailnetServer),
+      error: EnvironmentScopedOperationErrors,
+    }).middleware(EnvironmentAuthenticatedAuth),
+  )
+  .add(
+    // Fork patch 30: read, install, remove and turn extensions on or off.
+    HttpApiEndpoint.post("extensions", "/api/extensions", {
+      headers: OptionalBearerHeaders,
+      payload: ExtensionsRequest,
+      success: ExtensionsSnapshot,
       error: EnvironmentScopedOperationErrors,
     }).middleware(EnvironmentAuthenticatedAuth),
   ) {}

@@ -1,6 +1,8 @@
+import { builtInExtension } from "@t3tools/shared/builtInExtensions";
 import { createExtensionHost } from "@t3tools/shared/extensions";
 
 import { EphemeralThreadsWatcher } from "../components/EphemeralThreads";
+import { ExtensionLoader } from "../components/ExtensionLoader";
 import { createExtensionSlot, type SlotComponents } from "./ExtensionSlot";
 
 interface AppSlots {
@@ -11,10 +13,12 @@ interface AppSlots {
 export const AppSlot = createExtensionSlot(
   createExtensionHost<SlotComponents<AppSlots>>([
     {
-      id: "ephemeral-threads",
-      title: "Ephemeral threads",
-      patch: 11,
+      ...builtInExtension("ephemeral-thread-watcher"),
       contributes: { "app.root": [EphemeralThreadsWatcher] },
+    },
+    {
+      ...builtInExtension("extension-manager"),
+      contributes: { "app.root": [ExtensionLoader] },
     },
   ]),
 );

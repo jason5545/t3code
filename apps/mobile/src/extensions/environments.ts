@@ -1,3 +1,4 @@
+import { builtInExtension } from "@t3tools/shared/builtInExtensions";
 import { createExtensionHost } from "@t3tools/shared/extensions";
 
 import {
@@ -16,9 +17,7 @@ interface EnvironmentSlots {
 export const EnvironmentSlot = createExtensionSlot(
   createExtensionHost<SlotComponents<EnvironmentSlots>>([
     {
-      id: "tailscale-pairing",
-      title: "Tailscale pairing and tailnet discovery",
-      patch: 7,
+      ...builtInExtension("tailnet-suggestions"),
       contributes: {
         "home.environments": [TailnetServerHomeRows],
         "environments.suggestions": [TailnetServerSuggestions],

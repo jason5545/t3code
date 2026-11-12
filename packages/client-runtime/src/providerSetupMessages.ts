@@ -5,6 +5,30 @@
  */
 
 const EXACT: Readonly<Record<string, string>> = {
+  // Extensions (Settings → Maintenance; fork patch 30)
+  "Calls to your other machines": "呼叫你的其他機器",
+  "The t3_machine_call tool, which lets agents use T3 tools on your other machines. Changes apply after the server restarts.":
+    "t3_machine_call 工具，讓代理程式使用你其他機器上的 T3 工具。變更會在伺服器重新啟動後套用。",
+  "Interface language selector": "介面語言選擇器",
+  "The language section in Settings → General and Appearance.":
+    "「設定 → 一般」和「外觀」裡的語言區塊。",
+  "Tailnet server suggestions": "tailnet 伺服器建議",
+  "Servers found on your tailnet, offered when you add an environment. The mobile app keeps showing them.":
+    "新增環境時，列出在你的 tailnet 上找到的伺服器。行動版 App 仍會顯示。",
+  "Summary badge": "摘要標記",
+  "Marks a Claude update that is the provider's summary, not the agent's words.":
+    "標出 Claude 的進度說明其實是供應商給的摘要，不是代理程式的原話。",
+  "Ephemeral thread watcher": "無痕對話監看",
+  "Keeps ephemeral threads out of this device's storage and window title.":
+    "讓無痕對話不留在這部裝置的儲存空間和視窗標題裡。",
+  "Extension manager": "擴充功能管理",
+  "This list, and loading the extensions you install.": "這份清單，以及載入你安裝的擴充功能。",
+  "The server could not be reached.": "無法連到伺服器。",
+  "A built-in extension can be turned off, not removed.": "內建的擴充功能只能停用，不能移除。",
+  "This extension cannot be turned off.": "這個擴充功能不能停用。",
+  "The marketplace index is not in the expected format.": "市集索引的格式不符預期。",
+  "This server does not manage extensions.": "這台伺服器不管理擴充功能。",
+  "The extension list could not be saved.": "無法儲存擴充功能清單。",
   // Provider sign-in (ProviderAuthService)
   "This provider does not support sign-in in T3 Code.": "這個供應商不支援在 T3 Code 中登入。",
   "This provider instance is no longer available.": "這個供應商執行個體已不存在。",

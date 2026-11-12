@@ -149,6 +149,7 @@ import * as DirectEndpoints from "./environment/DirectEndpoints.ts";
 import * as RemoteOpenTargets from "./environment/RemoteOpenTargets.ts";
 import * as AuthHttp from "./auth/http.ts";
 import * as TailscalePairing from "./auth/TailscalePairing.ts";
+import * as ExtensionStore from "./extensions/ExtensionStore.ts";
 import * as ReplayMarkers from "./auth/replayMarkers.ts";
 import * as ServerSecretStore from "./auth/ServerSecretStore.ts";
 import * as CodexManagedTokenBroker from "./provider/CodexManagedTokenBroker.ts";
@@ -802,6 +803,8 @@ const layerMakeRoutes = Layer.mergeAll(
       Layer.provide(McpOAuthHttp.layer.pipe(Layer.provide(McpOAuth.layer))),
       // Fork patch 7: both layers above read it as optional.
       Layer.provide(TailscalePairing.layer),
+      // Fork patch 30: the extensions endpoint reads it as optional.
+      Layer.provide(ExtensionStore.layer),
       Layer.provide(CloudHttp.layer),
       Layer.provide(OrchestrationHttp.layer),
       Layer.provide(PullRequestHttp.layer),
@@ -830,6 +833,8 @@ const layerMakeRoutes = Layer.mergeAll(
     // Fork patch 22: the authenticator and the environment tools read these as optional.
     Layer.provide(MachineRelay.layer),
     Layer.provide(TailscalePairing.layer),
+    // Fork patch 30: extension toolkits register only while their extension is on.
+    Layer.provide(ExtensionStore.layer),
   ),
   // Follows delegated tasks running in linked environments, including after a restart.
   Layer.effectDiscard(

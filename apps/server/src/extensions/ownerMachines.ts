@@ -1,4 +1,5 @@
 import { OrchestratorMcpFailure } from "@t3tools/contracts";
+import { builtInExtension } from "@t3tools/shared/builtInExtensions";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Tool, Toolkit } from "effect/ai";
@@ -45,8 +46,6 @@ const handlers = McpToolAccess.toLayer(
 );
 
 export const ownerMachines: ServerExtension = {
-  id: "owner-machines",
-  title: "The owner's machines reach each other's T3 tools",
-  patch: 22,
+  ...builtInExtension("owner-machine-calls"),
   contributes: { mcpToolkits: [(register) => register(MachineToolkit, handlers)] },
 };

@@ -279,6 +279,7 @@ export const layer = HttpApiBuilder.group(
     return handlers
       .handle("tailscalePairing", fork.tailscalePairing)
       .handle("tailnetServers", fork.tailnetServers)
+      .handle("extensions", fork.extensions)
       .handle(
         "session",
         Effect.fn("environment.auth.session")(

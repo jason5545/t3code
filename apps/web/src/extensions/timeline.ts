@@ -1,3 +1,4 @@
+import { builtInExtension } from "@t3tools/shared/builtInExtensions";
 import { createExtensionHost } from "@t3tools/shared/extensions";
 
 import { SummarizedUpdateBadge } from "../components/chat/SummarizedUpdateBadge";
@@ -12,9 +13,7 @@ export interface TimelineSlots {
 export const TimelineSlot = createExtensionSlot(
   createExtensionHost<SlotComponents<TimelineSlots>>([
     {
-      id: "summarized-updates",
-      title: "Summarized Claude updates are marked",
-      patch: 16,
+      ...builtInExtension("summarized-update-badge"),
       contributes: { "timeline.assistantMessage": [SummarizedUpdateBadge] },
     },
   ]),

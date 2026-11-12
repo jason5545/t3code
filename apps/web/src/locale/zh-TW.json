@@ -8850,5 +8850,8 @@
   "Answer or dismiss the question first, then add it to chat.": "請先回答或關閉這個問題，再加入對話。",
   "Model: {0}": "模型：{0}",
   "Opened in {label}": "已在 {label} 開啟",
-  "Pinned 1 thread": "已釘選 1 個對話"
+  "Pinned 1 thread": "已釘選 1 個對話",
+  "Extensions": "擴充功能",
+  "Extension marketplace": "擴充功能市集",
+  "Nothing new to install": "沒有可安裝的新擴充功能"
 }

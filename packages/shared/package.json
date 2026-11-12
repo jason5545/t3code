@@ -435,6 +435,10 @@
       "types": "./src/extensions.ts",
       "import": "./src/extensions.ts"
     },
+    "./builtInExtensions": {
+      "types": "./src/builtInExtensions.ts",
+      "import": "./src/builtInExtensions.ts"
+    },
     "./Array": {
       "types": "./src/Array.ts",
       "import": "./src/Array.ts"
