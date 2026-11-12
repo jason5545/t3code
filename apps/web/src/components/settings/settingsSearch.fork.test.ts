@@ -21,12 +21,7 @@ const { getSettingsSearchTargetScope, searchableSetting, searchSettings } =
 describe("settings search in zh-TW", () => {
   it.each([
     ["傳送快捷鍵", "send-shortcut"],
-    ["外觀", "theme"],
     ["佈景主題", "theme"],
-    ["  語言  ", "interface-language"],
-    ["繁體中文", "interface-language"],
-    ["Taiwan", "interface-language"],
-    ["語言 English", "interface-language"],
   ])("finds %s", (query, id) => {
     expect(searchSettings(query).map((item) => item.id)).toContain(id);
   });
@@ -37,19 +32,11 @@ describe("settings search in zh-TW", () => {
       title: "傳送快捷鍵",
       to: "/settings/chat",
     });
-    expect(searchSettings("介面語言")[0]).toMatchObject({
-      id: "interface-language",
-      to: "/settings/general",
-    });
     expect(searchableSetting("send-shortcut")).toEqual({
       id: "send-shortcut",
       title: "傳送快捷鍵",
     });
-    expect(searchableSetting("interface-language")).toEqual({
-      id: "interface-language",
-      title: "介面語言",
-    });
-    expect(getSettingsSearchTargetScope("interface-language")?.scope).toBeNull();
+    expect(getSettingsSearchTargetScope("send-shortcut")?.scope).toBeNull();
     expect(searchSettings("   ")).toEqual([]);
   });
 });

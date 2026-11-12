@@ -1,9 +1,11 @@
+import { resolveLocale, SYSTEM_LANGUAGE } from "@t3tools/client-runtime/locales";
+
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "../i18n/locales";
+
 export type Locale = "en" | "zh-TW";
+/** A copy of the locale the Language setting last resolved to, readable before settings load. */
 export const LOCALE_STORAGE_KEY = "t3code:interface-locale:v1";
-export const LOCALE_OPTIONS = [
-  { value: "en", label: "English" },
-  { value: "zh-TW", label: "繁體中文（台灣）" },
-] as const;
+export const LOCALE_MIGRATED_KEY = "t3code:interface-locale:migrated:v1";
 
 export type LocaleStorage = Pick<Storage, "getItem" | "setItem">;
 
@@ -14,6 +16,23 @@ export function isLocale(value: unknown): value is Locale {
 /** Only Traditional Chinese language tags opt in; generic zh / zh-CN stay English. */
 export function defaultLocale(language: string | undefined): Locale {
   return language && /^zh-(?:tw|hk|mo|hant)(?:-|$)/i.test(language) ? "zh-TW" : "en";
+}
+
+/** The build-time translations' locale for a Language setting: Chinese only for zh-TW. */
+export function translatedLocale(language: string, systemLocales: ReadonlyArray<string>): Locale {
+  return resolveLocale(language, systemLocales, SUPPORTED_LOCALES, DEFAULT_LOCALE) === "zh-TW"
+    ? "zh-TW"
+    : "en";
+}
+
+/**
+ * The Language setting for a device that used the fork's own selector: its saved Chinese
+ * choice, or System default where the device's language made the interface Chinese unasked.
+ * Null leaves the setting alone.
+ */
+export function migratedLanguage(saved: string | null, language: string | undefined) {
+  if (saved === "zh-TW") return "zh-TW";
+  return saved === null && defaultLocale(language) === "zh-TW" ? SYSTEM_LANGUAGE : null;
 }
 
 export function browserLocaleStorage(): LocaleStorage | undefined {

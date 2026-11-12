@@ -9,9 +9,6 @@ const EXACT: Readonly<Record<string, string>> = {
   "Calls to your other machines": "呼叫你的其他機器",
   "The t3_machine_call tool, which lets agents use T3 tools on your other machines. Changes apply after the server restarts.":
     "t3_machine_call 工具，讓代理程式使用你其他機器上的 T3 工具。變更會在伺服器重新啟動後套用。",
-  "Interface language selector": "介面語言選擇器",
-  "The language section in Settings → General and Appearance.":
-    "「設定 → 一般」和「外觀」裡的語言區塊。",
   "Tailnet server suggestions": "tailnet 伺服器建議",
   "Servers found on your tailnet, offered when you add an environment. The mobile app keeps showing them.":
     "新增環境時，列出在你的 tailnet 上找到的伺服器。行動版 App 仍會顯示。",

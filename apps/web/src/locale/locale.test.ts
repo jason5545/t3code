@@ -1,12 +1,14 @@
 import { describe, expect, it, vi, afterEach } from "vite-plus/test";
-import { localeStorageListener, selectInterfaceLocale } from "./autoTranslateRuntime";
+import { localeStorageListener } from "./autoTranslateRuntime";
 import {
   browserLocaleStorage,
   defaultLocale,
   isLocale,
   LOCALE_STORAGE_KEY,
+  migratedLanguage,
   persistLocalePreference,
   readLocalePreference,
+  translatedLocale,
 } from "./locale";
 function memoryStorage() {
   const entries = new Map<string, string>();
@@ -90,26 +92,19 @@ describe("interface locale", () => {
     onStorage({ key: null });
     expect(reload).toHaveBeenCalledTimes(1);
   });
-  it("applies a selection, reloading only for a stored change from the startup language", () => {
-    const storage = memoryStorage();
-    const documentElement = { lang: "en" };
-    vi.stubGlobal("window", { localStorage: storage });
-    vi.stubGlobal("document", { documentElement });
-    const reload = vi.fn();
-    const startup = readLocalePreference(storage, navigator.languages?.[0] || navigator.language);
-    const other = startup === "en" ? "zh-TW" : "en";
-    selectInterfaceLocale(startup, reload);
-    expect(reload).not.toHaveBeenCalled();
-    selectInterfaceLocale(other, reload);
-    expect(documentElement.lang).toBe(other);
-    expect(storage.entries.get(LOCALE_STORAGE_KEY)).toBe(other);
-    expect(reload).toHaveBeenCalledTimes(1);
-    vi.stubGlobal("window", {
-      get localStorage() {
-        throw new Error("blocked");
-      },
-    });
-    selectInterfaceLocale(other, reload);
-    expect(reload).toHaveBeenCalledTimes(1);
+  it("uses the Chinese build-time text only when the Language setting resolves to zh-TW", () => {
+    expect(translatedLocale("zh-TW", ["en-US"])).toBe("zh-TW");
+    expect(translatedLocale("system", ["zh-Hant-TW", "en"])).toBe("zh-TW");
+    // Upstream's `zh` is Simplified; a Traditional device never falls into it.
+    expect(translatedLocale("zh", ["zh-TW"])).toBe("en");
+    expect(translatedLocale("system", ["zh-CN"])).toBe("en");
+    expect(translatedLocale("en", ["zh-TW"])).toBe("en");
+  });
+  it("moves the earlier selector's choice into the Language setting once", () => {
+    expect(migratedLanguage("zh-TW", "en-US")).toBe("zh-TW");
+    expect(migratedLanguage(null, "zh-TW")).toBe("system");
+    // English was the default, so an English choice or an English device changes nothing.
+    expect(migratedLanguage("en", "zh-TW")).toBeNull();
+    expect(migratedLanguage(null, "en-US")).toBeNull();
   });
 });

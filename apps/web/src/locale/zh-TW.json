@@ -8853,5 +8853,8 @@
   "Pinned 1 thread": "已釘選 1 個對話",
   "Extensions": "擴充功能",
   "Extension marketplace": "擴充功能市集",
-  "Nothing new to install": "沒有可安裝的新擴充功能"
+  "Nothing new to install": "沒有可安裝的新擴充功能",
+  "language": "語言",
+  "Your next message keeps all {0} tokens of history.": "下次傳送會保留全部 {0} 個 token 的歷史紀錄。",
+  "Compact first": "先壓縮"
 }

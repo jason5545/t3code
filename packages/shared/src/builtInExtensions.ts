@@ -17,11 +17,6 @@ const BUILT_IN = {
       "The t3_machine_call tool, which lets agents use T3 tools on your other machines. Changes apply after the server restarts.",
     patch: 22,
   },
-  "language-selector": {
-    title: "Interface language selector",
-    description: "The language section in Settings → General and Appearance.",
-    patch: 2,
-  },
   "tailnet-suggestions": {
     title: "Tailnet server suggestions",
     description:

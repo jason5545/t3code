@@ -33,6 +33,8 @@ const DIALOG_REQUEST_PROPERTY = /^(?:message|confirmText|cancelText)$/;
 const ACTION_PROPS = /^(?:actionProps|secondaryActionProps)$/;
 const VERBATIM_ELEMENTS = new Set(["code", "pre", "kbd", "samp", "script", "style", "Kbd"]);
 const STRING_CHILD_ELEMENTS = new Set(["option", "title", "textarea"]);
+// gt-react: `gt("…")` from `useGT`, `msg("…")` for tables read through `useMessages`.
+const GT_CALLS = new Set(["gt", "msg"]);
 const PLACEHOLDER = /\{([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*|\d+)\}/g;
 const TEST_FILE = /\.(?:test|browser|stories)\.[cm]?[jt]sx?$|[/\\]test-fixtures\.[jt]sx?$/;
 const REPO_ROOT = nodePath.resolve(__dirname, "../..");
@@ -359,11 +361,15 @@ module.exports = function autoTranslate(babel, options) {
     return name.type === "JSXIdentifier" ? name.name : "";
   }
 
+  const isGtElement = (node) => elementName(node) === "T";
+
   /** Combine an element's text and inline children into one message so word order can change. */
   function translateChildren(state, path) {
     const node = path.node;
     const tag = elementName(node);
     if (VERBATIM_ELEMENTS.has(tag)) return;
+    // Upstream's gt-react translates what its `<T>` wraps, from `i18n/translations/zh-TW.json`.
+    if (isGtElement(node) || path.findParent((parent) => isGtElement(parent.node))) return;
     const segments = [];
     for (const child of node.children) {
       if (child.type === "JSXSpreadChild") return;
@@ -510,6 +516,8 @@ module.exports = function autoTranslate(babel, options) {
         translateValue(state, args[1], "alert:message");
       } else if (/^(?:window\.)?(?:confirm|alert)$/.test(callee)) {
         translateValue(state, args[0], "dialog");
+      } else if (GT_CALLS.has(callee)) {
+        // gt-react's own strings, even in a display file.
       } else if (callee === "announce") {
         // Web's screen reader live region (`apps/web/src/lib/announce.ts`).
         translateValue(state, args[0], "announce");

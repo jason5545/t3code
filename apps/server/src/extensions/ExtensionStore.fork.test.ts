@@ -32,7 +32,7 @@ const marketplace = (webHash = sha256(WEB_CODE)): Record<string, string> => ({
         server: { url: "hello-world/server.mjs", sha256: sha256(SERVER_CODE) },
         web: { url: "hello-world/web.js", sha256: webHash },
       },
-      { id: "language-selector", title: "Shadow", description: "", version: "9.9.9" },
+      { id: "summarized-update-badge", title: "Shadow", description: "", version: "9.9.9" },
     ],
   }),
   "https://market.test/extensions/hello-world/server.mjs": SERVER_CODE,
@@ -109,7 +109,7 @@ it.effect("refuses a download that does not match the marketplace's hash", () =>
 
 it.effect("turns a built-in extension off but never removes it or a required one", () =>
   Effect.gen(function* () {
-    const removed = yield* ask({ action: "remove", id: "language-selector" });
+    const removed = yield* ask({ action: "remove", id: "summarized-update-badge" });
     assert.strictEqual(removed.error, "A built-in extension can be turned off, not removed.");
     const required = yield* ask({
       action: "setEnabled",
@@ -117,11 +117,11 @@ it.effect("turns a built-in extension off but never removes it or a required one
       enabled: false,
     });
     assert.strictEqual(required.error, "This extension cannot be turned off.");
-    const off = yield* ask({ action: "setEnabled", id: "language-selector", enabled: false });
+    const off = yield* ask({ action: "setEnabled", id: "summarized-update-badge", enabled: false });
     assert.strictEqual(off.error, null);
     assert.deepStrictEqual(
       off.extensions.filter(({ enabled }) => !enabled).map(({ id }) => id),
-      ["language-selector"],
+      ["summarized-update-badge"],
     );
   }).pipe(Effect.provide(layerTest(marketplace()))),
 );

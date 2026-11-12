@@ -3,18 +3,13 @@ import { setChineseProviderOptionLabels } from "@t3tools/client-runtime/provider
 import { setChineseDurations } from "@t3tools/shared/durationFormat";
 import { createElement, Fragment, type ReactNode } from "react";
 
-import {
-  type Locale,
-  LOCALE_STORAGE_KEY,
-  persistLocalePreference,
-  readLocalePreference,
-} from "./locale";
+import { type Locale, LOCALE_STORAGE_KEY, readLocalePreference } from "./locale";
 
 /**
  * Called by code that `scripts/i18n/autoTranslate.cjs` rewrites at build time.
  * The locale is read once at startup; changing it reloads the page.
  */
-const startupLocale = readLocalePreference();
+export const startupLocale = readLocalePreference();
 export const useChinese = startupLocale === "zh-TW";
 // Durations from @t3tools/shared and option labels built in client-runtime follow the same choice.
 setChineseDurations(useChinese);
@@ -39,18 +34,6 @@ if (typeof window !== "undefined") {
     "storage",
     localeStorageListener(startupLocale, () => window.location.reload()),
   );
-}
-
-/**
- * Applies the language selector's choice. Text was translated for the startup locale,
- * so a stored change reloads; when storage is blocked the page keeps its text.
- */
-export function selectInterfaceLocale(
-  locale: Locale,
-  reload: () => void = () => window.location.reload(),
-): void {
-  document.documentElement.lang = locale;
-  if (persistLocalePreference(locale) && locale !== startupLocale) reload();
 }
 
 /** Template parts: literal text, or an index into the values array. */
