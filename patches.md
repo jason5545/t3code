@@ -1,7 +1,7 @@
 # Fork patches
 
 Repository: https://github.com/jason5545/t3code
-Upstream baseline: `bc647ed535` (merged 2026-11-12).
+Upstream baseline: `f70e349eca` (merged 2026-11-13).
 
 ## 1. OMP provider
 
@@ -54,7 +54,7 @@ Upstream baseline: `bc647ed535` (merged 2026-11-12).
 
 ## 4. Manual context compaction for ACP agents
 
-- The ACP Registry adapter exposes the existing compaction operation so the context meter can execute an agent's advertised `compact` command. The UI still offers the button only when the agent lists that command, and disables it during a running turn. This also applies to local commands such as `perch-acp`.
+- Upstream #28822 (2026-11-13) lets ACP Registry agents that advertise `compact` run it from the context meter, which the fork used to add itself; the fork's remaining part is kimi's background compaction below. `AcpRegistryAdapterV2.fork.test.ts` still checks the registry adapter compacts through the advertised command.
 - kimi-code (2.3.1) answers `/compact` the moment its compaction starts in the background. A message sent before it ends is queued by kimi's engine and answered at once, so T3 closed the run with no output while kimi ran that turn unseen and dropped its updates (agent-channel #30, 2026-10-24). `packages/provider-acp-registry/src/server/backgroundCompaction.ts` wraps every registry runtime: when a `/compact` prompt reports `Context compaction started`, the prompt stays open until kimi's `Compaction completed.` or `Compaction cancelled.` notice, so the next message waits in T3's queue and the notice shows in the compaction turn. Stop ends the wait as cancelled. kimi sends nothing when the compaction request fails, so the wait gives up after 15 minutes. It keys on kimi's English wording and needs revisiting if kimi changes it; agents that compact before answering are unaffected. Covered by `backgroundCompaction.fork.test.ts`.
 
 ## 5. MCP approval codes and remote agent sign-in
