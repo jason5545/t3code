@@ -108,7 +108,7 @@ describe("AcpRegistryAdapterV2 (fork)", () => {
         selfInvocation: yield* resolveSelfInvocation(),
         instanceId,
         settings,
-        environment: { T3_ACP_SESSION_LIFECYCLE: "1" },
+        environment: { T3_ACP_SESSION_LIFECYCLE: "1", T3_ACP_AVAILABLE_COMMANDS: "compact" },
       }).pipe(
         Effect.provide(
           Layer.mergeAll(

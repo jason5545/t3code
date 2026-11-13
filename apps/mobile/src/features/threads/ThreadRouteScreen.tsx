@@ -206,7 +206,7 @@ function ThreadUnavailableScreen(props: {
 
 /** Fork patch 11: a purged ephemeral thread has nothing to reconnect to. */
 function EphemeralThreadEndedScreen() {
-  const goBack = useWorkspaceBackNavigation("threads");
+  const goBack = useWorkspaceBackNavigation();
   return (
     <ThreadRouteFallbackLayout>
       <ScrollView

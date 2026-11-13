@@ -54,7 +54,8 @@ function ompProbeSpawner(version: string) {
   });
 }
 
-const ompDiscoverySpawner = (inventory: unknown) =>
+// Status starts one RPC process for chat and one with --no-extensions, so each gets its own pipes.
+const ompRpcProcess = (inventory: unknown) =>
   Effect.gen(function* () {
     const stdout = yield* Queue.unbounded<Uint8Array, Cause.Done>();
     let stdinBuffer = "";
@@ -83,21 +84,24 @@ const ompDiscoverySpawner = (inventory: unknown) =>
         }
       }),
     );
-    return ChildProcessSpawner.make((command) => {
-      const args = ChildProcess.isStandardCommand(command) ? command.args : [];
-      return Effect.succeed(
-        args.includes("--version")
-          ? processHandle({ stdout: `${OMP_VERSION_PREFIX}0.84.3\n` })
-          : ChildProcessSpawner.makeHandle({
-              ...processHandle({}),
-              exitCode: Effect.never,
-              isRunning: Effect.succeed(true),
-              stdin,
-              stdout: Stream.fromQueue(stdout),
-            }),
-      );
+    return ChildProcessSpawner.makeHandle({
+      ...processHandle({}),
+      exitCode: Effect.never,
+      isRunning: Effect.succeed(true),
+      stdin,
+      stdout: Stream.fromQueue(stdout),
     });
   });
+
+const ompDiscoverySpawner = (inventory: unknown) =>
+  Effect.succeed(
+    ChildProcessSpawner.make((command) => {
+      const args = ChildProcess.isStandardCommand(command) ? command.args : [];
+      return args.includes("--version")
+        ? Effect.succeed(processHandle({ stdout: `${OMP_VERSION_PREFIX}0.84.3\n` }))
+        : ompRpcProcess(inventory);
+    }),
+  );
 
 const settings = {
   enabled: true,

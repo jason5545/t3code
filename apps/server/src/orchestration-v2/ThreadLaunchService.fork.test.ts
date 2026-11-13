@@ -145,7 +145,13 @@ function makeHarness(scratchRoot: string, baseDir: string) {
   );
   const layerLaunch = ThreadLaunch.layer.pipe(
     Layer.provide(
-      Layer.mergeAll(layerExternal, layerThreadManagement, layerReceipts, IdAllocator.layer),
+      Layer.mergeAll(
+        layerExternal,
+        layerThreadManagement,
+        layerReceipts,
+        IdAllocator.layer,
+        layerOrchestrator,
+      ),
     ),
   );
   return {
