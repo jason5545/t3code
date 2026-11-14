@@ -116,13 +116,16 @@ export function makePiRpcDialect(command: string): PiRpcDialect {
   };
   return {
     launchArgs: (args) =>
-      args.map((arg, index) =>
-        arg === "rpc" && args[index - 1] === "--mode"
-          ? "rpc-ui"
-          : arg === "--mode=rpc"
-            ? "--mode=rpc-ui"
-            : arg,
-      ),
+      args
+        // OMP 18.20.0 rejects Pi's --offline; OMP's later flag of that name restricts auxiliary providers instead.
+        .filter((arg) => arg !== "--offline")
+        .map((arg, index, kept) =>
+          arg === "rpc" && kept[index - 1] === "--mode"
+            ? "rpc-ui"
+            : arg === "--mode=rpc"
+              ? "--mode=rpc-ui"
+              : arg,
+        ),
     outgoing: (record) => {
       switch (record.type) {
         case "get_commands":

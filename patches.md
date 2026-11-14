@@ -209,6 +209,13 @@ Upstream baseline: `e5835c993a` (merged 2026-11-14).
 - `cloud/connectLocalOrigin.ts` gives T3 Connect's two callers (startup in `server.ts`, relay config in `CloudLink.ts`) upstream's host for a loopback or wildcard bind and 127.0.0.1 otherwise, where the fork's loopback forwarder listens; Tailscale Serve keeps #34741's behaviour. `connectLocalOrigin.fork.test.ts` failed on upstream's origin and passes now.
 - A server bound to a non-loopback address with no loopback listener cannot use T3 Connect either way, so upstream's own fix would likely be in the link checks; reported as upstream issue #36500 (2026-11-14, issue only: the fork's fix relies on its loopback forwarder). Drop this section when upstream fixes it.
 
+## 33. OMP's short-lived processes start without Pi's `--offline`
+
+- Upstream #30187 (`8be19ed3f1`, 2026-11-04) has `buildPiRpcLaunch` add `--offline` to every `shortLived` process (model discovery, text generation, fork), because Pi's startup catalog refresh renews expired OAuth tokens and T3 stops the process mid-request. OMP 18.20.0 has no such flag and exits 2 (`Error: unknown flag: --offline`), so on the Mac every OMP discovery failed with `Pi RPC discovery failed.` and the provider kept its pre-11-04 model snapshot; models added since, such as the third oMLX model from `/omlx-sync`, never appeared. Generated titles and forks on OMP failed the same way.
+- The OMP dialect's `launchArgs` (`provider-pi/src/server/rpcDialect.ts`), which every spawn goes through, drops `--offline`; Pi keeps it. `rpcDialect.fork.test.ts` failed before and passes now.
+- OMP has no equivalent switch. Its `--offline`, on oh-my-pi `main` since 2026-11-12 (`8b9b1ad22f`) but not in 18.20.0, restricts auxiliary services to the active model's provider and does not skip the catalog refresh, so it stays dropped once it ships. OMP's short-lived processes therefore lack #30187's protection: a stop during OMP's own startup refresh can still lose a rotated OAuth token.
+- Drop this section when upstream stops passing `--offline` to OMP itself.
+
 ## Extension system
 
 - Fork features that only add something (an MCP tool, a settings section, a row, a badge, a watcher) plug into named extension points. The upstream file holds one generic line per point instead of one import and one call per feature, and a later feature that fits an existing point edits no upstream file.
