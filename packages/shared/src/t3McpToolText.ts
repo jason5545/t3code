@@ -101,6 +101,8 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   t3_environment_unlink: { phrase: "移除已連結的環境" },
   t3_environment_preferences_update: { phrase: "更新環境偏好設定" },
   t3_machine_call: { phrase: "呼叫其他機器的工具" },
+  t3_theme_read: { phrase: "讀取主題" },
+  t3_theme_set: { phrase: "設定主題" },
   t3_thread_launch: { phrase: "啟動專案對話" },
   t3_project_list: { phrase: "列出專案" },
   t3_project_read: { phrase: "讀取專案" },
@@ -113,6 +115,7 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   t3_thread_send_attachments: { phrase: "傳送附件" },
   html_preview: { phrase: "預覽 HTML 頁面" },
   html_render: { phrase: "轉譯 HTML 頁面" },
+  send_to_user: { phrase: "傳送訊息" },
 };
 
 /** Taiwan style puts a half-width space between Chinese and Latin letters or digits. */
@@ -280,6 +283,8 @@ const OBJECTS: Readonly<Record<string, string>> = {
   "provider usage": "供應商用量",
   "environment preferences": "環境偏好設定",
   "other machines": "其他機器",
+  "the theme": "主題",
+  themes: "主題",
   "linked pull requests": "已連結的提取請求",
   "linked environments": "已連結的環境",
   "thread configuration": "對話設定",

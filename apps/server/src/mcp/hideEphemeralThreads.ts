@@ -19,8 +19,9 @@ import * as Orchestrator from "../orchestration-v2/Orchestrator.ts";
 import { ProjectionStoreThreadNotFoundError } from "../orchestration-v2/ProjectionStore.ts";
 import * as ThreadManagement from "../orchestration-v2/ThreadManagementService.ts";
 
-const visible = (threads: ReadonlyArray<OrchestrationV2ThreadShell>) =>
-  threads.filter((thread) => thread.ephemeral !== true);
+const visible = <T extends Pick<OrchestrationV2ThreadShell, "ephemeral">>(
+  threads: ReadonlyArray<T>,
+) => threads.filter((thread) => thread.ephemeral !== true);
 
 const visibleSnapshot = (
   snapshot: OrchestrationV2ThreadShellSnapshot,

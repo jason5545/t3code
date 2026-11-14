@@ -287,6 +287,10 @@ it.effect(
           // The relay hides an ephemeral thread's title only if awareness reads carry the flag.
           const awareness = yield* projections.getAgentAwarenessSnapshot(ephemeral);
           assert.isTrue(awareness.threads[0]?.ephemeral);
+          // Agents' thread listings drop it only if the list entries carry the flag too.
+          const listed = yield* projections.listActiveThreads();
+          assert.isTrue(listed.find((entry) => entry.id === ephemeral)?.ephemeral);
+          assert.isUndefined(listed.find((entry) => entry.id === kept)?.ephemeral);
           yield* seedEveryReference(ephemeral, "ephemeral");
           yield* seedEveryReference(kept, "kept");
           const keptBefore = yield* countReferences(kept);
