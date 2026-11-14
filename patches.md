@@ -203,6 +203,12 @@ Upstream baseline: `74573fc29b` (merged 2026-11-13).
 - Not covered: the mobile app neither loads web parts nor applies the off list (its slots always draw), there is no CLI or MCP tool for this, and only the primary environment's extensions apply to the web UI.
 - Covered by `ExtensionStore.fork.test.ts` (install, hash mismatch, built-in and required rules, tool names) and `installedToolkits.fork.test.ts` (an installed tool is advertised).
 
+## 32. T3 Connect keeps a loopback local origin on a tailnet-bound server
+
+- Upstream #34741 (merged 2026-11-12, in the fork since `f096881a94`) made `loopbackUrlHostForAddress` return the bound address for a specific `--host`, which fixed Tailscale Serve but also changed T3 Connect's managed tunnel origin. agent-hub and agent-fr bind their tailnet address, so the origin became `http://100.x:3773`, and `isAllowedEndpointOrigin` (`cloud/linkChecks.ts`) accepts only a loopback local host: every startup since then logged `Failed to reconcile T3 Connect desired link on startup` (`CloudLinkOriginInvalidError`, origin `endpoint`) and agent-hub's tunnel stayed down from 2026-11-13 08:06 until this fix (`t3 connect status`: NOT reachable).
+- `cloud/connectLocalOrigin.ts` gives T3 Connect's two callers (startup in `server.ts`, relay config in `CloudLink.ts`) upstream's host for a loopback or wildcard bind and 127.0.0.1 otherwise, where the fork's loopback forwarder listens; Tailscale Serve keeps #34741's behaviour. `connectLocalOrigin.fork.test.ts` failed on upstream's origin and passes now.
+- A server bound to a non-loopback address with no loopback listener cannot use T3 Connect either way, so upstream's own fix would likely be in the link checks; not reported upstream yet.
+
 ## Extension system
 
 - Fork features that only add something (an MCP tool, a settings section, a row, a badge, a watcher) plug into named extension points. The upstream file holds one generic line per point instead of one import and one call per feature, and a later feature that fits an existing point edits no upstream file.

@@ -69,7 +69,7 @@ import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as AgentAwarenessRelay from "../relay/AgentAwarenessRelay.ts";
 import { makeRelayEnvironmentClient } from "../relay/relayEnvironmentClient.ts";
-import { loopbackUrlHostForAddress } from "../startupAccess.ts";
+import { connectLocalOrigin } from "./connectLocalOrigin.ts";
 import {
   type CliDesiredLinkMode,
   readCliDesiredCloudLink,
@@ -1175,9 +1175,7 @@ const make = Effect.gen(function* () {
         if (typeof address === "string" || !("port" in address)) {
           return yield* new CloudLinkInternalError({ operation: "resolve-server-origin" });
         }
-        const registration = yield* registerManagedTunnelRecovery(
-          `http://${loopbackUrlHostForAddress(address)}:${address.port}`,
-        ).pipe(
+        const registration = yield* registerManagedTunnelRecovery(connectLocalOrigin(address)).pipe(
           Effect.retry({
             times: 2,
             while: (error) =>
