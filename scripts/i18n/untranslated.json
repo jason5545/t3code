@@ -564,7 +564,7 @@
     "apps/mobile/src/lib/threadActivityInspector.ts": [
       "Attempt {attempt.attemptOrdinal} · {attempt.status} · {0}"
     ],
-    "packages/client-runtime/src/state/shell.ts": ["empty", "cached", "3 seconds"],
+    "packages/client-runtime/src/state/shell.ts": ["empty", "cached", "3 seconds", "250 millis"],
     "packages/client-runtime/src/state/threads.ts": [
       "empty",
       "cached",
