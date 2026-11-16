@@ -7714,7 +7714,7 @@
   "Open in the browser panel. {externalClickLabel} for your browser.": "在瀏覽器面板開啟。{externalClickLabel}改用你的瀏覽器開啟。",
   "Stop localhost:{server.port}": "停止 localhost:{server.port}",
   "Stop server": "停止伺服器",
-  "Compacting for {0}": "正在壓縮 {0}",
+  "Compacting for {0}": "已壓縮 {0}",
   "What went wrong?": "出了什麼問題？",
   "The agent reads T3 Code's logs and source here, and asks before it applies a fix or posts anything.": "代理程式會在這裡讀取 T3 Code 的記錄和原始碼，套用修正或發布任何內容前都會先詢問。",
   "or run": "或執行",
