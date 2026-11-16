@@ -394,6 +394,7 @@ import {
   useSystemComposerBanners,
 } from "./chat/useSystemComposerBanners";
 import { useDraftHeroLayoutTransition } from "./chat/useDraftHeroLayoutTransition";
+import { useExtensionHidesComposer } from "../extensions/composerVisibility";
 import { useLocalDispatchState } from "./chat/useLocalDispatchState";
 import { draftFanoutSelectionsAtom, draftSendState } from "./chat/chatViewSend";
 import {
@@ -838,6 +839,7 @@ export default function ChatView(props: ChatViewProps) {
       )
     : undefined;
   const isServerThread = serverThread !== null;
+  const composerHiddenByInterface = useExtensionHidesComposer();
   const activeThread = isServerThread ? serverThread : localDraftThread;
   const serverLatestRun =
     serverProjection === null ? null : deriveLatestThreadRun(serverProjection);
@@ -3596,6 +3598,13 @@ export default function ChatView(props: ChatViewProps) {
                   ) : null}
                   <div
                     ref={draftHeroComposerAnchorRef}
+                    // Fork patch 30: an interface with its own composer (API 4).
+                    hidden={
+                      composerHiddenByInterface &&
+                      isServerThread &&
+                      pendingApprovals.length === 0 &&
+                      pendingUserInputs.length === 0
+                    }
                     className="relative z-10"
                     style={
                       forceExpandedMobileComposer

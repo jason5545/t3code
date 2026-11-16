@@ -7,10 +7,56 @@ import * as DateTime from "effect/DateTime";
  * a server is older. Upstream's types stay behind it, so an upstream change is absorbed here.
  */
 /**
- * 3 added, on web, `t3.pages`, `t3.actions`, `t3.navigation`, `t3.shortcuts` and
- * `t3.components.StatusNotices`; the server's `context.t3` is unchanged since 2.
+ * 3 added web's `t3.pages`, `t3.actions`, `t3.navigation`, `t3.shortcuts`, `StatusNotices`.
+ * 4 added replies (`threads.readReplies` on web, `threads.latestReplies` on the server),
+ * `threads.useRequest`, `threads.respond`, `pendingRequest.id` and `CurrentPage`'s `composer`.
  */
-export const EXTENSION_API_VERSION = 3;
+export const EXTENSION_API_VERSION = 4;
+
+/** Since API 4: a reply's first characters unless the caller asks for more. */
+export const REPLY_PREVIEW_CHARS = 600;
+export const REPLY_MAX_CHARS = 100_000;
+export const REPLY_MAX_THREADS = 200;
+
+/** Since API 4: a thread's newest finished assistant message. Times are ISO strings. */
+export interface ExtensionReply {
+  readonly threadId: string;
+  readonly messageId: string;
+  readonly runId: string | null;
+  /** Cut to the characters asked for; `length` is the whole message's. */
+  readonly text: string;
+  readonly length: number;
+  readonly truncated: boolean;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** The thread ids and characters a replies read takes; anything else is a TypeError. */
+export function readReplyQuery(
+  threadIds: unknown,
+  options: unknown,
+): { readonly threadIds: ReadonlyArray<string>; readonly chars: number } {
+  if (
+    !Array.isArray(threadIds) ||
+    threadIds.length > REPLY_MAX_THREADS ||
+    !threadIds.every((id) => typeof id === "string")
+  ) {
+    throw new TypeError(`Replies are read for at most ${REPLY_MAX_THREADS} thread ids.`);
+  }
+  const chars =
+    typeof options === "object" && options !== null && "chars" in options
+      ? options.chars
+      : REPLY_PREVIEW_CHARS;
+  if (
+    typeof chars !== "number" ||
+    !Number.isInteger(chars) ||
+    chars < 1 ||
+    chars > REPLY_MAX_CHARS
+  ) {
+    throw new TypeError(`chars is a whole number from 1 to ${REPLY_MAX_CHARS}.`);
+  }
+  return { threadIds: [...new Set(threadIds as ReadonlyArray<string>)], chars };
+}
 
 const LATEST_MESSAGE_CHARS = 2000;
 
@@ -36,11 +82,16 @@ export interface ExtensionThreadSummary {
   readonly runStartedAt: string | null;
   readonly runCompletedAt: string | null;
   readonly pendingRequest: {
+    /** Since API 4: what `t3.threads.respond` takes. */
+    readonly id: string;
     readonly kind: string;
     readonly createdAt: string;
     readonly userOnly: boolean;
   } | null;
-  /** The newest visible message, cut to 2,000 characters. */
+  /**
+   * Always null since upstream's new orchestrator keeps message bodies out of shell rows;
+   * read replies with `t3.threads.readReplies` (API 4).
+   */
   readonly latestMessage: {
     readonly role: string;
     readonly text: string;
@@ -111,6 +162,7 @@ export function summarizeThreadShell(
       request === null
         ? null
         : {
+            id: request.id,
             kind: request.kind,
             createdAt: DateTime.formatIso(request.createdAt),
             userOnly: request.userOnly === true,
