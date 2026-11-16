@@ -77,7 +77,7 @@ export function backgroundWorkVerb(waiting: boolean): string {
 
 /** The composer banner for an environment this client cannot reach, such as "agent-fr is offline". */
 export function environmentUnavailableTitle(label: string, reconnecting: boolean): string {
-  if (useChinese) return reconnecting ? `${label} 正在重新連線` : `${label} 已離線`;
+  if (useChinese) return reconnecting ? `${label}：正在重新連線` : `${label}：已離線`;
   return `${label} is ${reconnecting ? "reconnecting" : "offline"}`;
 }
 
