@@ -9087,5 +9087,7 @@
   "Fix findings in this thread": "在這個對話中修正審查意見",
   "Fix findings in a thread": "在對話中修正審查意見",
   "That interface could not be drawn": "無法繪製該介面",
-  "The standard interface is back.": "已切回標準介面。"
+  "The standard interface is back.": "已切回標準介面。",
+  "Could not confirm fork": "無法確認分岔是否建立",
+  "Reconnect and check the thread list before trying again.": "請重新連線，確認對話清單後再試一次。"
 }

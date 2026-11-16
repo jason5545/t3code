@@ -114,13 +114,14 @@ export function collectServerUpdateTargets(
       skip(useChinese ? "需要較新的桌面 App" : "needs a newer desktop app");
       continue;
     }
-    const serverVersion = config.environment.serverVersion;
+    const serverChannel = cliReleaseChannelOf(config.environment.serverVersion);
+    // A desktop app installs its own track's newest release. Nightly builds run ahead of Stable, so a
+    // Nightly host behind a Stable target has something newer; a Stable host may not.
     if (
-      selfUpdate !== "desktop-managed" &&
-      cliReleaseChannelOf(serverVersion) !== cliReleaseChannelOf(targetVersion)
+      serverChannel !== cliReleaseChannelOf(targetVersion) &&
+      (selfUpdate !== "desktop-managed" || serverChannel === "stable")
     ) {
-      const channel = cliReleaseChannelOf(serverVersion);
-      skip(useChinese ? `位於 ${channel} 頻道` : `on the ${channel} channel`);
+      skip(useChinese ? `位於 ${serverChannel} 頻道` : `on the ${serverChannel} channel`);
       continue;
     }
     const target: ServerUpdateTarget = {
