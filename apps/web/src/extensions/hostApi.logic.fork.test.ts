@@ -2,7 +2,12 @@ import type { OrchestrationV2ShellSnapshot, OrchestrationV2ThreadShell } from "@
 import * as DateTime from "effect/DateTime";
 import { describe, expect, it } from "vite-plus/test";
 
-import { collectThreadSummaries } from "./hostApi.logic";
+import {
+  availableExtensionPages,
+  collectThreadSummaries,
+  EXTENSION_ACTIONS,
+  readExtensionName,
+} from "./hostApi.logic";
 
 const at = (minute: number) => DateTime.makeUnsafe(Date.UTC(2026, 10, 16, 4, minute));
 
@@ -100,5 +105,21 @@ describe("collectThreadSummaries", () => {
     expect(collectThreadSummaries(environments, first)).toBe(first);
     const changed = [{ environmentId: "env:local", snapshot: snapshot([shell("thread:a", 2)]) }];
     expect(collectThreadSummaries(changed, first)).not.toBe(first);
+  });
+});
+
+describe("readExtensionName", () => {
+  it("takes T3's own names and refuses the rest, inherited keys included", () => {
+    expect(readExtensionName(EXTENSION_ACTIONS, "addProject", "actions.run")).toBe("addProject");
+    for (const name of ["toString", "constructor", "/settings", "", null, 3]) {
+      expect(() => readExtensionName(EXTENSION_ACTIONS, name, "actions.run")).toThrow(
+        "actions.run takes newThread, newThreadInProject, addProject or search.",
+      );
+    }
+  });
+
+  it("offers the pull request page only where the environment supports it", () => {
+    expect(availableExtensionPages(true)).toEqual(["home", "settings", "usage", "pullRequests"]);
+    expect(availableExtensionPages(false)).toEqual(["home", "settings", "usage"]);
   });
 });

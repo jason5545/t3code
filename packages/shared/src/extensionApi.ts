@@ -6,7 +6,10 @@ import * as DateTime from "effect/DateTime";
  * calls (`context.t3`). It is a public contract: extensions check `apiVersion` and say so when
  * a server is older. Upstream's types stay behind it, so an upstream change is absorbed here.
  */
-/** 3 added `t3.pages` on web; the server's `context.t3` is unchanged since 2. */
+/**
+ * 3 added, on web, `t3.pages`, `t3.actions`, `t3.navigation`, `t3.shortcuts` and
+ * `t3.components.StatusNotices`; the server's `context.t3` is unchanged since 2.
+ */
 export const EXTENSION_API_VERSION = 3;
 
 const LATEST_MESSAGE_CHARS = 2000;

@@ -37,3 +37,36 @@ export function collectThreadSummaries(
   next.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
   return previous !== null && arrayElementsEqual(previous, next) ? previous : next;
 }
+
+/** Since API 3: T3's pages an extension opens by name, never by path. */
+export const EXTENSION_PAGES = ["home", "settings", "usage", "pullRequests"] as const;
+export type ExtensionPage = (typeof EXTENSION_PAGES)[number];
+
+/** Since API 3: what the standard sidebar's header buttons do, by name. */
+export const EXTENSION_ACTIONS = [
+  "newThread",
+  "newThreadInProject",
+  "addProject",
+  "search",
+] as const;
+export type ExtensionAction = (typeof EXTENSION_ACTIONS)[number];
+
+/** A name an extension passed, checked against the table; anything else is a TypeError. */
+export function readExtensionName<const Name extends string>(
+  names: ReadonlyArray<Name>,
+  name: unknown,
+  caller: string,
+): Name {
+  const known: ReadonlyArray<unknown> = names;
+  if (typeof name === "string" && known.includes(name)) return name as Name;
+  throw new TypeError(`${caller} takes ${names.slice(0, -1).join(", ")} or ${names.at(-1) ?? ""}.`);
+}
+
+/** The sidebar shows Pull requests only where the environment can list them. */
+export function availableExtensionPages(
+  pullRequestsSupported: boolean,
+): ReadonlyArray<ExtensionPage> {
+  return pullRequestsSupported
+    ? EXTENSION_PAGES
+    : EXTENSION_PAGES.filter((page) => page !== "pullRequests");
+}
