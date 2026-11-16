@@ -126,6 +126,7 @@
     "apps/web/src/components/chat/TraitsPicker.tsx",
     "apps/web/src/components/ui/sidebar.tsx",
     "apps/web/src/components/chat/VoiceInputErrorPill.tsx",
-    "apps/web/src/components/chat/ComposerSpeechButton.tsx"
+    "apps/web/src/components/chat/ComposerSpeechButton.tsx",
+    "apps/web/src/components/settings/ConnectionDiagnosisDetails.tsx"
   ]
 }

@@ -1,3 +1,5 @@
+import { formatDurationUnits } from "./durationFormat.ts";
+
 /** Adapter and client match these dialog strings; reword them only here. */
 export const CLAUDE_RESUME_COMPACTION_NEVER_ANSWER = "Don't ask again";
 export const CLAUDE_RESUME_COMPACTION_COMPACT_ANSWER = "Compact and continue";
@@ -33,7 +35,9 @@ export function claudeResumeCompactionAge(questionAnswer: {
       questionAnswer.questionTextById?.[id] ?? id,
     )?.[1];
     const chosen = Array.isArray(answer) ? answer : [answer];
-    if (age !== undefined && chosen.includes(CLAUDE_RESUME_COMPACTION_COMPACT_ANSWER)) return age;
+    if (age !== undefined && chosen.includes(CLAUDE_RESUME_COMPACTION_COMPACT_ANSWER)) {
+      return localizedAge(age);
+    }
   }
   return null;
 }
@@ -44,3 +48,11 @@ export function claudeResumeCompactionAge(questionAnswer: {
  * idleCompaction default of 200K.
  */
 export const COMPACTION_SUGGESTION_MIN_TOKENS = 200_000;
+
+function localizedAge(age: string): string {
+  const [, hours, minutes] = /^(?:(\d+)h )?(\d+)m$/u.exec(age) ?? [];
+  if (minutes === undefined) return age;
+  return hours === undefined
+    ? formatDurationUnits([minutes, "m"])
+    : formatDurationUnits([hours, "h"], [minutes, "m"]);
+}

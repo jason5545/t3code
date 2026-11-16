@@ -8,6 +8,7 @@ import {
   type ServerSelfUpdateCapability,
 } from "@t3tools/contracts";
 import { cliReleaseChannelOf, desktopUpdateChannelOf } from "@t3tools/shared/cliRelease";
+import { formatDurationUnits } from "@t3tools/shared/durationFormat";
 import { compareSemverVersions } from "@t3tools/shared/semver";
 
 import {
@@ -450,9 +451,9 @@ const UPDATE_SLOW_AFTER_MS = 3 * 60 * 1000;
 
 export function formatUpdateElapsed(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return "<1m";
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  if (minutes < 1) return `<${formatDurationUnits([1, "m"])}`;
+  if (minutes < 60) return formatDurationUnits([minutes, "m"]);
+  return formatDurationUnits([Math.floor(minutes / 60), "h"], [minutes % 60, "m"]);
 }
 
 export interface UpdateRunMachineView {
