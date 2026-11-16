@@ -1,8 +1,10 @@
 import { ProjectId, ThreadId } from "@t3tools/contracts";
 import {
   EXTENSION_API_VERSION,
+  readReplyQuery,
   summarizeThreadShell,
   type ExtensionActivityItem,
+  type ExtensionReply,
   type ExtensionRunActivity,
   type ExtensionThreadSummary,
 } from "@t3tools/shared/extensionApi";
@@ -10,6 +12,7 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 
 import * as ProjectStore from "../orchestration-v2/ProjectStore.ts";
@@ -17,8 +20,8 @@ import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 
 /**
  * Fork patch 30: the read-only `t3` an installed server part's call receives as `context.t3`.
- * Run activity is read with one indexed query that extracts only the fields it returns, so a
- * board polling a long run never loads its command output; the rest is upstream's stores.
+ * Activity and replies are indexed queries that extract only what they return, so a board
+ * polling a long run never loads command output. Web reads replies through hostReads.ts.
  */
 const ACTIVITY_TYPES = ["command_execution", "file_change", "dynamic_tool"] as const;
 const MAX_ITEMS = 500;
@@ -31,6 +34,14 @@ export interface InstalledHostApi {
   readonly apiVersion: number;
   readonly threads: {
     readonly get: (threadId: string) => Promise<ExtensionThreadSummary | null>;
+    /**
+     * Since API 4: each thread's newest finished assistant message, first 600 characters unless
+     * `chars` asks for up to 100,000; threads without one are left out. At most 200 ids.
+     */
+    readonly latestReplies: (
+      threadIds: ReadonlyArray<string>,
+      options?: { readonly chars?: number },
+    ) => Promise<ReadonlyArray<ExtensionReply>>;
   };
   readonly runs: {
     /** The thread's latest run, or `runId`, with its tool steps after `afterOrdinal`. */
@@ -43,8 +54,36 @@ export interface InstalledHostApi {
 
 export class ExtensionHostApi extends Context.Service<
   ExtensionHostApi,
-  { readonly installed: InstalledHostApi }
+  {
+    readonly installed: InstalledHostApi;
+    /** `installed.threads.latestReplies` for built-in calls; input as JSON gave it. */
+    readonly latestReplies: (
+      threadIds: unknown,
+      options?: unknown,
+    ) => Effect.Effect<ReadonlyArray<ExtensionReply>, ExtensionReadError>;
+  }
 >()("t3/extensions/ExtensionHostApi") {}
+
+/** A read the host API could not answer: bad input, or the database failed. */
+export class ExtensionReadError extends Schema.TaggedError<ExtensionReadError>()(
+  "ExtensionReadError",
+  { message: Schema.String },
+) {}
+
+const readError = (cause: unknown) =>
+  new ExtensionReadError({
+    message: cause instanceof Error && cause.message !== "" ? cause.message : String(cause),
+  });
+
+interface ReplyRow {
+  readonly threadId: string;
+  readonly messageId: string;
+  readonly runId: string | null;
+  readonly text: string | null;
+  readonly length: number | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
 
 interface RunRow {
   readonly runId: string;
@@ -224,6 +263,56 @@ const make = Effect.gen(function* () {
     } satisfies ExtensionRunActivity;
   });
 
+  // The newest finished assistant message of each thread, ranked through the thread index.
+  const latestReplies = Effect.fn("ExtensionHostApi.latestReplies")(function* (
+    threadIdsInput: unknown,
+    options: unknown,
+  ) {
+    const query = yield* Effect.try({
+      try: () => readReplyQuery(threadIdsInput, options),
+      catch: readError,
+    });
+    if (query.threadIds.length === 0) return [];
+    const rows = yield* sql<ReplyRow>`
+      SELECT
+        m.thread_id AS "threadId",
+        m.message_id AS "messageId",
+        m.run_id AS "runId",
+        substr(json_extract(m.payload_json, '$.text'), 1, ${query.chars}) AS "text",
+        length(json_extract(m.payload_json, '$.text')) AS "length",
+        m.created_at AS "createdAt",
+        m.updated_at AS "updatedAt"
+      FROM (
+        SELECT
+          message_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY thread_id ORDER BY created_at DESC, message_id DESC
+          ) AS rank
+        FROM orchestration_v2_projection_messages
+        WHERE ${sql.in("thread_id", query.threadIds)} AND role = 'assistant' AND streaming = 0
+      ) AS latest
+      JOIN orchestration_v2_projection_messages AS m ON m.message_id = latest.message_id
+      WHERE latest.rank = 1`.pipe(Effect.mapError(readError));
+    const byThread = new Map(rows.map((row) => [row.threadId, row]));
+    return query.threadIds.flatMap((threadId): Array<ExtensionReply> => {
+      const row = byThread.get(threadId);
+      if (row === undefined) return [];
+      const length = row.length ?? 0;
+      return [
+        {
+          threadId,
+          messageId: row.messageId,
+          runId: row.runId,
+          text: row.text ?? "",
+          length,
+          truncated: length > query.chars,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        },
+      ];
+    });
+  });
+
   const services = yield* Effect.context<never>();
   const run = <A, E>(effect: Effect.Effect<A, E>) =>
     Effect.runPromiseWith(services)(effect.pipe(Effect.mapError(asError)));
@@ -236,6 +325,7 @@ const make = Effect.gen(function* () {
           return Promise.reject(new TypeError("threads.get takes a thread id."));
         return run(getThread(threadId));
       },
+      latestReplies: (threadIds, options) => run(latestReplies(threadIds, options)),
     },
     runs: {
       activity: (threadId, options) => {
@@ -245,7 +335,7 @@ const make = Effect.gen(function* () {
       },
     },
   };
-  return ExtensionHostApi.of({ installed: Object.freeze(installed) });
+  return ExtensionHostApi.of({ installed: Object.freeze(installed), latestReplies });
 });
 
 export const layer = Layer.effect(ExtensionHostApi, make).pipe(Layer.provide(ProjectStore.layer));

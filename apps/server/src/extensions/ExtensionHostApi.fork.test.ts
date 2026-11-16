@@ -18,6 +18,8 @@ import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as ProjectStore from "../orchestration-v2/ProjectStore.ts";
 import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import * as ExtensionHostApi from "./ExtensionHostApi.ts";
+import * as hostReads from "./hostReads.ts";
+import { serverExtensions } from "./index.ts";
 
 const projectId = ProjectId.make("project:board");
 const threadId = ThreadId.make("thread:board");
@@ -253,7 +255,7 @@ it.effect("reads a run's tool steps without their output, and only what came nex
 it.effect("summarizes a thread with its project, and answers null for an unknown one", () =>
   Effect.gen(function* () {
     const t3 = yield* seed;
-    assert.equal(t3.apiVersion, 3);
+    assert.equal(t3.apiVersion, 4);
     const summary = yield* Effect.promise(() => t3.threads.get(threadId));
     assert.include(summary, {
       id: threadId,
@@ -270,4 +272,93 @@ it.effect("summarizes a thread with its project, and answers null for an unknown
     assert.isNull(empty.run);
     assert.deepStrictEqual(empty.items, []);
   }).pipe(Effect.provide(layer)),
+);
+
+const reply = (id: string, second: number, text: string, streaming: boolean) =>
+  ({
+    id: EventId.make(`reply:${id}`),
+    type: "message.updated",
+    threadId,
+    occurredAt: at(second),
+    payload: {
+      id: MessageId.make(`message:${id}`),
+      threadId,
+      runId,
+      nodeId,
+      role: "assistant",
+      text,
+      attachments: [],
+      streaming,
+      createdBy: "agent",
+      creationSource: "provider",
+      createdAt: at(second),
+      updatedAt: at(second),
+    },
+  }) as OrchestrationV2DomainEvent;
+
+const REPORT = `HOLDING SHORT, number two：做完了。\n\n${"細節".repeat(1500)}`;
+
+it.effect("reads each thread's newest finished reply, cut to the characters asked for", () =>
+  Effect.gen(function* () {
+    const t3 = yield* seed;
+    const projections = yield* ProjectionStore.ProjectionStoreV2;
+    yield* projections.apply(reply("older", 7, "先跑測試", false));
+    yield* projections.apply(reply("report", 8, REPORT, false));
+    yield* projections.apply(reply("streaming", 9, "下一趟還在寫", true));
+
+    assert.equal(t3.apiVersion, 4);
+    const replies = yield* Effect.promise(() =>
+      t3.threads.latestReplies([threadId, "thread:missing"], { chars: 20 }),
+    );
+    assert.deepStrictEqual(replies, [
+      {
+        threadId,
+        messageId: "message:report",
+        runId,
+        text: REPORT.slice(0, 20),
+        length: REPORT.length,
+        truncated: true,
+        createdAt: DateTime.formatIso(at(8)),
+        updatedAt: DateTime.formatIso(at(8)),
+      },
+    ]);
+    const whole = yield* Effect.promise(() =>
+      t3.threads.latestReplies([threadId], { chars: 100_000 }),
+    );
+    assert.equal(whole[0]?.text, REPORT);
+    assert.isFalse(whole[0]?.truncated);
+
+    // Resolves with why the read was refused; a read that succeeds fails the test.
+    const refused = (read: () => Promise<unknown>) =>
+      Effect.tryPromise({
+        try: () => read().then(() => "it answered"),
+        catch: (cause) => String(cause),
+      }).pipe(Effect.flip);
+    const tooMany = yield* refused(() =>
+      t3.threads.latestReplies(Array.from({ length: 201 }, (_, i) => `thread:${i}`)),
+    );
+    assert.include(tooMany, "at most 200");
+    const noChars = yield* refused(() => t3.threads.latestReplies([threadId], { chars: 0 }));
+    assert.include(noChars, "chars");
+  }).pipe(Effect.provide(layer)),
+);
+
+it.effect(
+  "offers the replies to web code on every environment as extension-manager.latestReplies",
+  () =>
+    Effect.gen(function* () {
+      yield* seed;
+      const projections = yield* ProjectionStore.ProjectionStoreV2;
+      yield* projections.apply(reply("report", 8, REPORT, false));
+      const method = serverExtensions
+        .list("extensionCalls")
+        .find(({ id }) => id === "extension-manager")?.contribution.latestReplies;
+      assert.isTrue(method?.readOnly === true);
+      assert.strictEqual(method?.call, hostReads.latestReplies);
+      const value = yield* hostReads.latestReplies({ threadIds: [threadId] });
+      assert.deepStrictEqual(
+        value.map(({ messageId, length }) => ({ messageId, length })),
+        [{ messageId: "message:report", length: REPORT.length }],
+      );
+    }).pipe(Effect.provide(layer)),
 );
