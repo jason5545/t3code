@@ -65,7 +65,15 @@ export interface WebHostApi {
     /** Stops the running turn; resolves even when nothing was running. */
     readonly interrupt: (ref: ThreadRef) => Promise<void>;
   };
+  readonly pages: {
+    /** Since API 3: a function that opens one of T3's own pages, drawn over the interface. */
+    readonly useOpen: () => (page: ExtensionPage) => void;
+  };
 }
+
+/** Pages by name, so an upstream route rename changes this table and not the extensions. */
+const PAGE_ROUTES = { settings: "/settings", usage: "/usage" } as const;
+export type ExtensionPage = keyof typeof PAGE_ROUTES;
 
 const threadSummariesAtom = Atom.make((get): ReadonlyArray<ExtensionThreadSummary> =>
   collectThreadSummaries(
@@ -129,6 +137,16 @@ function useOpenThread() {
         scopeThreadRef(EnvironmentId.make(ref.environmentId), ThreadId.make(ref.threadId)),
       ),
     });
+  };
+}
+
+function useOpenPage() {
+  const navigate = useNavigate();
+  return (page: ExtensionPage) => {
+    if (!Object.hasOwn(PAGE_ROUTES, page)) {
+      throw new TypeError(`pages.useOpen opens ${Object.keys(PAGE_ROUTES).join(" or ")}.`);
+    }
+    void navigate({ to: PAGE_ROUTES[page] });
   };
 }
 
@@ -199,6 +217,7 @@ const webHostApi: WebHostApi = Object.freeze({
     send: sendToThread,
     interrupt: interruptThread,
   }),
+  pages: Object.freeze({ useOpen: useOpenPage }),
 });
 
 /** One frozen object; every web part gets the same one. */

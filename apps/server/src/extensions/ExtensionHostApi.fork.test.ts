@@ -253,7 +253,7 @@ it.effect("reads a run's tool steps without their output, and only what came nex
 it.effect("summarizes a thread with its project, and answers null for an unknown one", () =>
   Effect.gen(function* () {
     const t3 = yield* seed;
-    assert.equal(t3.apiVersion, 2);
+    assert.equal(t3.apiVersion, 3);
     const summary = yield* Effect.promise(() => t3.threads.get(threadId));
     assert.include(summary, {
       id: threadId,
