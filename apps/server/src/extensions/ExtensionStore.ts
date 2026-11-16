@@ -19,18 +19,18 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
-import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
+import * as Stream from "effect/Stream";
+import * as SubscriptionRef from "effect/SubscriptionRef";
 import { HttpClient } from "effect/http";
 
 import * as ServerConfig from "../config.ts";
 
 /**
- * Fork patch 30: the extensions this server carries or installed from the marketplace.
- * Built-in ones can only be turned off. An installed one is a `server.mjs` and a `web.js`
- * under `<state>/extensions/<id>`, downloaded from the marketplace index and checked against
- * the hash the index gives. Server parts load when the server starts.
+ * Fork patch 30: the extensions this server carries or installed from the marketplace, kept
+ * under `<state>/extensions`. Built-in ones can only be turned off. Every change applies while
+ * the server runs: `changes` tells the MCP layer to load, hide or replace server parts.
  */
 const MarketplaceUrl = Config.String("T3CODE_EXTENSION_MARKETPLACE_URL").pipe(
   Config.withDefault("https://t3.hiroki.im/extensions/index.json"),
@@ -109,9 +109,11 @@ export class ExtensionStore extends Context.Service<
   {
     /** Runs a request and answers with the resulting state; a refusal is the snapshot's `error`. */
     readonly handle: (request: ExtensionsRequest) => Effect.Effect<ExtensionsSnapshot>;
-    /** Whether an extension was on when this server started, which is when server parts load. */
-    readonly enabledAtStartup: (id: string) => boolean;
-    /** The server parts of the installed extensions that were on when this server started. */
+    /** Whether an extension is on now. */
+    readonly isEnabled: (id: string) => boolean;
+    /** The current list first, then once after every change to it. */
+    readonly changes: Stream.Stream<unknown>;
+    /** The server parts of the installed extensions that are on now. */
     readonly serverModules: Effect.Effect<ReadonlyArray<LoadedServerModule>>;
   }
 >()("t3/extensions/ExtensionStore") {}
@@ -127,11 +129,11 @@ const make = Effect.gen(function* () {
   const moduleFile = (id: string, part: "server" | "web") =>
     path.join(directory, id, part === "server" ? "server.mjs" : "web.js");
 
-  const startup = yield* fileSystem.readFileString(stateFile).pipe(
+  const state = yield* fileSystem.readFileString(stateFile).pipe(
     Effect.map((text) => Option.getOrElse(decodeState(text), () => EMPTY_STATE)),
     Effect.orElseSucceed(() => EMPTY_STATE),
+    Effect.flatMap(SubscriptionRef.make),
   );
-  const state = yield* Ref.make(startup);
   const mutations = yield* Semaphore.make(1);
 
   const save = (next: ExtensionState) =>
@@ -139,7 +141,7 @@ const make = Effect.gen(function* () {
       Effect.provideService(FileSystem.FileSystem, fileSystem),
       Effect.provideService(Path.Path, path),
       Effect.mapError(() => refuse("The extension list could not be saved.")),
-      Effect.andThen(Ref.set(state, next)),
+      Effect.andThen(SubscriptionRef.set(state, next)),
     );
 
   const fetchText = Effect.fn("ExtensionStore.fetchText")(function* (url: URL) {
@@ -208,7 +210,7 @@ const make = Effect.gen(function* () {
     if (offered.web) parts.push(["web", yield* download(id, "web", offered.web)]);
     if (parts.length === 0) return yield* refuse(`"${id}" has nothing to install.`);
     yield* writeModules(id, parts);
-    const current = yield* Ref.get(state);
+    const current = yield* SubscriptionRef.get(state);
     yield* save({
       disabled: current.disabled.filter((disabled) => disabled !== id),
       installed: [
@@ -229,7 +231,7 @@ const make = Effect.gen(function* () {
     if (BUILT_IN_IDS.has(id)) {
       return yield* refuse("A built-in extension can be turned off, not removed.");
     }
-    const current = yield* Ref.get(state);
+    const current = yield* SubscriptionRef.get(state);
     if (!current.installed.some((installed) => installed.id === id)) {
       return yield* refuse(`"${id}" is not installed.`);
     }
@@ -246,7 +248,7 @@ const make = Effect.gen(function* () {
     id: string,
     enabled: boolean,
   ) {
-    const current = yield* Ref.get(state);
+    const current = yield* SubscriptionRef.get(state);
     if (!BUILT_IN_IDS.has(id) && !current.installed.some((installed) => installed.id === id)) {
       return yield* refuse(`"${id}" is not installed.`);
     }
@@ -328,7 +330,7 @@ const make = Effect.gen(function* () {
             }),
           )
         : { offered: null, error: null };
-      const current = yield* Ref.get(state);
+      const current = yield* SubscriptionRef.get(state);
       return {
         extensions: entries(current),
         marketplaceUrl,
@@ -343,43 +345,48 @@ const make = Effect.gen(function* () {
     },
   );
 
-  const serverModules = Effect.forEach(
-    startup.installed.filter(({ id, server }) => server && !startup.disabled.includes(id)),
-    ({ id, version }) =>
-      Effect.tryPromise({
-        try: () =>
-          import(
-            `${NodeURL.pathToFileURL(moduleFile(id, "server")).href}?v=${encodeURIComponent(version)}`
-          ) as Promise<{ readonly default?: unknown }>,
-        catch: (cause) => refuse(String(cause)),
-      }).pipe(
-        Effect.map((module): Option.Option<LoadedServerModule> =>
-          Option.some({ id, exports: module.default }),
+  // Node keeps every module it imported, so the URL carries the file's hash: a reinstall loads
+  // the new code, and an unchanged file is the module already loaded.
+  const importServerModule = Effect.fn("ExtensionStore.importServerModule")(function* (id: string) {
+    const file = moduleFile(id, "server");
+    const code = yield* fileSystem
+      .readFileString(file)
+      .pipe(Effect.mapError(() => refuse(`${file} could not be read.`)));
+    const hash = NodeCrypto.createHash("sha256").update(code).digest("hex");
+    return yield* Effect.tryPromise({
+      try: () =>
+        import(`${NodeURL.pathToFileURL(file).href}?v=${hash}`) as Promise<{
+          readonly default?: unknown;
+        }>,
+      catch: (cause) => refuse(String(cause)),
+    });
+  });
+
+  const serverModules = Effect.suspend(() => {
+    const current = SubscriptionRef.getUnsafe(state);
+    return Effect.forEach(
+      current.installed.filter(({ id, server }) => server && !current.disabled.includes(id)),
+      ({ id }) =>
+        importServerModule(id).pipe(
+          Effect.map((module): Option.Option<LoadedServerModule> =>
+            Option.some({ id, exports: module.default }),
+          ),
+          Effect.catch((cause) =>
+            Effect.logWarning("An extension's server part could not be loaded.", {
+              id,
+              cause: cause.detail,
+            }).pipe(Effect.as(Option.none<LoadedServerModule>())),
+          ),
         ),
-        Effect.catch((cause) =>
-          Effect.logWarning("An extension's server part could not be loaded.", {
-            id,
-            cause: cause.detail,
-          }).pipe(Effect.as(Option.none<LoadedServerModule>())),
-        ),
-      ),
-  ).pipe(Effect.map((modules) => modules.flatMap(Option.toArray)));
+    ).pipe(Effect.map((modules) => modules.flatMap(Option.toArray)));
+  });
 
   return ExtensionStore.of({
     handle,
-    enabledAtStartup: (id) => !startup.disabled.includes(id),
+    isEnabled: (id) => !SubscriptionRef.getUnsafe(state).disabled.includes(id),
+    changes: SubscriptionRef.changes(state),
     serverModules,
   });
 });
 
 export const layer = Layer.effect(ExtensionStore, make);
-
-/** A built-in extension's layer, left out when the extension was off at startup. */
-export const whenEnabled = <A, E, R>(id: string, extension: Layer.Layer<A, E, R>) =>
-  Layer.unwrap(
-    Effect.serviceOption(ExtensionStore).pipe(
-      Effect.map((store) =>
-        Option.isSome(store) && !store.value.enabledAtStartup(id) ? Layer.empty : extension,
-      ),
-    ),
-  );

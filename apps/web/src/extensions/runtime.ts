@@ -46,6 +46,14 @@ const listeners = new Set<() => void>();
 /** The version of each web part that has run on this page. */
 const ran = new Map<string, string>();
 let contributions: ReadonlyArray<SlotContribution & { readonly slot: string }> = [];
+/** What the web parts that ran last were read from, so a re-read can tell whether to fetch them. */
+let appliedList: string | null = null;
+
+/** The extension list as one string: a change in it means the web parts may have changed. */
+export const extensionListKey = (snapshot: ExtensionsSnapshot) =>
+  snapshot.extensions.map(({ id, version, enabled }) => `${id}@${version}:${enabled}`).join(",");
+
+export const appliedExtensionListKey = () => appliedList;
 
 function subscribeExtensionRuntime(listener: () => void) {
   listeners.add(listener);
@@ -90,6 +98,7 @@ export function applyExtensionsSnapshot(snapshot: ExtensionsSnapshot) {
   }
   let installed = runtime.installed;
   if (snapshot.webModules !== null) {
+    appliedList = extensionListKey(snapshot);
     for (const module of snapshot.webModules) runWebModule(module);
     // A removed or turned-off extension is no longer among the web parts.
     const active = new Set(snapshot.webModules.map(({ id }) => id));

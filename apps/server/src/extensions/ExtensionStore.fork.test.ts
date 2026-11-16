@@ -86,9 +86,17 @@ it.effect("installs from the marketplace, turns off and removes an extension", (
     assert.deepStrictEqual(web.webModules, [
       { id: "hello-world", version: "1.0.0", code: WEB_CODE },
     ]);
+    // The server part loads at once, not at the next start.
+    const store = yield* ExtensionStore.ExtensionStore;
+    assert.deepStrictEqual(
+      (yield* store.serverModules).flatMap(readInstalledTools).map(({ name }) => name),
+      ["hello_world_greet"],
+    );
 
     yield* ask({ action: "setEnabled", id: "hello-world", enabled: false });
     assert.deepStrictEqual((yield* ask({ action: "read", webModules: true })).webModules, []);
+    assert.isFalse(store.isEnabled("hello-world"));
+    assert.deepStrictEqual(yield* store.serverModules, []);
 
     const afterRemove = yield* ask({ action: "remove", id: "hello-world" });
     assert.strictEqual(afterRemove.error, null);

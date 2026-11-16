@@ -30,7 +30,6 @@ import { parseBearerToken } from "../auth/EnvironmentAuth.ts";
 import * as ServerConfig from "../config.ts";
 import * as ServerSettings from "../serverSettings.ts";
 import * as DeviceService from "../device/DeviceService.ts";
-import * as ExtensionStore from "../extensions/ExtensionStore.ts";
 import { serverExtensions } from "../extensions/index.ts";
 import * as InstalledToolkits from "../extensions/installedToolkits.ts";
 import * as HtmlRender from "../htmlRender/HtmlRender.ts";
@@ -1358,7 +1357,7 @@ export const layerTools = Layer.mergeAll(
   ...serverExtensions
     .list("mcpToolkits")
     .map(({ id, contribution }) =>
-      ExtensionStore.whenEnabled(id, contribution(toolkitRegistration)),
+      InstalledToolkits.hiddenWhileOff(id, contribution(toolkitRegistration)),
     ),
 );
 

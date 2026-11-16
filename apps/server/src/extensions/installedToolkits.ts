@@ -4,7 +4,9 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { Tool, Toolkit } from "effect/ai";
+import * as Stream from "effect/Stream";
+// oxlint-disable-next-line t3code/no-raw-mcp-registration -- tools still register through toolkitRegistration; McpServer is only read for visibility and list_changed
+import { McpSchema, McpServer, Tool, Toolkit } from "effect/ai";
 
 import type * as McpHttpServer from "../mcp/McpHttpServer.ts";
 import * as McpInvocationContext from "../mcp/McpInvocationContext.ts";
@@ -13,10 +15,9 @@ import * as ThreadManagementService from "../orchestration-v2/ThreadManagementSe
 import * as ExtensionStore from "./ExtensionStore.ts";
 
 /**
- * Fork patch 30: MCP tools from installed extensions. A server part's default export is
- * `{ tools: [{ name, description, readOnly?, call(args) }] }`. A tool's name starts with its
- * extension's id (dashes as underscores), so it cannot take a built-in tool's name. A tool that
- * is not `readOnly` needs a full-access caller, like the tools that change the environment.
+ * Fork patch 30: MCP tools from installed extensions, named after their extension's id. A tool
+ * that is not `readOnly` needs a full-access caller. MCP cannot take a tool back, so one whose
+ * extension is off or removed stays registered, hidden from lists and calls.
  */
 const CALL_TIMEOUT = Duration.minutes(2);
 
@@ -60,7 +61,8 @@ export const readInstalledTools = (
 
 const registerTool = (
   register: typeof McpHttpServer.toolkitRegistration,
-  { name, description, readOnly, call }: InstalledTool,
+  { name, description, readOnly }: InstalledTool,
+  live: ReadonlyMap<string, InstalledTool>,
 ) => {
   const toolkit = Toolkit.make(
     Tool.make(name, {
@@ -75,11 +77,16 @@ const registerTool = (
       ],
     })
       .annotate(Tool.Readonly, readOnly)
-      .annotate(Tool.Destructive, !readOnly),
+      .annotate(Tool.Destructive, !readOnly)
+      .annotate(McpSchema.EnabledWhen, () => live.has(name)),
   );
   const run = (args: { readonly [key: string]: unknown }) =>
     Effect.tryPromise({
-      try: () => Promise.resolve(call(args)),
+      try: () => {
+        const tool = live.get(name);
+        if (tool === undefined) throw new Error("its extension is off or was removed");
+        return Promise.resolve(tool.call(args));
+      },
       catch: (cause) => failure(`The extension's tool failed: ${String(cause)}`),
     }).pipe(
       Effect.timeoutOrElse({
@@ -95,13 +102,68 @@ const registerTool = (
   );
 };
 
-/** Takes `toolkitRegistration` as an argument: `McpHttpServer.ts` is loading when it calls this. */
+/** Hides a built-in extension's toolkit, and refuses its calls, while the extension is off. */
+export const hiddenWhileOff = <A, E, R>(id: string, toolkit: Layer.Layer<A, E, R>) =>
+  toolkit.pipe(
+    Layer.provide(
+      McpServer.visibility(
+        Effect.map(
+          Effect.serviceOption(ExtensionStore.ExtensionStore),
+          (store) => () => Effect.succeed(Option.isNone(store) || store.value.isEnabled(id)),
+        ),
+      ).layer,
+    ),
+  );
+
+/**
+ * Takes `toolkitRegistration` as an argument: `McpHttpServer.ts` is loading when it calls this.
+ * Registers each installed tool through the memo map the MCP layers were built with, so a tool
+ * added later joins the same `McpServer`, and tells clients after every change to the list.
+ */
 export const layer = (register: typeof McpHttpServer.toolkitRegistration) =>
-  Layer.unwrap(
+  Layer.effectDiscard(
     Effect.gen(function* () {
       const store = yield* Effect.serviceOption(ExtensionStore.ExtensionStore);
-      if (Option.isNone(store)) return Layer.empty;
-      const tools = (yield* store.value.serverModules).flatMap(readInstalledTools);
-      return Layer.mergeAll(Layer.empty, ...tools.map((tool) => registerTool(register, tool)));
+      if (Option.isNone(store)) return;
+      const server = yield* McpServer.McpServer;
+      // Present while layers build; without it a registration would build a second McpServer.
+      const memoMap = yield* Effect.serviceOption(Layer.CurrentMemoMap);
+      if (Option.isNone(memoMap)) {
+        return yield* Effect.logWarning("Extension tools need the layers' memo map.");
+      }
+      const scope = yield* Effect.scope;
+      const services = yield* Effect.context<Layer.Services<ReturnType<typeof registerTool>>>();
+      const live = new Map<string, InstalledTool>();
+      const advertised = new Map<string, string>();
+
+      const reconcile = Effect.gen(function* () {
+        const tools = (yield* store.value.serverModules).flatMap(readInstalledTools);
+        const names = new Set(tools.map(({ name }) => name));
+        for (const name of live.keys()) if (!names.has(name)) live.delete(name);
+        for (const tool of tools) live.set(tool.name, tool);
+        for (const tool of tools) {
+          const shape = `${tool.readOnly}:${tool.description}`;
+          if (advertised.get(tool.name) === shape) continue;
+          advertised.set(tool.name, shape);
+          yield* Layer.buildWithMemoMap(
+            registerTool(register, tool, live),
+            memoMap.value,
+            scope,
+          ).pipe(Effect.provideContext(services));
+        }
+        yield* server.notifications["notifications/tools/list_changed"]({});
+      }).pipe(
+        Effect.catchCause((cause) =>
+          Effect.logWarning("The extension tools could not be updated.", { cause }),
+        ),
+      );
+
+      yield* reconcile;
+      // The first value is the list just reconciled; a change before the stream starts is
+      // still among the later ones, and reconciling twice changes nothing.
+      yield* store.value.changes.pipe(
+        Stream.runForEach(() => reconcile),
+        Effect.forkScoped,
+      );
     }),
-  );
+  ).pipe(Layer.provide(McpServer.McpServer.layer));
