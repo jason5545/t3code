@@ -10,8 +10,9 @@ import * as DateTime from "effect/DateTime";
  * 3 added web's `pages`, `actions`, `navigation`, `shortcuts`, `StatusNotices`. 4 added replies,
  * `threads.useRequest`, `threads.respond`, `pendingRequest.id` and `CurrentPage`'s `composer`.
  * 5 added web's `threads.useSettle`; 6 `projects.use`, `threads.useStartOptions`, `threads.start`.
+ * 7 added web's `components.ModelPicker`.
  */
-export const EXTENSION_API_VERSION = 6;
+export const EXTENSION_API_VERSION = 7;
 
 /** Since API 4: a reply's first characters unless the caller asks for more. */
 export const REPLY_PREVIEW_CHARS = 600;

@@ -60,6 +60,7 @@ import {
   type ExtensionStartInput,
   type ExtensionStartOptions,
 } from "./newThread";
+import { ModelPicker, type ExtensionModelPickerProps } from "./ModelPicker";
 import { StatusNotices } from "./StatusNotices";
 
 export type { ExtensionAction, ExtensionPage, ExtensionPendingRequest };
@@ -104,6 +105,12 @@ export interface WebHostApi {
      * the app's sidebar colours. Its width follows what it shows, up to about 34rem.
      */
     readonly StatusNotices: () => React.ReactNode;
+    /**
+     * Since API 7: the new-thread composer's model picker (favorites, hidden models and order
+     * from Settings, legacy models, search, effort column, speed and permissions) for a project.
+     * The caller holds the value, e.g. `useStartOptions(project).selection` until the user picks.
+     */
+    readonly ModelPicker: (props: ExtensionModelPickerProps) => React.ReactNode;
   };
   readonly environments: { readonly use: () => ReadonlyArray<ExtensionEnvironment> };
   readonly threads: {
@@ -521,7 +528,7 @@ function useSettle() {
 
 const webHostApi: WebHostApi = Object.freeze({
   apiVersion: EXTENSION_API_VERSION,
-  components: Object.freeze({ CurrentPage, StatusNotices }),
+  components: Object.freeze({ CurrentPage, StatusNotices, ModelPicker }),
   environments: Object.freeze({ use: () => useAtomValue(environmentsAtom) }),
   threads: Object.freeze({
     use: () => useAtomValue(threadSummariesAtom),
