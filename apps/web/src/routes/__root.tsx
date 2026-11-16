@@ -40,7 +40,7 @@ import { Button } from "../components/ui/button";
 import { StandalonePage, StandalonePageHeader } from "../components/ui/standalone-page";
 import { AnchoredToastProvider, ToastProvider } from "../components/ui/toast";
 import { isElectron } from "../env";
-import { AppSlot } from "../extensions/app";
+import { AppInterface, AppSlot } from "../extensions/app";
 import { useClientSettings } from "../hooks/useSettings";
 import {
   deriveLogicalProjectKeyFromSettings,
@@ -227,7 +227,7 @@ function RootRouteBranch() {
           {primaryEnvironmentAuthenticated ? (
             <EventRouter skipInitialBootstrapNavigation={returningFromWelcome} />
           ) : null}
-          {appShell}
+          <AppInterface>{appShell}</AppInterface>
         </FirstRunGate>
       )}
       {/* Above both shells and the router, so drafts survive navigation, including to /welcome. */}

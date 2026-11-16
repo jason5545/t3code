@@ -3,12 +3,16 @@ import type { ExtensionContribution } from "@t3tools/shared/extensions";
 import * as React from "react";
 import type { ComponentType } from "react";
 
+import { selectionAfterExtensionList } from "./interfaceSwitch";
+
 /**
  * Fork patch 30: which extensions are off, and what installed extensions added to the slots.
  * The primary environment decides both. The off list is cached on this device so the first
  * paint already leaves those out.
  */
 const DISABLED_KEY = "t3code:extensions:disabled:v1";
+/** The interface this device last switched to: the id of the extension that offers it. */
+const INTERFACE_KEY = "t3code:extensions:interface:v1";
 
 type SlotContribution = ExtensionContribution<ComponentType<object>>;
 
@@ -16,6 +20,10 @@ export interface ExtensionRuntime {
   readonly disabled: ReadonlySet<string>;
   /** Components that installed extensions added, by slot name. */
   readonly installed: ReadonlyMap<string, ReadonlyArray<SlotContribution>>;
+  /** Extension titles by id, known once the primary environment has answered. */
+  readonly titles: ReadonlyMap<string, string>;
+  /** The extension whose interface is chosen on this device, or null for the standard one. */
+  readonly selectedInterface: string | null;
 }
 
 /** What an installed extension's web part receives as `t3`. */
@@ -41,7 +49,20 @@ function readCachedDisabled(): ReadonlySet<string> {
   }
 }
 
-let runtime: ExtensionRuntime = { disabled: readCachedDisabled(), installed: new Map() };
+function readSelectedInterface(): string | null {
+  try {
+    return localStorage.getItem(INTERFACE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+let runtime: ExtensionRuntime = {
+  disabled: readCachedDisabled(),
+  installed: new Map(),
+  titles: new Map(),
+  selectedInterface: readSelectedInterface(),
+};
 const listeners = new Set<() => void>();
 /** The version of each web part that has run on this page. */
 const ran = new Map<string, string>();
@@ -64,6 +85,18 @@ const readExtensionRuntime = () => runtime;
 
 export function useExtensionRuntime() {
   return React.useSyncExternalStore(subscribeExtensionRuntime, readExtensionRuntime);
+}
+
+/** Switches this device to an extension's interface, or back to the standard one with null. */
+export function selectExtensionInterface(id: string | null) {
+  try {
+    if (id === null) localStorage.removeItem(INTERFACE_KEY);
+    else localStorage.setItem(INTERFACE_KEY, id);
+  } catch {
+    // Storage is full or blocked; the choice still holds until the page reloads.
+  }
+  runtime = { ...runtime, selectedInterface: id };
+  for (const listener of listeners) listener();
 }
 
 // The desktop app's CSP allows inline scripts but not `blob:` or `eval`, so a web part runs
@@ -109,6 +142,12 @@ export function applyExtensionsSnapshot(snapshot: ExtensionsSnapshot) {
     }
     installed = bySlot;
   }
-  runtime = { disabled, installed };
+  const titles = new Map(snapshot.extensions.map(({ id, title }) => [id, title]));
+  const selectedInterface = selectionAfterExtensionList(
+    runtime.selectedInterface,
+    snapshot.extensions,
+  );
+  if (selectedInterface !== runtime.selectedInterface) selectExtensionInterface(selectedInterface);
+  runtime = { ...runtime, disabled, installed, titles };
   for (const listener of listeners) listener();
 }

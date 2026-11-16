@@ -9085,5 +9085,7 @@
   "Loading messages…": "正在載入訊息…",
   "Fix in this thread": "在這個對話中修正",
   "Fix findings in this thread": "在這個對話中修正審查意見",
-  "Fix findings in a thread": "在對話中修正審查意見"
+  "Fix findings in a thread": "在對話中修正審查意見",
+  "That interface could not be drawn": "無法繪製該介面",
+  "The standard interface is back.": "已切回標準介面。"
 }

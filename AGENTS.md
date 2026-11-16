@@ -221,6 +221,8 @@ This checkout is `jason5545/t3code`. Upstream owns everything above; keep fork n
 
 A fork feature that adds something to a surface (an MCP tool, a settings section, a row, a badge, a watcher) goes through an extension point, not a new import in an upstream file. Read "Extension system" in [patches.md](patches.md) first: it lists the points, how to add one, the load-order trap, and what deliberately stays a patch. Fork services stay optional Effect services and never add to an upstream service's requirements.
 
+A different interface (a new layout, a board in place of the sidebar and chat) is not an edit to upstream's components. It is an extension that fills the web `app.interface` point: with the extension off the app is upstream's, and with it on the user switches to it with a button. "Interfaces" under "Extension system" in patches.md has the contract.
+
 ### Every change starts with a sync
 
 Any change to the fork, whether a bug fix, a translation or an update, starts by syncing upstream: steps 1 and 2 below, before reading the code you will change (owner decision, 2026-10-31). It is required every time, not only when upstream might already have fixed the problem; the change then lands on the code that will ship. Deploy the sync and the change together, then carry on as usual.
