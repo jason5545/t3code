@@ -10,6 +10,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
+import * as ExtensionHostApi from "./ExtensionHostApi.ts";
 import * as ExtensionStore from "./ExtensionStore.ts";
 import { serverExtensions } from "./index.ts";
 import type {
@@ -46,7 +47,14 @@ export type PreparedCall =
 
 interface InstalledCall {
   readonly readOnly: boolean;
-  readonly call: (input: unknown, context: { readonly signal: AbortSignal }) => unknown;
+  readonly call: (
+    input: unknown,
+    context: {
+      readonly signal: AbortSignal;
+      /** Absent when the server has no read API to offer (tests, older builds). */
+      readonly t3?: ExtensionHostApi.InstalledHostApi;
+    },
+  ) => unknown;
 }
 
 const refused = (error: string): PreparedCall => ({ _tag: "Refused", error });
@@ -125,6 +133,10 @@ const make = Effect.fn("ExtensionCalls.make")(function* (
   builtIns: ReadonlyArray<ExtensionContribution<ServerExtensionPoints["extensionCalls"]>>,
 ) {
   const store = yield* Effect.serviceOption(ExtensionStore.ExtensionStore);
+  const hostApi = Option.map(
+    yield* Effect.serviceOption(ExtensionHostApi.ExtensionHostApi),
+    ({ installed }) => installed,
+  );
   const services = yield* Effect.context<ExtensionCallServices>();
   const tables = new Map<string, ReadonlyMap<string, BuiltInExtensionCall>>();
   for (const { id, contribution } of builtIns) {
@@ -167,7 +179,13 @@ const make = Effect.fn("ExtensionCalls.make")(function* (
           run: execute(
             label,
             Effect.tryPromise({
-              try: (signal) => Promise.resolve(installed.call(request.input, { signal })),
+              try: (signal) =>
+                Promise.resolve(
+                  installed.call(
+                    request.input,
+                    Option.isSome(hostApi) ? { signal, t3: hostApi.value } : { signal },
+                  ),
+                ),
               catch: failed,
             }),
           ),
@@ -188,4 +206,4 @@ export const layerWith = (
 export const layer = Layer.effect(
   ExtensionCalls,
   Effect.suspend(() => make(serverExtensions.list("extensionCalls"))),
-);
+).pipe(Layer.provide(ExtensionHostApi.layer));

@@ -4,6 +4,7 @@ import * as React from "react";
 import type { ComponentType } from "react";
 
 import { bindExtensionCall, type ExtensionCallSender } from "./extensionCall";
+import { readWebHostApi, type WebHostApi } from "./hostApi";
 import { selectionAfterExtensionList } from "./interfaceSwitch";
 
 /**
@@ -27,8 +28,8 @@ export interface ExtensionRuntime {
   readonly selectedInterface: string | null;
 }
 
-/** What an installed extension's web part receives as `t3`. */
-interface ExtensionApi {
+/** What an installed extension's web part receives as `t3`; `hostApi.tsx` has the rest. */
+interface ExtensionApi extends WebHostApi {
   readonly react: typeof React;
   readonly slots: {
     readonly add: (slot: string, component: ComponentType<object>) => void;
@@ -115,6 +116,7 @@ function runWebModule({ id, version, code }: ExtensionWebModule) {
   contributions = contributions.filter((contribution) => contribution.id !== id);
   const apis = (window.__t3ExtensionApis ??= new Map());
   apis.set(id, {
+    ...readWebHostApi(),
     react: React,
     slots: {
       add: (slot, contribution) => {

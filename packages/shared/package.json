@@ -463,6 +463,10 @@
       "types": "./src/builtInExtensions.ts",
       "import": "./src/builtInExtensions.ts"
     },
+    "./extensionApi": {
+      "types": "./src/extensionApi.ts",
+      "import": "./src/extensionApi.ts"
+    },
     "./Array": {
       "types": "./src/Array.ts",
       "import": "./src/Array.ts"

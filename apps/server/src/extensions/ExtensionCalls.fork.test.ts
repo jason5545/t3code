@@ -16,6 +16,7 @@ import * as ServerConfig from "../config.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import * as ExtensionCalls from "./ExtensionCalls.ts";
+import * as ExtensionHostApi from "./ExtensionHostApi.ts";
 import * as ExtensionStore from "./ExtensionStore.ts";
 
 const INDEX_URL = "https://market.test/extensions/index.json";
@@ -27,6 +28,10 @@ const serverCode = (version: string) => `export default { calls: {
   hang: () => new Promise(() => {}),
   boom: () => { throw new Error("it broke"); },
   huge: () => "x".repeat(2 * 1024 * 1024),
+  api: { readOnly: true, call: async (_input, { t3 }) => ({
+    apiVersion: t3?.apiVersion ?? null,
+    run: t3 === undefined ? "absent" : (await t3.runs.activity("thread:none")).run,
+  }) },
 } };`;
 
 /** A marketplace whose files the test can change between installs. */
@@ -70,8 +75,9 @@ const builtIns = [
 
 const layerTest = (files: ReadonlyMap<string, string>) =>
   ExtensionCalls.layerWith(builtIns).pipe(
+    Layer.provide(ExtensionHostApi.layer),
     Layer.provideMerge(ExtensionStore.layer),
-    Layer.provide(ProjectionStore.layer.pipe(Layer.provide(SqlitePersistence.layerMemory))),
+    Layer.provide(ProjectionStore.layer.pipe(Layer.provideMerge(SqlitePersistence.layerMemory))),
     Layer.provide(
       Layer.succeed(
         HttpClient.HttpClient,
@@ -132,6 +138,11 @@ it.effect("runs an installed method for its own id only, and refuses it once off
     assert.deepStrictEqual(yield* call({ id: "hello-world", method: "rename", input: "a" }), {
       readOnly: false,
       result: { ok: true, value: "1.0.0:a" },
+    });
+    // An installed call reads the server through `context.t3`.
+    assert.deepStrictEqual(yield* call({ id: "hello-world", method: "api" }), {
+      readOnly: true,
+      result: { ok: true, value: { apiVersion: 2, run: null } },
     });
     // The id picks the server part: no other extension's methods are reachable through it.
     assert.deepStrictEqual(yield* call({ id: "other-extension", method: "ping" }), {
