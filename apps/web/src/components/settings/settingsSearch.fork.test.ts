@@ -20,21 +20,21 @@ const { getSettingsSearchTargetScope, searchableSetting, searchSettings } =
 
 describe("settings search in zh-TW", () => {
   it.each([
-    ["傳送快捷鍵", "send-shortcut"],
+    ["傳送快速鍵", "send-shortcut"],
     ["佈景主題", "theme"],
   ])("finds %s", (query, id) => {
     expect(searchSettings(query).map((item) => item.id)).toContain(id);
   });
 
   it("keeps destination paths, stable anchors, and device-local scope", () => {
-    expect(searchSettings("傳送快捷鍵")[0]).toMatchObject({
+    expect(searchSettings("傳送快速鍵")[0]).toMatchObject({
       id: "send-shortcut",
-      title: "傳送快捷鍵",
+      title: "傳送快速鍵",
       to: "/settings/chat",
     });
     expect(searchableSetting("send-shortcut")).toEqual({
       id: "send-shortcut",
-      title: "傳送快捷鍵",
+      title: "傳送快速鍵",
     });
     expect(getSettingsSearchTargetScope("send-shortcut")?.scope).toBeNull();
     expect(searchSettings("   ")).toEqual([]);
