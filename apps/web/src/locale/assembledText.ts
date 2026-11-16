@@ -75,6 +75,12 @@ export function backgroundWorkVerb(waiting: boolean): string {
   return waiting ? "Waiting" : "Running";
 }
 
+/** The composer banner for an environment this client cannot reach, such as "agent-fr is offline". */
+export function environmentUnavailableTitle(label: string, reconnecting: boolean): string {
+  if (useChinese) return reconnecting ? `${label} 正在重新連線` : `${label} 已離線`;
+  return `${label} is ${reconnecting ? "reconnecting" : "offline"}`;
+}
+
 /** The undo notice's button, such as "⌘Z to undo". */
 export function threadUndoLabelText(shortcut: string | null): string {
   if (useChinese) return shortcut ? `按 ${shortcut} 復原` : "復原";

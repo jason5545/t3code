@@ -18,6 +18,7 @@ import {
   useEnvironmentStateHeldFor,
 } from "../../hooks/useEnvironmentDisconnectDelay";
 import { serverEnvironment } from "../../state/server";
+import { environmentUnavailableTitle } from "../../locale/assembledText";
 import { type EnvironmentPresentation } from "../../state/environments";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
 import { ENVIRONMENT_RECONNECT_WARNING_GRACE_MS } from "../ChatView.logic";
@@ -194,7 +195,10 @@ export function useSystemComposerBanners(input: SystemComposerBannersInput) {
         icon: <WifiOffIcon />,
         title: awaitingApproval
           ? `${activeEnvironmentUnavailableState.label} is waiting to approve this device`
-          : `${activeEnvironmentUnavailableState.label} is ${environmentReconnecting ? "reconnecting" : "offline"}`,
+          : environmentUnavailableTitle(
+              activeEnvironmentUnavailableState.label,
+              environmentReconnecting,
+            ),
         description: awaitingApproval ? (
           (unavailableConnection.error ?? undefined)
         ) : activeEnvironment ? (

@@ -4984,7 +4984,6 @@
   "{0}{1} results in {2} files": "{0}{2} 個檔案中有 {1} 個結果",
   "{accessiblePreview}, tool call failed": "{accessiblePreview}，工具呼叫失敗",
   "{actionLabel} for {serverLabel}": "{serverLabel} 的{actionLabel}",
-  "{activeEnvironmentUnavailableState.label} is {0}": "{activeEnvironmentUnavailableState.label}：{0}",
   "{activeThread.title} fork": "{activeThread.title}（分岔）",
   "{additions} additions, {deletions} deletions": "新增 {additions} 行，刪除 {deletions} 行",
   "{address} · found automatically": "{address} · 自動找到",
