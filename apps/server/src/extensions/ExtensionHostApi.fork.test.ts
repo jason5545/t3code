@@ -255,7 +255,7 @@ it.effect("reads a run's tool steps without their output, and only what came nex
 it.effect("summarizes a thread with its project, and answers null for an unknown one", () =>
   Effect.gen(function* () {
     const t3 = yield* seed;
-    assert.equal(t3.apiVersion, 5);
+    assert.equal(t3.apiVersion, 6);
     const summary = yield* Effect.promise(() => t3.threads.get(threadId));
     assert.include(summary, {
       id: threadId,
@@ -306,7 +306,7 @@ it.effect("reads each thread's newest finished reply, cut to the characters aske
     yield* projections.apply(reply("report", 8, REPORT, false));
     yield* projections.apply(reply("streaming", 9, "下一趟還在寫", true));
 
-    assert.equal(t3.apiVersion, 5);
+    assert.equal(t3.apiVersion, 6);
     const replies = yield* Effect.promise(() =>
       t3.threads.latestReplies([threadId, "thread:missing"], { chars: 20 }),
     );

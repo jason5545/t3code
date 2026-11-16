@@ -142,7 +142,7 @@ it.effect("runs an installed method for its own id only, and refuses it once off
     // An installed call reads the server through `context.t3`.
     assert.deepStrictEqual(yield* call({ id: "hello-world", method: "api" }), {
       readOnly: true,
-      result: { ok: true, value: { apiVersion: 5, run: null } },
+      result: { ok: true, value: { apiVersion: 6, run: null } },
     });
     // The id picks the server part: no other extension's methods are reachable through it.
     assert.deepStrictEqual(yield* call({ id: "other-extension", method: "ping" }), {

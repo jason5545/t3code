@@ -7,11 +7,11 @@ import * as DateTime from "effect/DateTime";
  * a server is older. Upstream's types stay behind it, so an upstream change is absorbed here.
  */
 /**
- * 3 added web's `t3.pages`, `t3.actions`, `t3.navigation`, `t3.shortcuts`, `StatusNotices`.
- * 4 added replies (`threads.readReplies` on web, `threads.latestReplies` on the server),
+ * 3 added web's `pages`, `actions`, `navigation`, `shortcuts`, `StatusNotices`. 4 added replies,
  * `threads.useRequest`, `threads.respond`, `pendingRequest.id` and `CurrentPage`'s `composer`.
+ * 5 added web's `threads.useSettle`; 6 `projects.use`, `threads.useStartOptions`, `threads.start`.
  */
-export const EXTENSION_API_VERSION = 5;
+export const EXTENSION_API_VERSION = 6;
 
 /** Since API 4: a reply's first characters unless the caller asks for more. */
 export const REPLY_PREVIEW_CHARS = 600;

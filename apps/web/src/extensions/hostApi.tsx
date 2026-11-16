@@ -52,6 +52,14 @@ import {
   type ExtensionPage,
   type ExtensionPendingRequest,
 } from "./hostApi.logic";
+import {
+  startExtensionThread,
+  useExtensionProjects,
+  useStartOptions,
+  type ExtensionProject,
+  type ExtensionStartInput,
+  type ExtensionStartOptions,
+} from "./newThread";
 import { StatusNotices } from "./StatusNotices";
 
 export type { ExtensionAction, ExtensionPage, ExtensionPendingRequest };
@@ -140,6 +148,24 @@ export interface WebHostApi {
      * same undo notice (shown by `StatusNotices`). Settled threads have a `settledAt`.
      */
     readonly useSettle: () => (ref: ThreadRef) => Promise<void>;
+    /**
+     * Since API 6: what the new-thread composer offers for a project (providers, their models and
+     * each model's traits, access modes) and what a fresh draft there would pick; null while the
+     * project is unknown.
+     */
+    readonly useStartOptions: (
+      project: { readonly environmentId: string; readonly projectId: string } | null,
+    ) => ExtensionStartOptions | null;
+    /**
+     * Since API 6: starts a new thread with its first message, as sending from a new draft does,
+     * without opening it. Left-out choices take the project's defaults; `worktree` makes a new
+     * worktree from that branch instead of using the project folder.
+     */
+    readonly start: (input: ExtensionStartInput) => Promise<ThreadRef>;
+  };
+  /** Since API 6: the projects of every connected environment, archived ones left out. */
+  readonly projects: {
+    readonly use: () => ReadonlyArray<ExtensionProject>;
   };
   readonly pages: {
     /**
@@ -507,7 +533,10 @@ const webHostApi: WebHostApi = Object.freeze({
     useRequest,
     respond: respondToRequest,
     useSettle,
+    useStartOptions,
+    start: startExtensionThread,
   }),
+  projects: Object.freeze({ use: useExtensionProjects }),
   pages: Object.freeze({ useOpen: useOpenPage, useAvailable: usePagesAvailable }),
   actions: Object.freeze({ useRun: useRunAction }),
   navigation: Object.freeze({ useHistory }),
