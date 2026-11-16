@@ -24,6 +24,7 @@ import { AppSidebarLayout } from "../components/AppSidebarLayout";
 import { CommandPalette } from "../components/CommandPalette";
 import { readPullRequestListPreferences } from "../components/pullRequest/pullRequestListPreferences";
 import { environmentCatalog } from "../connection/catalog";
+import { useThreadActions } from "../hooks/useThreadActions";
 import { shortcutLabelForCommand } from "../keybindings";
 import { newMessageId } from "../lib/utils";
 import { navigateHistory, useCanNavigateHistory } from "../navigationHistory";
@@ -134,6 +135,11 @@ export interface WebHostApi {
      * multiple choice) or the user's own words for every question id.
      */
     readonly respond: (ref: ThreadRef, requestId: string, response: unknown) => Promise<void>;
+    /**
+     * Since API 5: a function that settles a thread the way the sidebar's Settle does, with the
+     * same undo notice (shown by `StatusNotices`). Settled threads have a `settledAt`.
+     */
+    readonly useSettle: () => (ref: ThreadRef) => Promise<void>;
   };
   readonly pages: {
     /**
@@ -476,6 +482,17 @@ async function respondToRequest(refInput: ThreadRef, requestId: string, response
   if (result._tag === "Failure") throw failure(result);
 }
 
+function useSettle() {
+  const { settleThread } = useThreadActions();
+  return async (refInput: ThreadRef) => {
+    const ref = readThreadRef(refInput, "threads.useSettle()");
+    const shell = readShell(ref);
+    if (shell.ephemeral === true) throw new Error("A temporary thread cannot be settled.");
+    const result = await settleThread(scoped(ref));
+    if (result._tag === "Failure") throw failure(result);
+  };
+}
+
 const webHostApi: WebHostApi = Object.freeze({
   apiVersion: EXTENSION_API_VERSION,
   components: Object.freeze({ CurrentPage, StatusNotices }),
@@ -489,6 +506,7 @@ const webHostApi: WebHostApi = Object.freeze({
     readReplies,
     useRequest,
     respond: respondToRequest,
+    useSettle,
   }),
   pages: Object.freeze({ useOpen: useOpenPage, useAvailable: usePagesAvailable }),
   actions: Object.freeze({ useRun: useRunAction }),

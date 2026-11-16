@@ -11,7 +11,7 @@ import * as DateTime from "effect/DateTime";
  * 4 added replies (`threads.readReplies` on web, `threads.latestReplies` on the server),
  * `threads.useRequest`, `threads.respond`, `pendingRequest.id` and `CurrentPage`'s `composer`.
  */
-export const EXTENSION_API_VERSION = 4;
+export const EXTENSION_API_VERSION = 5;
 
 /** Since API 4: a reply's first characters unless the caller asks for more. */
 export const REPLY_PREVIEW_CHARS = 600;
