@@ -14,9 +14,9 @@ import * as ProviderLatestVersions from "@t3tools/provider-core/server/ProviderL
 import type { AcpRegistrySettings } from "../settings.ts";
 
 /*
- * Fork patch 3: a local ACP command (`source: "local"`) has no registry entry, so its
- * version is the one it reports in ACP `initialize`, and two hidden settings opt it
- * into the update flow: `npmPackageName` to look up npm `latest`, and `updateCommand`.
+ * Fork patch 3: a local ACP command (`source: "local"`) has no registry entry, so two
+ * hidden settings opt it into the update flow: `npmPackageName` to look up npm
+ * `latest`, and `updateCommand`.
  */
 
 const DRIVER_KIND = ProviderDriverKind.make("acpRegistry");
@@ -46,38 +46,15 @@ export function acpRegistryMaintenanceCapabilities(input: {
   });
 }
 
-/** What a local command reports in ACP `initialize`, the only version it has. */
-export const localCommandVersion = (input: {
-  readonly settings: AcpRegistrySettings;
-  readonly probe?: { readonly agentVersion?: string } | undefined;
-}): string | undefined =>
-  input.settings.source === "local" ? input.probe?.agentVersion || undefined : undefined;
-
 export const make = Effect.fn("AcpLocalCommandUpdates.make")(function* (input: {
   readonly instanceId: ProviderInstance["instanceId"];
   readonly settings: AcpRegistrySettings;
   readonly environment: NodeJS.ProcessEnv;
-  /** The last provider the background probe cached, if any. */
-  readonly probedProvider: Effect.Effect<ServerProvider | undefined>;
 }) {
   // Read as optional so upstream's driver harnesses need neither; the server provides both.
   const httpClient = yield* Effect.serviceOption(HttpClient.HttpClient);
   const latestVersions = yield* Effect.serviceOption(ProviderLatestVersions.ProviderLatestVersions);
   const maintenance = acpRegistryMaintenanceCapabilities(input);
-
-  /**
-   * A local command's version comes only from the background probe. The readiness
-   * check repeats the probed one so a health refresh neither blanks it nor misses
-   * the probe cache; invalidating the probe cache clears both.
-   */
-  const withProbedVersion = (provider: ServerProvider) =>
-    input.settings.source !== "local" || !provider.installed || provider.version !== null
-      ? Effect.succeed(provider)
-      : input.probedProvider.pipe(
-          Effect.map((probed) =>
-            probed?.version ? { ...provider, version: probed.version } : provider,
-          ),
-        );
 
   /**
    * Adds the npm version advisory to a background probe's result. It runs before the
@@ -103,5 +80,5 @@ export const make = Effect.fn("AcpLocalCommandUpdates.make")(function* (input: {
             ),
           );
 
-  return { maintenance, withProbedVersion, adviseProbe };
+  return { maintenance, adviseProbe };
 });

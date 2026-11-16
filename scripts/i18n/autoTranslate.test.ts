@@ -178,8 +178,11 @@ describe("autoTranslate", () => {
       `const c = () => ["Could not save"];`,
       `const d = { detail: "Add provider" };`,
       `const e = { details: ["Could not save"] };`,
+      `const f = { status: busy ? "Cancel" : "folder" };`,
     ].join("\n");
     const output = transform(source, "components/chat/ProviderStatusBanner.tsx");
+    // A status line is display text; a lowercase status is an identifier the code compares.
+    expect(output).toContain(`status: busy ? __t3_t("Cancel", "取消") : "folder"`);
     expect(output).toContain(`return busy ? __t3_t("Cancel", "取消") : __t3_t("Undo", "復原");`);
     expect(output).toContain(`__t3_tf(["Rename ", 0], ["重新命名 ", 0], [thread.title])`);
     expect(output).toContain(`[__t3_t("Could not save", "無法儲存")]`);
@@ -255,6 +258,15 @@ describe("autoTranslate", () => {
     expect(output).toContain(`mode === "a" ? __t3_t("Cancel", "取消") : fallback`);
     expect(output).toContain(`const resolveOtherLabel = () => __t3_t("Cancel", "取消");`);
     expect(output).toContain(`const mode = "Cancel";`);
+  });
+
+  it("translates the label table a labels helper returns", () => {
+    const source = `function handoffLabels(here) { return here ? { fix: "Cancel", kind: "folder" } : { fix: "Undo" }; }`;
+    const output = transform(source);
+    expect(output).toContain(`fix: __t3_t("Cancel", "取消")`);
+    expect(output).toContain(`fix: __t3_t("Undo", "復原")`);
+    // Only capitalized values: a lowercase one is an identifier the code compares.
+    expect(output).toContain(`kind: "folder"`);
   });
 
   it("keeps English when a translation invents a placeholder", () => {

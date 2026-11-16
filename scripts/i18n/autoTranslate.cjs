@@ -200,6 +200,16 @@ function isDisplayVariable(name) {
 }
 
 /** Helpers such as `resolveEnvModeLabel(mode)` whose name says they return display text. */
+// `function handoffLabels() { return { fix: "Fix" }; }` returns a table of labels.
+const LABEL_TABLE_FUNCTION = /[a-z](?:Labels|Titles)$/;
+
+function isLabelTableFunction(functionPath) {
+  if (!functionPath) return false;
+  let id = functionPath.node.id;
+  if (!id && functionPath.parentPath.isVariableDeclarator()) id = functionPath.parentPath.node.id;
+  return id?.type === "Identifier" && LABEL_TABLE_FUNCTION.test(id.name);
+}
+
 function isDisplayFunction(functionPath) {
   if (!functionPath) return false;
   let id = functionPath.node.id;
@@ -295,6 +305,36 @@ module.exports = function autoTranslate(babel, options) {
   }
 
   /** Translate a string-valued expression: literals, templates, and conditional branches. */
+  // A display file's `status` is a status line when capitalized and an identifier otherwise.
+  function translateCapitalized(state, path, kind) {
+    const node = path?.node;
+    if (!node) return;
+    if (node.type === "ConditionalExpression") {
+      translateCapitalized(state, path.get("consequent"), kind);
+      translateCapitalized(state, path.get("alternate"), kind);
+    } else if (node.type === "LogicalExpression") {
+      translateCapitalized(state, path.get("right"), kind);
+    } else if (
+      (node.type === "StringLiteral" && /^[A-Z]/.test(node.value)) ||
+      (node.type === "TemplateLiteral" && /^[A-Z]/.test(node.quasis[0]?.value.cooked ?? ""))
+    ) {
+      translateValue(state, path, kind);
+    }
+  }
+
+  function translateLabelTable(state, path) {
+    const node = path?.node;
+    if (!node) return;
+    if (node.type === "ConditionalExpression") {
+      translateLabelTable(state, path.get("consequent"));
+      translateLabelTable(state, path.get("alternate"));
+    } else if (node.type === "ObjectExpression") {
+      for (const property of path.get("properties")) {
+        if (property.isObjectProperty()) translateCapitalized(state, property.get("value"), "map");
+      }
+    }
+  }
+
   function translateValue(state, path, kind) {
     if (!path?.node || path.node._t3i18n) return;
     const node = path.node;
@@ -455,11 +495,15 @@ module.exports = function autoTranslate(babel, options) {
         (sink === "dialog" && DIALOG_REQUEST_PROPERTY.test(key))
       ) {
         translateValue(state, path.get("value"), sink ? `${sink}:${key}` : `prop:${key}`);
+      } else if (state.displayFile && key === "status") {
+        translateCapitalized(state, path.get("value"), "prop:status");
       }
     },
     ReturnStatement(path, state) {
-      if (state.displayFile || isDisplayFunction(path.getFunctionParent()))
+      const functionPath = path.getFunctionParent();
+      if (state.displayFile || isDisplayFunction(functionPath))
         translateValue(state, path.get("argument"), "return");
+      if (isLabelTableFunction(functionPath)) translateLabelTable(state, path.get("argument"));
     },
     ArrowFunctionExpression(path, state) {
       if ((state.displayFile || isDisplayFunction(path)) && !path.get("body").isBlockStatement())

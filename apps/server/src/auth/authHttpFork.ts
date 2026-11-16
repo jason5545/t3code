@@ -34,6 +34,7 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
     HttpServerRequest.HttpServerRequest
   >;
   readonly appendSessionCookie: (
+    request: HttpServerRequest.HttpServerRequest,
     cookieName: string,
     token: string,
     expiresAt: DateTime.DateTime,
@@ -137,6 +138,7 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
       );
       if (Option.isSome(expiresAt)) {
         yield* helpers.appendSessionCookie(
+          request,
           helpers.sessions.cookieName,
           credential.token,
           expiresAt.value,
