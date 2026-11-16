@@ -141,6 +141,7 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
             .handle("revokeOtherClients", () => unexpectedEndpoint("auth.revokeOtherClients"))
             .handle("tailnetServers", () => unexpectedEndpoint("auth.tailnetServers"))
             .handle("extensions", () => unexpectedEndpoint("auth.extensions"))
+            .handle("extensionCall", () => unexpectedEndpoint("auth.extensionCall"))
             .handle("approveConnectDevice", () => unexpectedEndpoint("auth.approveConnectDevice"))
             .handle("revokeConnectDevice", () => unexpectedEndpoint("auth.revokeConnectDevice")),
         ),

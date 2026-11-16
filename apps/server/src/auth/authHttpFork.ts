@@ -1,9 +1,11 @@
 import {
   AuthEnvironmentMaintainScope,
+  AuthOrchestrationOperateScope,
   AuthOrchestrationReadScope,
   EnvironmentOperationForbiddenError,
   type AuthSessionId,
   type EnvironmentInternalError,
+  type ExtensionCallRequest,
   type ExtensionsRequest,
   type ServerAuthSessionMethod,
 } from "@t3tools/contracts";
@@ -12,6 +14,7 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { HttpServerRequest } from "effect/http";
 
+import * as ExtensionCalls from "../extensions/ExtensionCalls.ts";
 import * as ExtensionStore from "../extensions/ExtensionStore.ts";
 import * as EnvironmentAuth from "./EnvironmentAuth.ts";
 import type * as AuthHttp from "./http.ts";
@@ -114,6 +117,23 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
     });
   });
 
+  // Fork patch 30: a read needs the scope that reads threads; anything else the scope that runs
+  // agents, which can already run any command on this machine.
+  const extensionCalls = yield* Effect.serviceOption(ExtensionCalls.ExtensionCalls);
+  const extensionCall = Effect.fn("environment.auth.extensionCall")(function* (input: {
+    readonly payload: ExtensionCallRequest;
+  }) {
+    yield* helpers.annotateEnvironmentRequest("extensionCall");
+    yield* helpers.requireEnvironmentScope(AuthOrchestrationReadScope);
+    if (Option.isNone(extensionCalls)) {
+      return { ok: false, error: "This server does not run extension calls." } as const;
+    }
+    const prepared = yield* extensionCalls.value.prepare(input.payload);
+    if (prepared._tag === "Refused") return { ok: false, error: prepared.error } as const;
+    if (!prepared.readOnly) yield* helpers.requireEnvironmentScope(AuthOrchestrationOperateScope);
+    return yield* prepared.run;
+  });
+
   /**
    * A browser drops its cookie at the deadline the cookie was set with, whatever the
    * server renews. Renewing just before the socket opens lets the same response carry
@@ -151,6 +171,7 @@ export const make = Effect.fn("AuthHttpFork.make")(function* (helpers: {
     tailscalePairing: tailscalePairingHandler,
     tailnetServers,
     extensions,
+    extensionCall,
     renewBrowserSessionCookie,
   };
 });

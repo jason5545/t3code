@@ -3,6 +3,7 @@ import type { ExtensionContribution } from "@t3tools/shared/extensions";
 import * as React from "react";
 import type { ComponentType } from "react";
 
+import { bindExtensionCall, type ExtensionCallSender } from "./extensionCall";
 import { selectionAfterExtensionList } from "./interfaceSwitch";
 
 /**
@@ -32,6 +33,8 @@ interface ExtensionApi {
   readonly slots: {
     readonly add: (slot: string, component: ComponentType<object>) => void;
   };
+  /** Calls a method of this extension's own server part on the primary environment. */
+  readonly call: (method: string, input?: unknown) => Promise<unknown>;
 }
 
 declare global {
@@ -67,6 +70,11 @@ const listeners = new Set<() => void>();
 /** The version of each web part that has run on this page. */
 const ran = new Map<string, string>();
 let contributions: ReadonlyArray<SlotContribution & { readonly slot: string }> = [];
+/** Set by `ExtensionLoader` while the primary environment is connected. */
+let sender: ExtensionCallSender | null = null;
+export function setExtensionCallSender(next: ExtensionCallSender | null) {
+  sender = next;
+}
 /** What the web parts that ran last were read from, so a re-read can tell whether to fetch them. */
 let appliedList: string | null = null;
 
@@ -113,12 +121,15 @@ function runWebModule({ id, version, code }: ExtensionWebModule) {
         contributions = [...contributions, { id, slot, contribution }];
       },
     },
+    call: bindExtensionCall(id, () => sender),
   });
   const script = document.createElement("script");
   const key = JSON.stringify(id);
   script.textContent = `(function (t3) { try {\n${code}\n} catch (error) { console.error("Extension " + ${key} + " failed to load.", error); } })(window.__t3ExtensionApis.get(${key}));`;
   document.head.append(script);
   script.remove();
+  // The script has run and holds its API; another web part cannot look it up afterwards.
+  apis.delete(id);
 }
 
 /** Takes the primary environment's answer: what is off, and the web parts to run. */

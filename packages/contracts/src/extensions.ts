@@ -56,3 +56,21 @@ export const ExtensionsSnapshot = Schema.Struct({
   error: Schema.NullOr(Schema.String),
 });
 export type ExtensionsSnapshot = typeof ExtensionsSnapshot.Type;
+
+/**
+ * A call from an extension's web part to its own server part. The web part never names the id:
+ * the app does, for an installed extension, from the web part it ran.
+ */
+export const ExtensionCallRequest = Schema.Struct({
+  id: Schema.String,
+  method: Schema.String,
+  input: Schema.optional(Schema.Unknown),
+});
+export type ExtensionCallRequest = typeof ExtensionCallRequest.Type;
+
+/** What the handler returned, as JSON, or why the call was refused or failed. */
+export const ExtensionCallResult = Schema.Union([
+  Schema.Struct({ ok: Schema.Literal(true), value: Schema.Unknown }),
+  Schema.Struct({ ok: Schema.Literal(false), error: Schema.String }),
+]);
+export type ExtensionCallResult = typeof ExtensionCallResult.Type;

@@ -157,6 +157,7 @@ import * as DirectEndpoints from "./environment/DirectEndpoints.ts";
 import * as RemoteOpenTargets from "./environment/RemoteOpenTargets.ts";
 import * as AuthHttp from "./auth/http.ts";
 import * as TailscalePairing from "./auth/TailscalePairing.ts";
+import * as ExtensionCalls from "./extensions/ExtensionCalls.ts";
 import * as ExtensionStore from "./extensions/ExtensionStore.ts";
 import * as ReplayMarkers from "./auth/replayMarkers.ts";
 import * as ServerSecretStore from "./auth/ServerSecretStore.ts";
@@ -842,8 +843,13 @@ const layerMakeRoutes = Layer.mergeAll(
       Layer.provide(McpOAuthHttp.layer.pipe(Layer.provide(McpOAuth.layer))),
       // Fork patch 7: both layers above read it as optional.
       Layer.provide(TailscalePairing.layer),
-      // Fork patch 30: the extensions endpoint reads it as optional.
-      Layer.provide(ExtensionStore.layer),
+      // Fork patch 30: the extensions endpoints read both as optional.
+      Layer.provide(
+        ExtensionCalls.layer.pipe(
+          Layer.provideMerge(ExtensionStore.layer),
+          Layer.provide(ProjectionStoreV2.layer),
+        ),
+      ),
       Layer.provide(CloudHttp.layer),
       Layer.provide(OrchestrationHttp.layer),
       Layer.provide(PullRequestHttp.layer),

@@ -86,6 +86,7 @@ const makeStore = Effect.gen(function* () {
     serverModules: SubscriptionRef.get(modules).pipe(
       Effect.tap((read) => Queue.offer(reads, read)),
     ),
+    serverModule: () => Effect.die("unused"),
   });
   const readOf = Effect.fn(function* (expected: ReadonlyArray<ExtensionStore.LoadedServerModule>) {
     while ((yield* Queue.take(reads)) !== expected) {

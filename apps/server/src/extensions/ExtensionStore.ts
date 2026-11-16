@@ -79,7 +79,7 @@ const REQUIRED_IDS = new Set(
   BUILT_IN_EXTENSIONS.flatMap(({ id, required }) => (required ? [id] : [])),
 );
 
-class ExtensionError extends Schema.TaggedError<ExtensionError>()("ExtensionError", {
+export class ExtensionError extends Schema.TaggedError<ExtensionError>()("ExtensionError", {
   /** Shown to the person as it is. */
   detail: Schema.String,
 }) {}
@@ -115,6 +115,8 @@ export class ExtensionStore extends Context.Service<
     readonly changes: Stream.Stream<unknown>;
     /** The server parts of the installed extensions that are on now. */
     readonly serverModules: Effect.Effect<ReadonlyArray<LoadedServerModule>>;
+    /** One installed extension's server part, refused while it is off or absent. */
+    readonly serverModule: (id: string) => Effect.Effect<LoadedServerModule, ExtensionError>;
   }
 >()("t3/extensions/ExtensionStore") {}
 
@@ -362,6 +364,16 @@ const make = Effect.gen(function* () {
     });
   });
 
+  const serverModule = Effect.fn("ExtensionStore.serverModule")(function* (id: string) {
+    const current = SubscriptionRef.getUnsafe(state);
+    const installed = current.installed.find((extension) => extension.id === id);
+    if (installed === undefined) return yield* refuse(`"${id}" is not installed.`);
+    if (current.disabled.includes(id)) return yield* refuse(`"${id}" is turned off.`);
+    if (!installed.server) return yield* refuse(`"${id}" has no server part.`);
+    const module = yield* importServerModule(id);
+    return { id, exports: module.default };
+  });
+
   const serverModules = Effect.suspend(() => {
     const current = SubscriptionRef.getUnsafe(state);
     return Effect.forEach(
@@ -386,6 +398,7 @@ const make = Effect.gen(function* () {
     isEnabled: (id) => !SubscriptionRef.getUnsafe(state).disabled.includes(id),
     changes: SubscriptionRef.changes(state),
     serverModules,
+    serverModule,
   });
 });
 

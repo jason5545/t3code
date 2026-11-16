@@ -1,11 +1,12 @@
 import * as Option from "effect/Option";
 import { useEffect } from "react";
 
-import { requestExtensions } from "../extensions/commands";
+import { callExtension, requestExtensions } from "../extensions/commands";
 import {
   appliedExtensionListKey,
   applyExtensionsSnapshot,
   extensionListKey,
+  setExtensionCallSender,
 } from "../extensions/runtime";
 import { useConnectedEnvironmentIds, usePrimaryEnvironmentId } from "../state/environments";
 import { useAtomCommand } from "../state/use-atom-command";
@@ -19,7 +20,19 @@ export function ExtensionLoader() {
   const environmentId = usePrimaryEnvironmentId();
   const connected = useConnectedEnvironmentIds();
   const request = useAtomCommand(requestExtensions, { reportFailure: false });
+  const call = useAtomCommand(callExtension, { reportFailure: false });
   const ready = environmentId !== null && connected.includes(environmentId);
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- hands installed web parts' t3.call the connected primary environment
+  useEffect(() => {
+    if (!ready || environmentId === null) return;
+    setExtensionCallSender(async (callRequest) => {
+      const result = await call({ environmentId, request: callRequest });
+      if (result._tag !== "Success") throw new Error("The call did not reach the server.");
+      return Option.getOrNull(result.value);
+    });
+    return () => setExtensionCallSender(null);
+  }, [ready, environmentId, call]);
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- reads from the server once it connects and when the window comes back
   useEffect(() => {

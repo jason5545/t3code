@@ -71,7 +71,12 @@ import {
   EnvironmentSpeechTranscriptionResult,
 } from "./speech.ts";
 import { SecretReference } from "./secretReference.ts";
-import { ExtensionsRequest, ExtensionsSnapshot } from "./extensions.ts";
+import {
+  ExtensionCallRequest,
+  ExtensionCallResult,
+  ExtensionsRequest,
+  ExtensionsSnapshot,
+} from "./extensions.ts";
 import {
   OrchestrationV2ShellHttpSnapshot,
   OrchestrationV2ShellResumable,
@@ -715,6 +720,15 @@ class EnvironmentAuthHttpApi extends HttpApiGroup.make("auth")
       headers: OptionalBearerHeaders,
       payload: ExtensionsRequest,
       success: ExtensionsSnapshot,
+      error: EnvironmentScopedOperationErrors,
+    }).middleware(EnvironmentAuthenticatedAuth),
+  )
+  .add(
+    // Fork patch 30: an extension's web part calls its own server part.
+    HttpApiEndpoint.post("extensionCall", "/api/extensions/call", {
+      headers: OptionalBearerHeaders,
+      payload: ExtensionCallRequest,
+      success: ExtensionCallResult,
       error: EnvironmentScopedOperationErrors,
     }).middleware(EnvironmentAuthenticatedAuth),
   ) {}
