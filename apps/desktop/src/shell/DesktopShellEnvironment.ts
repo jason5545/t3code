@@ -6,6 +6,7 @@ import {
   mergePathValues,
   readUserLoginShell,
   setWindowsPath,
+  windowsEnvironmentValueCommand,
 } from "@t3tools/shared/shell";
 import * as Context from "effect/Context";
 import * as Duration from "effect/Duration";
@@ -92,6 +93,8 @@ export class DesktopShellEnvironment extends Context.Service<
     readonly awaitDiscovery: Effect.Effect<boolean>;
     /** Whether the user's own login shell, not a fallback, gave the PATH a new terminal gets. */
     readonly awaitUserShellDiscovery: Effect.Effect<boolean>;
+    /** Whether discovery has settled (the user's shell answered or retries ran out), without waiting. */
+    readonly discoveryFinished: Effect.Effect<boolean>;
     readonly updates: Stream.Stream<DesktopShellEnvironmentSnapshot>;
   }
 >()("@t3tools/desktop/shell/DesktopShellEnvironment") {}
@@ -124,8 +127,10 @@ const LOGIN_SHELL_ENV_NAMES = [
   "T3CODE_TAILSCALE_MCP_OWNER_ACCESS",
   "T3CODE_TAILSCALE_PAIRING",
   "T3CODE_GITHUB_APP_CLIENT_ID",
+  "T3CODE_RELEASE_BASE_URL",
   "__MISE_DIFF",
   "JAVA_HOME",
+  "PNPM_HOME",
 ] as const;
 const WINDOWS_PROFILE_ENV_NAMES = ["PATH", "FNM_DIR", "FNM_MULTISHELL_PATH"] as const;
 const LOCALE_ENV_NAMES = ["LANG", "LC_ALL", "LC_CTYPE"] as const;
@@ -235,7 +240,7 @@ const captureWindowsEnvironmentCommand = (names: ReadonlyArray<string>) =>
     ...names.flatMap((name) => {
       return [
         `Write-Output '${startMarker(name)}'`,
-        `$value = [Environment]::GetEnvironmentVariable('${name}')`,
+        windowsEnvironmentValueCommand(name),
         "if ($null -ne $value -and $value.Length -gt 0) { Write-Output $value }",
         `Write-Output '${endMarker(name)}'`,
       ];
@@ -548,11 +553,13 @@ const installPosixEnvironment = Effect.fn("desktop.shellEnvironment.installPosix
       "SSL_CERT_DIR",
       "NODE_EXTRA_CA_CERTS",
       "JAVA_HOME",
+      "PNPM_HOME",
       "T3CODE_TELEMETRY_ENABLED",
       "T3CODE_CONTEXT_HANDOFF_TOKEN_CAP",
       "T3CODE_TAILSCALE_MCP_OWNER_ACCESS",
       "T3CODE_TAILSCALE_PAIRING",
       "T3CODE_GITHUB_APP_CLIENT_ID",
+      "T3CODE_RELEASE_BASE_URL",
     ] as const) {
       if (!config.env[name] && shellEnvironment[name]) {
         config.env[name] = shellEnvironment[name];
@@ -653,9 +660,11 @@ const CACHED_ENV_NAMES = [
   "HOMEBREW_CELLAR",
   "HOMEBREW_REPOSITORY",
   "JAVA_HOME",
+  "PNPM_HOME",
   "SSL_CERT_FILE",
   "SSL_CERT_DIR",
   "NODE_EXTRA_CA_CERTS",
+  "T3CODE_TELEMETRY_ENABLED",
   "T3CODE_CONTEXT_HANDOFF_TOKEN_CAP",
   "T3CODE_TAILSCALE_MCP_OWNER_ACCESS",
   "T3CODE_TAILSCALE_PAIRING",
@@ -669,6 +678,21 @@ export const make = Effect.gen(function* () {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const scope = yield* Scope.Scope;
   const env = process.env;
+  const isLinuxAppImage =
+    environment.platform === "linux" && (env.APPIMAGE !== undefined || env.APPDIR !== undefined);
+  const appDir = env.APPDIR?.replace(/\/+$/u, "");
+  const stripAppImagePaths = (target: NodeJS.ProcessEnv) => {
+    if (!isLinuxAppImage || target.PATH === undefined) return;
+    // Cached PATHs can outlive the AppImage mount that originally contributed them.
+    const kept = target.PATH.split(":").filter(
+      (entry) =>
+        !(appDir && (entry === appDir || entry.startsWith(`${appDir}/`))) &&
+        !/^\/tmp\/\.mount_T3-[^/]+(?:\/|$)/u.test(entry),
+    );
+    if (kept.length > 0) target.PATH = kept.join(":");
+    else delete target.PATH;
+  };
+  stripAppImagePaths(env);
   const inherited = { ...env };
   const key = encodeCacheKey([
     environment.platform,
@@ -680,6 +704,7 @@ export const make = Effect.gen(function* () {
   const changes = yield* PubSub.unbounded<DesktopShellEnvironmentSnapshot>();
   const latest = yield* Ref.make<Option.Option<DesktopShellEnvironmentSnapshot>>(Option.none());
   const discovered = yield* Deferred.make<ShellDiscovery>();
+  const settledDiscovery = yield* Deferred.make<void>();
   const publish = Effect.fn("desktop.shellEnvironment.publish")(function* (
     patch: ShellEnvironmentPatch,
     discovered = false,
@@ -705,6 +730,7 @@ export const make = Effect.gen(function* () {
         budget,
       });
       const { prepared } = discovery;
+      stripAppImagePaths(fresh);
       const patch = Object.fromEntries(
         Object.keys(ShellEnvironmentPatch.fields).map((name) => [name, fresh[name] ?? null]),
       );
@@ -749,6 +775,7 @@ export const make = Effect.gen(function* () {
             ),
           ),
     ),
+    Effect.onExit(() => Deferred.succeed(settledDiscovery, undefined)),
   );
   const installIntoProcess = yield* Effect.cached(
     Effect.gen(function* () {
@@ -769,6 +796,7 @@ export const make = Effect.gen(function* () {
             return typeof value === "string" ? [[name, value]] : [];
           }),
         );
+        stripAppImagePaths(cached);
         const baseline = { ...inherited };
         const cachedPath = cached.PATH;
         if (cachedPath) {
@@ -808,6 +836,7 @@ export const make = Effect.gen(function* () {
       Effect.andThen(Deferred.await(discovered)),
       Effect.map(({ fromUserShell }) => fromUserShell),
     ),
+    discoveryFinished: Deferred.isDone(settledDiscovery),
     updates,
   });
 });

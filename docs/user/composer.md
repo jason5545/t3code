@@ -142,9 +142,12 @@ delete it like other inline context. Copying, reloading, and restoring a
 with its quote, and sending tells the agent which words were quoted and which comment you wrote.
 The quoted text and comment count toward the message limit.
 
-On mobile, select text within one assistant response and choose **Cite** in the selection
-menu; the quote goes to the end of your draft. Mobile does not add comments to citations or
-navigate to their sources.
+On mobile, long-press an assistant response, adjust the text selection, and choose
+**Cite** to insert a quote at the composer cursor. If the passage appears more than
+once in that section, choose its source occurrence. Select more surrounding text
+if a short passage appears too often. Tap a quote in a draft to add
+or edit its comment, or to remove it. To open the source message, tap a quote in
+a draft or sent message, then choose **Go to message**.
 
 ## Recall a sent prompt
 
