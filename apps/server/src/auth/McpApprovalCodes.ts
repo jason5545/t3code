@@ -3,7 +3,7 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import type { AuthEnvironmentScope, AuthMcpClientAccess } from "@t3tools/contracts";
+import type { AuthEnvironmentScope } from "@t3tools/contracts";
 
 import * as AuthPairingLinks from "../persistence/AuthPairingLinks.ts";
 import { decodeMcpApprovalSubject } from "./mcpApprovalCode.ts";
@@ -23,7 +23,7 @@ export class McpApprovalCodes extends Context.Service<
       credential: string,
       input?: {
         readonly requiredScopes?: ReadonlyArray<AuthEnvironmentScope>;
-        readonly mcpApproval?: AuthMcpClientAccess;
+        readonly allowedSubject?: string;
       },
     ) => Effect.Effect<
       PairingGrantStore.BootstrapGrant,

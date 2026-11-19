@@ -115,6 +115,9 @@ export function decideGuestShareCommand(input: {
       if (thread.archivedAt !== null) return Result.fail("Archived threads cannot be shared.");
       // Fork patch 11: guest commands bypass the ephemeral dispatch wrapper.
       if (thread.ephemeral === true) return Result.fail("Ephemeral threads cannot be shared.");
+      if (share?.messages.some((message) => message.status === "pending")) {
+        return Result.fail("Answer or dismiss waiting guest messages before replacing this link.");
+      }
       return withShare({
         id: command.shareId,
         host: command.host,

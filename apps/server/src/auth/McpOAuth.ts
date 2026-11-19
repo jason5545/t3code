@@ -489,7 +489,7 @@ const make = Effect.gen(function* () {
         });
       }
       const approved = yield* environmentAuth
-        .consumeMcpApprovalCode(decision.code, decision.access)
+        .consumeMcpApprovalCode(decision.code, decision.access, input.authorization.client.peerLink)
         .pipe(
           Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (cause) =>
             Effect.logError("MCP approval code check failed.", { cause }).pipe(

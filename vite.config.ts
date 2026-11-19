@@ -149,6 +149,7 @@ export default defineConfig({
       NodeURL.fileURLToPath(
         new URL("./packages/shared/src/testing/providerEnv.ts", import.meta.url),
       ),
+      NodeURL.fileURLToPath(new URL("./packages/shared/src/testing/gitEnv.ts", import.meta.url)),
     ],
     ...(isRepoRootTestRun
       ? {
@@ -587,6 +588,51 @@ export default defineConfig({
           ],
         },
       },
+      // Registered always so a disable comment for intentional English counts as used.
+      // `vp run i18n:untranslated` counts what it flags.
+      {
+        files: ["apps/web/src/**", "apps/mobile/src/**", "packages/client-runtime/src/**"],
+        excludeFiles: [
+          "**/*.{test,spec,bench}.{ts,tsx}",
+          "**/{test,testkit,testing,fixtures}/**",
+          "**/*.test-fixtures.ts",
+          "**/{test-fixtures,*TestFixtures}.ts",
+          "apps/mobile/src/features/development/**",
+          "packages/client-runtime/src/rpc/**",
+        ],
+        rules: { "t3code/no-untranslated-copy": "error" },
+      },
+      {
+        // Fork patch 2: fork-owned text is translated by the build-time pass, not gt-react, so
+        // fork changes never touch upstream's generated catalogs.
+        files: [
+          "apps/web/src/extensions/**",
+          "apps/web/src/locale/**",
+          "apps/mobile/src/locale/**",
+          "apps/web/src/components/EphemeralThreads.tsx",
+          "apps/web/src/components/ephemeralThreadText.ts",
+          "apps/web/src/components/providerUpdateName.ts",
+          "apps/web/src/components/chat/DraftHeroHeading.tsx",
+          "apps/web/src/components/chat/EphemeralDraftToggle.tsx",
+          "apps/web/src/components/chat/SummarizedUpdateBadge.tsx",
+          "apps/web/src/components/settings/ExtensionsSettings.tsx",
+          "apps/web/src/components/settings/TailnetServerSuggestions.tsx",
+          "apps/web/src/components/sidebar/SidebarLaunchedThreadsToggle.tsx",
+          "apps/mobile/src/features/connection/TailnetServerSection.tsx",
+          "apps/mobile/src/features/threads/EphemeralThreads.tsx",
+          // Upstream files with fork text; upstream's CI still checks their own copy.
+          "apps/web/src/components/ChatView.logic.ts",
+          "apps/web/src/components/Sidebar.tsx",
+          "apps/web/src/components/auth/ConnectAgentSurface.tsx",
+          "apps/web/src/components/chat/useComposerStash.ts",
+          "apps/web/src/components/settings/AddEnvironmentDialog.tsx",
+          "apps/web/src/components/sidebar/SidebarThreadRow.tsx",
+          "apps/mobile/src/features/connection/ConnectionsNewRouteScreen.tsx",
+          "apps/mobile/src/features/threads/ThreadFeed.tsx",
+          "apps/mobile/src/features/threads/ThreadRouteScreen.tsx",
+        ],
+        rules: { "t3code/no-untranslated-copy": "off" },
+      },
       {
         // React Compiler owns memoization; upstream rules do not ban redundant useMemo/useCallback.
         files: ["apps/web/src/**/*.{ts,tsx}"],
@@ -651,6 +697,7 @@ export default defineConfig({
           "apps/mobile/src/features/review/useNativeReviewDiffBridge.ts",
           "apps/mobile/src/features/settings/SettingsEnvironmentsRouteScreen.tsx",
           "apps/mobile/src/features/threads/ThreadComposer.tsx",
+          "apps/mobile/src/components/ComposerSurface.tsx",
           "apps/mobile/src/features/threads/ThreadFeed.tsx",
           "apps/mobile/src/features/threads/ThreadQueueControl.tsx",
           "apps/mobile/src/features/review/ReviewCommentCard.tsx",

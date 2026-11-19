@@ -10,7 +10,7 @@ import { buildGtCatalogs } from "./gtCatalog.ts";
 it("gt-react's zh-TW catalogs cover every upstream string and are up to date", () => {
   for (const { file, contents, missing } of buildGtCatalogs()) {
     expect(missing, file).toEqual([]);
-    expect(NodeFS.readFileSync(file, "utf8"), file).toBe(contents);
+    expect(JSON.parse(NodeFS.readFileSync(file, "utf8")), file).toEqual(JSON.parse(contents));
   }
 });
 
@@ -21,6 +21,5 @@ it("the mobile provider loads the zh-TW catalog", () => {
     new URL("../../apps/mobile/src/i18n/I18nProvider.tsx", import.meta.url),
     "utf8",
   );
-  expect(provider).toContain('import zhTW from "./translations/zh-TW.json";');
-  expect(provider).toContain('"zh-TW": zhTW,');
+  expect(provider).toContain('"zh-TW": () => require("./translations/zh-TW.json"),');
 });

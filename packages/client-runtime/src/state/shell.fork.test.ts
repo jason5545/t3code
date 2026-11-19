@@ -122,6 +122,7 @@ describe("ephemeral threads in the shell cache (fork patch 11)", () => {
         generation: 0,
         lastFailure: null,
         retryAt: null,
+        refusedRouteIds: [],
       });
       yield* Queue.offer(events, { kind: "snapshot", snapshot });
       yield* Queue.offer(events, { kind: "synchronized" });
@@ -139,6 +140,7 @@ describe("ephemeral threads in the shell cache (fork patch 11)", () => {
         generation: 1,
         lastFailure: null,
         retryAt: null,
+        refusedRouteIds: [],
       });
 
       const cached = yield* Deferred.await(saved);

@@ -77,6 +77,7 @@ export interface SelectableMarkdownTextProps {
   readonly models?: ReadonlyArray<SelectableMarkdownModel>;
   readonly preserveSoftBreaks?: boolean;
   readonly onLinkPress?: (href: string) => void;
+  readonly onCiteText?: (text: string) => void;
   readonly fileContextMenu?: (href: string) => MarkdownFileContextMenu | undefined;
   readonly onFileContextMenuAction?: (href: string, actionId: string) => void;
   readonly linkCustomization?: (href: string) => MarkdownLinkCustomization | undefined;
@@ -85,8 +86,6 @@ export interface SelectableMarkdownTextProps {
   readonly fileEmbedLabel?: (href: string, standalone: boolean) => string | null;
   readonly resolveImageSource?: MarkdownImageSourceResolver;
   readonly onImagePress?: (href: string) => void;
-  /** Extra actions in the text selection menu. Keep the array stable; native reloads it on change. */
-  readonly contextMenuItems?: import("react-native-enriched-markdown").TextContextMenuItem[];
   /**
    * Makes task checkboxes tappable. The renderer ticks the box itself; `index` counts checkboxes
    * in document order and `checked` is the new state.
