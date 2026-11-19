@@ -9089,5 +9089,6 @@
   "That interface could not be drawn": "無法繪製該介面",
   "The standard interface is back.": "已切回標準介面。",
   "Could not confirm fork": "無法確認分岔是否建立",
-  "Reconnect and check the thread list before trying again.": "請重新連線，確認對話清單後再試一次。"
+  "Reconnect and check the thread list before trying again.": "請重新連線，確認對話清單後再試一次。",
+  "{option.mergedCount} {0} loaded": "已載入 {option.mergedCount} 次合併"
 }
