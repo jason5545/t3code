@@ -18,9 +18,14 @@ if [[ "${1:-}" != --swap ]]; then
   new=$(ls -d "$stage"/*.app)
   codesign --verify --deep --strict "$new"
   [[ $(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$new/Contents/Info.plist") == com.jason5545.t3code.nightly ]]
+  # The app runs with no arguments. Its executable also runs as Node (ELECTRON_RUN_AS_NODE),
+  # and such a process can end up under launchd too, so the parent alone does not pick it.
   main=""
   for pid in $(t3_pids); do
-    [[ $(ps -o ppid= -p "$pid" | tr -d ' ') == 1 && $(ps -o comm= -p "$pid") == "$EXE" ]] && main=$pid
+    if [[ $(ps -o ppid= -p "$pid" | tr -d ' ') == 1 && $(ps -o args= -p "$pid") == "$EXE" ]]; then
+      [[ -z $main ]] || { echo "Two T3 main processes ($main, $pid); quit one first." >&2; exit 1; }
+      main=$pid
+    fi
   done
   log="$out/install.log"
   : >"$log"
