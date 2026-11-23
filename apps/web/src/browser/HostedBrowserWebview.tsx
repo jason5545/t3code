@@ -4,7 +4,7 @@ import type {
   ScopedThreadRef,
 } from "@t3tools/contracts";
 import { useShallow } from "zustand/react/shallow";
-import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { previewBridge } from "~/components/preview/previewBridge";
 import {
@@ -13,6 +13,7 @@ import {
 } from "~/components/preview/thumbButtons";
 import { usePreviewBridge } from "~/components/preview/usePreviewBridge";
 import { useClientSettingsHydrated } from "~/hooks/useSettings";
+import { useViewportSize } from "~/hooks/useViewportSize";
 import { cn, isMacPlatform } from "~/lib/utils";
 
 import { resolveBrowserSurfacePanelRect, useBrowserSurfaceStore } from "./browserSurfaceStore";
@@ -22,6 +23,7 @@ import {
   resolveBrowserViewportLayout,
   resolveBrowserViewportTransform,
   resolveFittedBrowserViewport,
+  resolveHiddenBrowserViewportSize,
 } from "./browserViewportLayout";
 import { BrowserDeviceToolbar } from "./BrowserDeviceToolbar";
 import { BrowserViewportResizeHandles } from "./BrowserViewportResizeHandles";
@@ -50,13 +52,6 @@ declare global {
     webview: ElectronWebview;
   }
 }
-
-const subscribeToWindowSize = (onChange: () => void) => {
-  window.addEventListener("resize", onChange);
-  return () => window.removeEventListener("resize", onChange);
-};
-const readWindowWidth = () => window.innerWidth;
-const readWindowHeight = () => window.innerHeight;
 
 export function HostedBrowserWebview(props: {
   readonly threadRef: ScopedThreadRef;
@@ -250,22 +245,14 @@ export function HostedBrowserWebview(props: {
     setAspectRatioLocked(aspectRatio !== null);
   };
   const content = presentation.content;
-  const windowWidth = useSyncExternalStore(subscribeToWindowSize, readWindowWidth);
-  const windowHeight = useSyncExternalStore(subscribeToWindowSize, readWindowHeight);
-  // Chromium paints a guest only near the app window, so a fixed viewport larger than the window
-  // is scaled to fit while hidden; otherwise its snapshot loses the part outside the window.
-  const hiddenWidth =
-    viewport._tag !== "fill"
-      ? Math.min(windowWidth, viewport.width * layoutZoomFactor)
-      : content
-        ? content.width / content.scale
-        : (lastRect?.width ?? 1280);
-  const hiddenHeight =
-    viewport._tag !== "fill"
-      ? Math.min(windowHeight, viewport.height * layoutZoomFactor)
-      : content
-        ? content.height / content.scale
-        : (lastRect?.height ?? 800);
+  const windowSize = useViewportSize();
+  const { width: hiddenWidth, height: hiddenHeight } = resolveHiddenBrowserViewportSize({
+    setting: viewport,
+    zoomFactor: layoutZoomFactor,
+    content,
+    lastRect,
+    windowSize,
+  });
   // Build from primitives on each side of the resize hook to keep both objects cached.
   const containerSize =
     active && lastRect ? lastRect : { width: hiddenWidth, height: hiddenHeight };

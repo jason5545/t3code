@@ -8737,5 +8737,300 @@
   "No suggestions": "沒有建議",
   "Copy Email Address": "複製電子郵件地址",
   "Copy Image": "複製圖片",
-  "Desktop config": "桌面版設定檔"
+  "Desktop config": "桌面版設定檔",
+  "No longer registered on this server": "已不再註冊到此伺服器",
+  "Runs as part of other workflows": "作為其他工作流程的一部分執行",
+  "Started by hand": "手動啟動",
+  "Starts on {triggers}": "由 {triggers} 觸發啟動",
+  "Needs you": "等你處理",
+  "Sleeping": "休眠中",
+  "Asks: {question} and {more} more": "提問：{question}，另有 {more} 個",
+  "Asks: {question}": "提問：{question}",
+  "A step failed": "有步驟失敗",
+  "Running its own steps": "正在執行自身的步驟",
+  "{step} is working": "{step} 正在執行",
+  "Sleeping at {step}": "在 {step} 休眠中",
+  "Runs {run}": "執行 {run}",
+  "{count} runs under way": "{count} 個執行進行中",
+  "Waiting for {step}": "正在等待 {step}",
+  "Ended early": "提前結束",
+  "Loading {provider} plugins": "正在載入 {provider} 外掛",
+  "Starting {provider} MCP servers": "正在啟動 {provider} MCP 伺服器",
+  "Loading {provider} hooks": "正在載入 {provider} hooks",
+  "Loading {provider} rules and skills": "正在載入 {provider} 規則和技能",
+  "Connecting to {provider}": "正在連線 {provider}",
+  "Step of the workflow run": "工作流程執行的步驟",
+  "Open run": "開啟執行",
+  "Open workflows": "開啟工作流程",
+  "Run multi-step workflows from files in the workflows folder of this server's T3 home. Open them from the command palette. While off, nothing in that folder runs; runs wait until it is on again.": "從此伺服器 T3 主目錄下 workflows 資料夾中的檔案執行多步驟工作流程。可從指令面板開啟。關閉期間，該資料夾中的內容都不會執行；執行會等到重新開啟後繼續。",
+  "Workflows": "工作流程",
+  "beta workflow durable runs automation steps schedule webhook folder": "測試版 工作流程 workflow 持久 執行 自動化 步驟 計畫 webhook 資料夾",
+  "Leave without saving? Your changes to this file are lost.": "不儲存就離開？你對此檔案的變更會遺失。",
+  "Unsaved changes": "未儲存的變更",
+  "Saved and running": "已儲存並生效",
+  "The file on disk does not load. The last version that did keeps running.": "磁碟上的檔案無法載入。上一個可載入的版本會繼續執行。",
+  "Saved, but it does not run yet.": "已儲存，但尚未執行。",
+  "Not saved. Nothing changed on the server.": "未儲存。伺服器上沒有任何變更。",
+  "Could not save": "無法儲存",
+  "{name} is not connected": "{name} 未連線",
+  "Its workflows show again when it reconnects. Pick another environment to see its runs.": "重新連線後，它的工作流程會再次顯示。選擇其他環境可檢視其執行。",
+  "Could not read the workflow files": "無法讀取工作流程檔案",
+  "Delete {file}? The workflows it defines can no longer be started.": "要刪除 {file} 嗎？它定義的工作流程將無法再啟動。",
+  "{name} is not connected. What you write here stays, and saves once it is back.": "{name} 未連線。你在這裡寫的內容會保留，重新連線後即可儲存。",
+  "Deleted, but what runs has not caught up yet.": "已刪除，但正在執行的內容尚未更新。",
+  "Not deleted. Nothing changed on the server.": "未刪除。伺服器上沒有任何變更。",
+  "These files do not fit together. What ran before keeps running.": "這些檔案彼此不相容。之前的版本會繼續執行。",
+  "File name": "檔名",
+  "Defines no workflows": "未定義任何工作流程",
+  "[\"Line \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\":\"]": [
+    "第 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 行："
+  ],
+  "The file changed on disk while you were editing. Saving replaces that change.": "你編輯時，磁碟上的檔案被修改了。儲存會蓋掉那次修改。",
+  "Load the file and drop my changes": "載入該檔案並放棄我的變更",
+  "Loading the workflow files…": "正在載入工作流程檔案…",
+  "[\"Every file in\",\" \",{\"t\":\"code\",\"i\":1,\"c\":{\"i\":2,\"k\":\"_gt_value_2\",\"v\":\"v\"}},\" \",\"defines workflows. A change to one is picked up without a restart.\"]": [
+    {
+      "t": "code",
+      "i": 1,
+      "c": {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    },
+    " ",
+    "中的每個檔案都定義工作流程。修改後無需重新啟動即可生效。"
+  ],
+  "New file": "新增檔案",
+  "No workflows yet. Make the first file here, or ask an agent to write one in that folder.": "還沒有工作流程。在這裡建立第一個檔案，或讓代理程式在該資料夾中撰寫一個。",
+  "Does not load": "無法載入",
+  "Open beside the run": "在執行旁開啟",
+  "Open as a full thread": "以完整對話開啟",
+  "Open on its own page": "在獨立頁面開啟",
+  "Close the pane": "關閉面板",
+  "This run no longer lists it.": "此執行不再列出它。",
+  "{count, plural, =1 {1st try} =2 {2nd try} =3 {3rd try} other {{count}th try}}": "{count, plural, =1 {第 1 次嘗試} =2 {第 2 次嘗試} =3 {第 3 次嘗試} other {第 {count} 次嘗試}}",
+  "Could not resume the run": "無法繼續此執行",
+  "Cancel {title}? Its agents stop and the run cannot be resumed.": "要取消 {title} 嗎？其代理程式將停止，且此執行無法再繼續。",
+  "Could not cancel the run": "無法取消此執行",
+  "Back to the list of runs": "返回執行清單",
+  "Cancel run": "取消執行",
+  "took {duration}": "耗時 {duration}",
+  "{duration} so far": "已耗時 {duration}",
+  "What the run touched": "此執行涉及的內容",
+  "What happened": "經過",
+  "{names} and {count} more": "{names} 和另外 {count} 個",
+  "{count} in parallel": "{count} 個並行",
+  "Asks you": "向你提問",
+  "Steps so far": "目前的步驟",
+  "waits for your approval": "等待你的批准",
+  "starting": "正在啟動",
+  "working": "工作中",
+  "wakes in {duration}": "{duration} 後喚醒",
+  "about to wake": "即將喚醒",
+  "nobody answered": "無人回答",
+  "You said {choice}": "你的回答：{choice}",
+  "Quick steps": "快速步驟",
+  "slept": "已休眠",
+  "waited": "已等待",
+  "running for {duration}": "已執行 {duration}",
+  "Watch live": "即時檢視",
+  "Transcript": "對話記錄",
+  "cannot go on until its workflow version is registered again": "需重新註冊其工作流程版本後才能繼續",
+  "waits for you to resume it": "等你手動繼續",
+  "tries again by itself in {duration}": "{duration} 後自動重試",
+  "about to try again by itself": "即將自動重試",
+  "Why it paused": "暫停原因",
+  "Paused at {step}": "暫停於 {step}",
+  "Could not answer the question": "無法回答此問題",
+  "Reason for {title}": "{title} 的理由",
+  "Why, in a sentence. It goes with whichever answer you pick.": "用一句話說明理由。無論你選哪個回答，它都會一併附上。",
+  "Runs": "執行",
+  "[\"Part of \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"}]": [
+    "屬於 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "[\"started\",\" \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"}]": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "開始"
+  ],
+  "its version is no longer registered": "其版本已不再註冊",
+  "Loading steps…": "正在載入步驟…",
+  "Nothing yet.": "還沒有內容。",
+  "[\"You said\",\" \",{\"t\":\"span\",\"i\":1,\"c\":{\"i\":2,\"k\":\"_gt_value_2\",\"v\":\"v\"}},\".\"]": [
+    "你的回答：",
+    {
+      "t": "span",
+      "i": 1,
+      "c": {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    }
+  ],
+  "[\"You said\",\" \",{\"t\":\"span\",\"i\":1,\"c\":{\"i\":2,\"k\":\"_gt_value_2\",\"v\":\"v\"}},\": \",{\"i\":3,\"k\":\"_gt_value_3\",\"v\":\"v\"}]": [
+    "你的回答：",
+    {
+      "t": "span",
+      "i": 1,
+      "c": {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    },
+    "：",
+    {
+      "i": 3,
+      "k": "_gt_value_3",
+      "v": "v"
+    }
+  ],
+  "[\"Thread on \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"}]": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 上的對話"
+  ],
+  "Only the failed step runs again; what finished before it is kept.": "只會重新執行失敗的步驟；此前已完成的內容會保留。",
+  "[\"asked\",\" \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\" \",\"· the run waits for you\"]": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "提問",
+    " ",
+    "· 執行正在等你回答"
+  ],
+  "Add a reason": "新增理由",
+  "Ask the agent first": "先問問代理程式",
+  "Nothing waits on you.": "沒有等你處理的內容。",
+  "Nothing is running.": "沒有正在執行的內容。",
+  "No runs yet.": "還沒有執行。",
+  "Could not load workflow runs": "無法載入工作流程執行",
+  "This run is not here": "此執行不在這裡",
+  "No workflow runs yet": "還沒有工作流程執行",
+  "Which runs": "顯示哪些執行",
+  "All {count} workflows": "全部 {count} 個工作流程",
+  "Workflow runs": "工作流程執行",
+  "Has not run yet.": "尚未執行過。",
+  "Hide skipped": "隱藏已跳過",
+  "Show {count} skipped": "顯示 {count} 個已跳過",
+  "Loading workflow runs…": "正在載入工作流程執行…",
+  "[\"This environment has no run with that link.\",\" \",{\"t\":\"button\",\"i\":1,\"c\":\"Back to the runs\"}]": [
+    "此環境中沒有該連結對應的執行。",
+    " ",
+    {
+      "t": "button",
+      "i": 1,
+      "c": "返回執行列表"
+    }
+  ],
+  "[\"A workflow ties agents, code, schedules and questions to you into one run that survives restarts. Write one under\",\" \",{\"t\":\"button\",\"i\":1,\"c\":\"Definitions\"},\", or ask an agent to.\",\" \",{\"t\":\"a\",\"i\":2,\"c\":\"Read the guide\"}]": [
+    "工作流程將代理程式、程式碼、排程和向你提出的問題串聯成一次重新啟動後仍會繼續的執行。可在",
+    " ",
+    {
+      "t": "button",
+      "i": 1,
+      "c": "定義"
+    },
+    " ",
+    "中撰寫，或讓代理程式代寫。",
+    " ",
+    {
+      "t": "a",
+      "i": 2,
+      "c": "閱讀指南"
+    }
+  ],
+  "[{\"t\":\"span\",\"i\":1,\"c\":\"A workflow file has a problem.\"},\" \",\"The last version that did keeps running.\"]": [
+    {
+      "t": "span",
+      "i": 1,
+      "c": "有工作流程檔案存在問題。"
+    },
+    "上一個可載入的版本會繼續執行。"
+  ],
+  "Open the file": "開啟檔案",
+  "All workflows": "全部工作流程",
+  "{step} · transcript": "{step} · 對話記錄",
+  "This thread is no longer there.": "此對話已不存在。",
+  "Loading the thread…": "正在載入對話…",
+  "Workflows breadcrumb": "工作流程導覽路徑",
+  "Workflows are off": "工作流程已關閉",
+  "No environment connected": "未連線任何環境",
+  "Connect an environment to see its workflow runs.": "連線一個環境以檢視其工作流程執行。",
+  "Beside the run": "執行旁",
+  "Definitions": "定義",
+  "Loading the editor…": "正在載入編輯器…",
+  "[\"Turn them on for this server in\",\" \",{\"t\":\"Link\",\"i\":1,\"c\":\"Settings → Labs\"},\".\"]": [
+    "在此伺服器的",
+    " ",
+    {
+      "t": "Link",
+      "i": 1,
+      "c": "設定 → Labs"
+    },
+    " 中開啟。"
+  ],
+  "Could not send the answer": "無法傳送回答",
+  "Cancel this run?": "要取消此執行嗎？",
+  "Its agents stop and the run cannot be resumed.": "其代理程式將停止，且此執行無法再繼續。",
+  "Keep it": "保留",
+  "A step failed.": "有步驟失敗。",
+  "It cannot go on until its workflow version is registered again.": "需重新註冊其工作流程版本後才能繼續。",
+  "It waits for you to resume it.": "正在等你手動繼續。",
+  "It tries again by itself, or resume it now.": "它會自動重試，你也可以立即繼續。",
+  "Loading the run's steps…": "正在載入此執行的步驟…",
+  "Loading the run…": "正在載入執行…",
+  "Could not load the run": "無法載入此執行",
+  "This run is not in the list": "此執行不在清單中",
+  "It may be older than the runs this server still lists.": "它可能比此伺服器仍在列出的執行更早。",
+  "[\"asked\",\" \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"}]": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "提問"
+  ],
+  "This connection can read runs but not answer them.": "此連線可以檢視執行，但無法回答。",
+  "[{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\" · started\",\" \",{\"i\":2,\"k\":\"_gt_value_2\",\"v\":\"v\"}]": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " · ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "開始"
+  ],
+  "Answered {choice}": "已回答：{choice}",
+  "Answered {choice}: {reason}": "已回答：{choice}（{reason}）",
+  "Loading the step…": "正在載入步驟…",
+  "sleeping": "休眠中",
+  "under way": "進行中",
+  "A workflow ties agents, code, schedules and questions to you into one run that survives restarts. Write one on your computer, under Workflows, then Definitions.": "工作流程將代理程式、程式碼、排程和向你提出的問題串聯成一次重新啟動後仍會繼續的執行。請在電腦上進入「工作流程」>「定義」撰寫。"
 }

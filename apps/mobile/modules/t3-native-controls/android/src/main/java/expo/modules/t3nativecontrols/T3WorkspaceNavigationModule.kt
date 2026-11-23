@@ -430,6 +430,7 @@ class T3WorkspaceNavigationView(
     "threads" -> zh("Chats", "對話")
     "pullRequests" -> zh("Pulls", "PR")
     "issues" -> zh("Issues", "議題")
+    "workflows" -> zh("Workflows", "工作流程")
     "usage" -> zh("Usage", "用量")
     else -> zh("Settings", "設定")
   }
@@ -443,6 +444,7 @@ class T3WorkspaceNavigationView(
       "threads" -> R.drawable.t3_chats
       "pullRequests" -> R.drawable.t3_pull_requests
       "issues" -> R.drawable.t3_issues
+      "workflows" -> R.drawable.t3_workflows
       "usage" -> R.drawable.t3_usage
       else -> R.drawable.t3_settings
     }

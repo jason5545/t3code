@@ -683,6 +683,20 @@
     "apps/web/src/components/chat/VoiceInputErrorPill.tsx": [
       "Could not transcribe this recording.",
       "Voice transcription on this environment failed."
+    ],
+    "apps/web/src/components/workflows/WorkflowDefinitionEditor.tsx": [
+      "workflow definition save",
+      "workflow definition delete"
+    ],
+    "apps/web/src/components/workflows/WorkflowRunFeed.tsx": [
+      "workflow resume",
+      "workflow cancel",
+      "workflow answer"
+    ],
+    "apps/mobile/src/features/workflows/WorkflowRunRouteScreen.tsx": [
+      "workflow resume",
+      "workflow cancel",
+      "workflow answer"
     ]
   }
 }
