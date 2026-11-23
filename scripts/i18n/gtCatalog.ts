@@ -17,7 +17,7 @@ const repoRoot = NodePath.resolve(
   NodePath.dirname(NodeURL.fileURLToPath(import.meta.url)),
   "../..",
 );
-const GT_APPS = ["web", "mobile"] as const;
+const GT_APPS = ["web", "mobile", "desktop"] as const;
 const gtTranslationsFile = NodePath.join(repoRoot, "scripts/i18n/gtTranslations.json");
 const readJson = <T>(file: string): T => JSON.parse(NodeFS.readFileSync(file, "utf8")) as T;
 const translationsFile = (app: (typeof GT_APPS)[number], locale: string) =>
@@ -104,6 +104,9 @@ const TERMS: ReadonlyArray<readonly [RegExp, string]> = [
   [/單擊/g, "按一下"],
   [/雙擊/g, "按兩下"],
   [/計劃/g, "計畫"],
+  [/全屏/g, "全螢幕"],
+  [/共享與存取/g, "共用與存取"],
+  [/側聊/g, "側邊對話"],
   [/“/g, "「"],
   [/”/g, "」"],
   [/‘/g, "『"],
@@ -114,19 +117,45 @@ const applyTerms = (text: string) =>
   TERMS.reduce((result, [pattern, replacement]) => result.replace(pattern, replacement), text);
 
 /** Every string inside a JSX entry, in order, so one OpenCC run converts them all. */
-function collectStrings(entry: unknown, into: string[]): void {
+type JsxElement = {
+  readonly c?: unknown;
+  readonly d?: { readonly b?: Readonly<Record<string, unknown>> };
+};
+
+/** Plural and branch elements keep their text in `d.b`, other elements in `c`. */
+export function collectStrings(entry: unknown, into: string[]): void {
   if (typeof entry === "string") into.push(entry);
   else if (Array.isArray(entry)) for (const part of entry) collectStrings(part, into);
-  else if (entry !== null && typeof entry === "object" && "c" in entry) {
-    collectStrings((entry as { readonly c: unknown }).c, into);
+  else if (entry !== null && typeof entry === "object") {
+    const { c, d } = entry as JsxElement;
+    for (const branch of Object.values(d?.b ?? {})) collectStrings(branch, into);
+    if (c !== undefined) collectStrings(c, into);
   }
 }
 
 function replaceStrings(entry: unknown, next: () => string): unknown {
   if (typeof entry === "string") return next();
   if (Array.isArray(entry)) return entry.map((part) => replaceStrings(part, next));
-  if (entry !== null && typeof entry === "object" && "c" in entry) {
-    return { ...entry, c: replaceStrings((entry as { readonly c: unknown }).c, next) };
+  if (entry !== null && typeof entry === "object") {
+    const element = entry as JsxElement;
+    const d =
+      element.d?.b === undefined
+        ? element.d
+        : {
+            ...element.d,
+            b: Object.fromEntries(
+              Object.entries(element.d.b).map(([name, branch]) => [
+                name,
+                replaceStrings(branch, next),
+              ]),
+            ),
+          };
+    const c = element.c === undefined ? undefined : replaceStrings(element.c, next);
+    return {
+      ...entry,
+      ...(d === undefined ? {} : { d }),
+      ...(c === undefined ? {} : { c }),
+    };
   }
   return entry;
 }
