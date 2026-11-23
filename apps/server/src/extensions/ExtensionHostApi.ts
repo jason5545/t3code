@@ -27,6 +27,7 @@ const ACTIVITY_TYPES = ["command_execution", "file_change", "dynamic_tool"] as c
 const MAX_ITEMS = 500;
 // Commands stay whole for parsing (the longest on record is 38 KB); tool input is only peeked at.
 const COMMAND_CHARS = 64 * 1024;
+const REASONING_CHARS = 32 * 1024;
 const TOOL_STRING_CHARS = 1000;
 const TOOL_INPUT_BYTES = 256 * 1024;
 
@@ -107,6 +108,8 @@ interface ItemRow {
   readonly file: string | null;
   readonly toolName: string | null;
   readonly toolInput: string | null;
+  readonly reasoningText: string | null;
+  readonly reasoningStreaming: number | boolean | null;
 }
 
 /** Tool input with long strings cut, so ids and short fields stay whole and payloads stay small. */
@@ -143,6 +146,12 @@ const toItem = (row: ItemRow): ExtensionActivityItem => ({
   ...(row.type === "dynamic_tool"
     ? { tool: { name: row.toolName, input: parseToolInput(row.toolInput) } }
     : {}),
+  ...(row.type === "reasoning"
+    ? {
+        text: row.reasoningText ?? "",
+        streaming: row.reasoningStreaming === 1 || row.reasoningStreaming === true,
+      }
+    : {}),
 });
 
 const asError = (cause: unknown) =>
@@ -166,7 +175,11 @@ const make = Effect.gen(function* () {
     CASE WHEN type = 'file_change' THEN json_extract(payload_json, '$.fileName') END AS "file",
     CASE WHEN type = 'dynamic_tool' THEN json_extract(payload_json, '$.toolName') END AS "toolName",
     CASE WHEN type = 'dynamic_tool' AND length(payload_json) <= ${TOOL_INPUT_BYTES}
-      THEN payload_json -> '$.input' END AS "toolInput"`;
+      THEN payload_json -> '$.input' END AS "toolInput",
+    CASE WHEN type = 'reasoning'
+      THEN substr(json_extract(payload_json, '$.text'), 1, ${REASONING_CHARS}) END AS "reasoningText",
+    CASE WHEN type = 'reasoning'
+      THEN json_extract(payload_json, '$.streaming') END AS "reasoningStreaming"`;
 
   const getThread = Effect.fn("ExtensionHostApi.threadsGet")(function* (threadId: string) {
     const shell = yield* projections.getThreadShell(ThreadId.make(threadId));

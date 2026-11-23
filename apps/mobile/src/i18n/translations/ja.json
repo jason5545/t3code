@@ -1041,6 +1041,7 @@
   "af11b6afd744089a": "{status, select, inProgress {環境のリンクを求めています} completed {環境のリンクを求めました} failed {環境のリンクを求められませんでした} declined {環境のリンクの要求は拒否されました} stopped {環境のリンクの要求を中止しました} other {環境のリンクを求めています}}",
   "78ce399d5ddd8c0d": "{status, select, inProgress {リンク済みの環境を削除しています} completed {リンク済みの環境を削除しました} failed {リンク済みの環境を削除できませんでした} declined {リンク済みの環境の削除は拒否されました} stopped {リンク済みの環境の削除を中止しました} other {リンク済みの環境を削除しています}}",
   "b32fb6580625fcb1": "{status, select, inProgress {環境の設定を更新しています} completed {環境の設定を更新しました} failed {環境の設定を更新できませんでした} declined {環境の設定の更新は拒否されました} stopped {環境の設定の更新を中止しました} other {環境の設定を更新しています}}",
+  "dbb8fb939c3245b6": "{status, select, inProgress {Calling another machine} completed {Called another machine} failed {Failed to call another machine} declined {Declined to call another machine} stopped {Stopped calling another machine} other {Calling another machine}}",
   "ac03ef3d24daa518": "{status, select, inProgress {テーマを読み取っています} completed {テーマを読み取りました} failed {テーマを読み取れませんでした} declined {テーマの読み取りは拒否されました} stopped {テーマの読み取りを中止しました} other {テーマを読み取っています}}",
   "6aba5ebcdb9df13d": "{status, select, inProgress {テーマを設定しています} completed {テーマを設定しました} failed {テーマを設定できませんでした} declined {テーマの設定は拒否されました} stopped {テーマの設定を中止しました} other {テーマを設定しています}}",
   "6a1fa31a97a17df5": "{status, select, inProgress {プロジェクトのスレッドを起動しています} completed {プロジェクトのスレッドを起動しました} failed {プロジェクトのスレッドを起動できませんでした} declined {プロジェクトのスレッドの起動は拒否されました} stopped {プロジェクトのスレッドの起動を中止しました} other {プロジェクトのスレッドを起動しています}}",

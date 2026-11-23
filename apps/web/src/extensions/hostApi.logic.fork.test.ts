@@ -11,6 +11,7 @@ import {
   planReplyReads,
   readExtensionName,
   readRequestResponse,
+  summarizeLiveActivity,
   summarizePendingRequest,
 } from "./hostApi.logic";
 
@@ -266,5 +267,170 @@ describe("readRequestResponse", () => {
   it("refuses a request that cannot be answered any more", () => {
     const gone = { ...approve, canRespond: false };
     expect(() => readRequestResponse(gone, { decision: "accept" })).toThrow(TypeError);
+  });
+});
+
+describe("summarizeLiveActivity", () => {
+  const sec = (second: number, ms = 0) =>
+    DateTime.makeUnsafe(Date.UTC(2026, 10, 23, 2, 0, second, ms));
+  const turnItem = (
+    ordinal: number,
+    fields: Record<string, unknown> & { readonly type: string; readonly status: string },
+  ) =>
+    ({
+      id: `item:${ordinal}`,
+      threadId: "thread:a",
+      runId: "run:2",
+      ordinal,
+      title: null,
+      startedAt: sec(ordinal),
+      completedAt:
+        fields.status === "completed" || fields.status === "failed" ? sec(ordinal) : null,
+      updatedAt: sec(ordinal),
+      ...fields,
+    }) as never;
+
+  const projection = (turnItems: ReadonlyArray<unknown>, status = "running") =>
+    ({
+      runs: [
+        { id: "run:1", ordinal: 1, status: "completed" },
+        { id: "run:2", ordinal: 2, status },
+      ],
+      turnItems,
+    }) as never;
+
+  it("joins adjacent reasoning blocks in the active thinking span and streams updates", () => {
+    const first = summarizeLiveActivity(
+      projection([
+        turnItem(1, {
+          type: "reasoning",
+          status: "completed",
+          text: "Old thought",
+          streaming: false,
+        }),
+        turnItem(2, { type: "command_execution", status: "completed", input: "git status" }),
+        turnItem(3, {
+          type: "reasoning",
+          status: "completed",
+          text: "First part",
+          streaming: false,
+        }),
+        turnItem(4, { type: "reasoning", status: "running", text: "Second part", streaming: true }),
+      ]),
+      null,
+    );
+    expect(first).toEqual({
+      runId: "run:2",
+      status: "running",
+      current: {
+        id: "item:4",
+        ordinal: 4,
+        kind: "reasoning",
+        text: "",
+        status: "running",
+        failed: false,
+        at: "2026-11-23T02:00:04.000Z",
+      },
+      last: {
+        id: "item:2",
+        ordinal: 2,
+        kind: "command",
+        text: "git status",
+        status: "completed",
+        failed: false,
+        at: "2026-11-23T02:00:02.000Z",
+      },
+      reasoning: {
+        id: "item:4",
+        ordinal: 4,
+        text: "First part\n\nSecond part",
+        streaming: true,
+        status: "running",
+        updatedAt: "2026-11-23T02:00:04.000Z",
+      },
+      lastActivityAt: "2026-11-23T02:00:04.000Z",
+    });
+
+    const grew = summarizeLiveActivity(
+      projection([
+        turnItem(1, {
+          type: "reasoning",
+          status: "completed",
+          text: "Old thought",
+          streaming: false,
+        }),
+        turnItem(2, { type: "command_execution", status: "completed", input: "git status" }),
+        turnItem(3, {
+          type: "reasoning",
+          status: "completed",
+          text: "First part",
+          streaming: false,
+        }),
+        turnItem(4, {
+          type: "reasoning",
+          status: "running",
+          text: "Second part\nNext line",
+          streaming: true,
+          updatedAt: sec(4, 200),
+        }),
+      ]),
+      first,
+    );
+    expect(grew).not.toBe(first);
+    expect(grew?.reasoning?.text).toBe("First part\n\nSecond part\nNext line");
+  });
+
+  it("keeps the latest reasoning segment while a tool runs and reuses the previous object when unchanged", () => {
+    const runningTool = projection([
+      turnItem(1, {
+        type: "reasoning",
+        status: "completed",
+        text: "Check git diff",
+        streaming: false,
+      }),
+      turnItem(2, { type: "file_change", status: "failed", fileName: "src/app.ts" }),
+      turnItem(3, {
+        type: "dynamic_tool",
+        status: "running",
+        toolName: "mcp__t3-code__read_issue",
+      }),
+    ]);
+    const first = summarizeLiveActivity(runningTool, null);
+    expect(first?.current).toMatchObject({
+      kind: "tool",
+      text: "t3-code:read_issue",
+      status: "running",
+    });
+    expect(first?.last).toMatchObject({ kind: "file", text: "src/app.ts", failed: true });
+    expect(first?.reasoning).toMatchObject({ text: "Check git diff", streaming: false });
+    expect(summarizeLiveActivity(runningTool, first)).toBe(first);
+
+    // Streaming assistant text within the same second does not churn the activity object.
+    const replying = summarizeLiveActivity(
+      projection([
+        turnItem(1, {
+          type: "assistant_message",
+          status: "running",
+          text: "Hello",
+          streaming: true,
+          updatedAt: sec(5, 100),
+        }),
+      ]),
+      null,
+    );
+    const replyingMore = summarizeLiveActivity(
+      projection([
+        turnItem(1, {
+          type: "assistant_message",
+          status: "running",
+          text: "Hello world",
+          streaming: true,
+          updatedAt: sec(5, 350),
+        }),
+      ]),
+      replying,
+    );
+    expect(replyingMore).toBe(replying);
+    expect(summarizeLiveActivity(null, first)).toBeNull();
   });
 });

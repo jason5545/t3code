@@ -249,13 +249,35 @@ it.effect("reads a run's tool steps without their output, and only what came nex
     const none = yield* Effect.promise(() => t3.runs.activity(threadId, { afterOrdinal: 6 }));
     assert.deepStrictEqual(none.items, []);
     assert.equal(none.lastOrdinal, 6);
+
+    const projections = yield* ProjectionStore.ProjectionStoreV2;
+    yield* projections.apply(
+      item(7, {
+        type: "reasoning",
+        status: "running",
+        text: "Comparing API 8 fields",
+        streaming: true,
+      }),
+    );
+    const thinking = yield* Effect.promise(() => t3.runs.activity(threadId, { afterOrdinal: 6 }));
+    assert.deepStrictEqual(thinking.current, {
+      ordinal: 7,
+      type: "reasoning",
+      status: "running",
+      title: null,
+      startedAt: DateTime.formatIso(at(7)),
+      completedAt: null,
+      updatedAt: DateTime.formatIso(at(7)),
+      text: "Comparing API 8 fields",
+      streaming: true,
+    });
   }).pipe(Effect.provide(layer)),
 );
 
 it.effect("summarizes a thread with its project, and answers null for an unknown one", () =>
   Effect.gen(function* () {
     const t3 = yield* seed;
-    assert.equal(t3.apiVersion, 7);
+    assert.equal(t3.apiVersion, 8);
     const summary = yield* Effect.promise(() => t3.threads.get(threadId));
     assert.include(summary, {
       id: threadId,
@@ -306,7 +328,7 @@ it.effect("reads each thread's newest finished reply, cut to the characters aske
     yield* projections.apply(reply("report", 8, REPORT, false));
     yield* projections.apply(reply("streaming", 9, "下一趟還在寫", true));
 
-    assert.equal(t3.apiVersion, 7);
+    assert.equal(t3.apiVersion, 8);
     const replies = yield* Effect.promise(() =>
       t3.threads.latestReplies([threadId, "thread:missing"], { chars: 20 }),
     );

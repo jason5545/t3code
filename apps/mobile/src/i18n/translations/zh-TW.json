@@ -1041,6 +1041,7 @@
   "af11b6afd744089a": "{status, select, inProgress {正在請求關聯環境} completed {已請求關聯環境} failed {請求關聯環境失敗} declined {已拒絕請求關聯環境} stopped {已停止請求關聯環境} other {正在請求關聯環境}}",
   "78ce399d5ddd8c0d": "{status, select, inProgress {正在忘記已關聯的環境} completed {已忘記已關聯的環境} failed {忘記已關聯的環境失敗} declined {已拒絕忘記已關聯的環境} stopped {已停止忘記已關聯的環境} other {正在忘記已關聯的環境}}",
   "b32fb6580625fcb1": "{status, select, inProgress {正在更新環境偏好設定} completed {已更新環境偏好設定} failed {更新環境偏好設定失敗} declined {已拒絕更新環境偏好設定} stopped {已停止更新環境偏好設定} other {正在更新環境偏好設定}}",
+  "dbb8fb939c3245b6": "{status, select, inProgress {正在呼叫其他機器} completed {已呼叫其他機器} failed {呼叫其他機器失敗} declined {已拒絕呼叫其他機器} stopped {已停止呼叫其他機器} other {正在呼叫其他機器}}",
   "ac03ef3d24daa518": "{status, select, inProgress {正在讀取主題} completed {已讀取主題} failed {讀取主題失敗} declined {已拒絕讀取主題} stopped {已停止讀取主題} other {正在讀取主題}}",
   "6aba5ebcdb9df13d": "{status, select, inProgress {正在設定主題} completed {已設定主題} failed {設定主題失敗} declined {已拒絕設定主題} stopped {已停止設定主題} other {正在設定主題}}",
   "6a1fa31a97a17df5": "{status, select, inProgress {正在啟動專案對話} completed {已啟動專案對話} failed {啟動專案對話失敗} declined {已拒絕啟動專案對話} stopped {已停止啟動專案對話} other {正在啟動專案對話}}",

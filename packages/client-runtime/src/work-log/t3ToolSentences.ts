@@ -754,6 +754,14 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     },
   ],
   [
+    "Call\nCalling\nCalled\nanother machine",
+    {
+      detail: msg(
+        "{status, select, inProgress {Calling another machine} completed {Called another machine} failed {Failed to call another machine} declined {Declined to call another machine} stopped {Stopped calling another machine} other {Calling another machine}}",
+      ),
+    },
+  ],
+  [
     "Read\nReading\nRead\nthemes",
     {
       detail: msg(

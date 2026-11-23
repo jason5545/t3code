@@ -13,6 +13,7 @@ import {
 } from "@t3tools/contracts";
 import {
   EXTENSION_API_VERSION,
+  type ExtensionLiveActivity,
   type ExtensionReply,
   type ExtensionThreadSummary,
 } from "@t3tools/shared/extensionApi";
@@ -47,6 +48,7 @@ import {
   planReplyReads,
   readExtensionName,
   readRequestResponse,
+  summarizeLiveActivity,
   summarizePendingRequest,
   type ExtensionAction,
   type ExtensionPage,
@@ -169,6 +171,12 @@ export interface WebHostApi {
      * worktree from that branch instead of using the project folder.
      */
     readonly start: (input: ExtensionStartInput) => Promise<ThreadRef>;
+    /**
+     * Since API 8: live activity and reasoning stream of the thread's latest run, following the
+     * thread detail stream so reasoning text updates in real time on every environment. Pass null
+     * when a thread is not active.
+     */
+    readonly useActivity: (ref: ThreadRef | null) => ExtensionLiveActivity | null;
   };
   /** Since API 6: the projects of every connected environment, archived ones left out. */
   readonly projects: {
@@ -451,6 +459,33 @@ const NO_PENDING_REQUESTS = Atom.make<PendingThreadRequests | null>(null).pipe(
   Atom.withLabel("extension-no-pending-requests"),
 );
 
+const NO_LIVE_ACTIVITY = Atom.make<ExtensionLiveActivity | null>(null).pipe(
+  Atom.withLabel("extension-no-live-activity"),
+);
+
+const liveActivityAtomFamily = Atom.family((key: string) => {
+  const separator = key.indexOf("\u0000");
+  const ref = scopeThreadRef(
+    EnvironmentId.make(key.slice(0, separator)),
+    ThreadId.make(key.slice(separator + 1)),
+  );
+  let previous: ExtensionLiveActivity | null = null;
+  return Atom.make((get): ExtensionLiveActivity | null => {
+    const thread = get(environmentThreadDetails.threadAtom(ref));
+    previous = summarizeLiveActivity(thread?.projection ?? null, previous);
+    return previous;
+  }).pipe(Atom.setIdleTTL(0), Atom.withLabel(`extension-live-activity:${key}`));
+});
+
+function useActivity(ref: ThreadRef | null): ExtensionLiveActivity | null {
+  const checked = ref === null ? null : readThreadRef(ref, "threads.useActivity()");
+  return useAtomValue(
+    checked === null
+      ? NO_LIVE_ACTIVITY
+      : liveActivityAtomFamily(`${checked.environmentId}\u0000${checked.threadId}`),
+  );
+}
+
 function useRequest(ref: ThreadRef | null): ExtensionPendingRequest | null {
   const checked = ref === null ? null : readThreadRef(ref, "threads.useRequest()");
   const pending = useAtomValue(
@@ -542,6 +577,7 @@ const webHostApi: WebHostApi = Object.freeze({
     useSettle,
     useStartOptions,
     start: startExtensionThread,
+    useActivity,
   }),
   projects: Object.freeze({ use: useExtensionProjects }),
   pages: Object.freeze({ useOpen: useOpenPage, useAvailable: usePagesAvailable }),

@@ -2,6 +2,8 @@ import { arrayElementsEqual } from "@t3tools/client-runtime/state/entities";
 import type { PendingThreadRequests } from "@t3tools/client-runtime/state/thread-requests";
 import type {
   OrchestrationV2ShellSnapshot,
+  OrchestrationV2ThreadProjection,
+  OrchestrationV2TurnItem,
   ProviderApprovalDecision,
   ProviderApprovalOption,
 } from "@t3tools/contracts";
@@ -10,9 +12,13 @@ import {
   REPLY_MAX_THREADS,
   REPLY_PREVIEW_CHARS,
   summarizeThreadShell,
+  type ExtensionLiveActivity,
+  type ExtensionLiveReasoning,
+  type ExtensionLiveStep,
   type ExtensionProjectInfo,
   type ExtensionThreadSummary,
 } from "@t3tools/shared/extensionApi";
+import * as DateTime from "effect/DateTime";
 
 const EMPTY: ReadonlyArray<ExtensionThreadSummary> = [];
 
@@ -274,4 +280,177 @@ export function readRequestResponse(
     }
   }
   return { type: "user_input", answers };
+}
+
+const ACTIVE_STEP_STATUSES = new Set(["pending", "running", "waiting"]);
+const TOOL_STEP_TYPES = new Set([
+  "command_execution",
+  "file_change",
+  "dynamic_tool",
+  "file_search",
+  "web_search",
+  "subagent",
+]);
+
+const isoOrNull = (value: DateTime.Utc | null | undefined) =>
+  value === null || value === undefined ? null : DateTime.formatIso(value);
+
+function describeLiveStep(item: OrchestrationV2TurnItem): ExtensionLiveStep {
+  let kind: string = item.type;
+  let text = "";
+  switch (item.type) {
+    case "command_execution":
+      kind = "command";
+      text = (item.input || item.title || "").slice(0, 200);
+      break;
+    case "file_change":
+      kind = "file";
+      text = item.fileName || "";
+      break;
+    case "dynamic_tool":
+      kind = "tool";
+      text = (item.toolName || "tool").replace("mcp__", "").replace("__", ":");
+      break;
+    case "file_search":
+      kind = "file_search";
+      text = item.pattern || item.title || "";
+      break;
+    case "web_search":
+      kind = "web_search";
+      text = item.patterns?.join(", ") || item.title || "";
+      break;
+    case "subagent":
+      kind = "subagent";
+      text = item.title || "";
+      break;
+    case "assistant_message":
+    case "reasoning":
+      text = "";
+      break;
+    default:
+      text = item.title || "";
+      break;
+  }
+  return {
+    id: item.id,
+    ordinal: item.ordinal,
+    kind,
+    text,
+    status: item.status,
+    failed: item.status === "failed",
+    at: isoOrNull(item.completedAt) ?? isoOrNull(item.updatedAt),
+  };
+}
+
+const sameLiveStep = (left: ExtensionLiveStep | null, right: ExtensionLiveStep | null): boolean =>
+  left === right ||
+  (left !== null &&
+    right !== null &&
+    left.id === right.id &&
+    left.ordinal === right.ordinal &&
+    left.kind === right.kind &&
+    left.text === right.text &&
+    left.status === right.status &&
+    left.failed === right.failed &&
+    sameSecond(left.at, right.at));
+
+const sameLiveReasoning = (
+  left: ExtensionLiveReasoning | null,
+  right: ExtensionLiveReasoning | null,
+): boolean =>
+  left === right ||
+  (left !== null &&
+    right !== null &&
+    left.id === right.id &&
+    left.ordinal === right.ordinal &&
+    left.text === right.text &&
+    left.streaming === right.streaming &&
+    left.status === right.status);
+
+const sameSecond = (left: string | null, right: string | null): boolean =>
+  left === right || (left !== null && right !== null && left.slice(0, 19) === right.slice(0, 19));
+
+/**
+ * Since API 8: live activity of a thread's latest run for `t3.threads.useActivity`.
+ * Adjacent reasoning items in the same thinking span are joined so multi-part streams stay whole.
+ */
+export function summarizeLiveActivity(
+  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "turnItems"> | null,
+  previous: ExtensionLiveActivity | null,
+): ExtensionLiveActivity | null {
+  if (projection === null || projection.runs.length === 0) return null;
+  let latestRun = projection.runs[0]!;
+  for (let index = 1; index < projection.runs.length; index += 1) {
+    const candidate = projection.runs[index]!;
+    if (candidate.ordinal >= latestRun.ordinal) latestRun = candidate;
+  }
+  const runItems = projection.turnItems
+    .filter((item) => item.runId === latestRun.id)
+    .toSorted((left, right) => left.ordinal - right.ordinal);
+
+  let currentItem: OrchestrationV2TurnItem | null = null;
+  let lastToolItem: OrchestrationV2TurnItem | null = null;
+  let lastActivityAt: string | null = null;
+  type ReasoningItem = Extract<OrchestrationV2TurnItem, { readonly type: "reasoning" }>;
+  const reasoningGroups: Array<Array<ReasoningItem>> = [];
+  let openGroup: Array<ReasoningItem> | null = null;
+
+  for (const item of runItems) {
+    const updated = DateTime.formatIso(item.updatedAt);
+    if (lastActivityAt === null || updated > lastActivityAt) lastActivityAt = updated;
+    if (ACTIVE_STEP_STATUSES.has(item.status)) {
+      currentItem = item;
+    } else if (TOOL_STEP_TYPES.has(item.type)) {
+      lastToolItem = item;
+    }
+    if (item.type === "reasoning") {
+      if (openGroup === null) {
+        openGroup = [item];
+        reasoningGroups.push(openGroup);
+      } else {
+        openGroup.push(item);
+      }
+    } else if (TOOL_STEP_TYPES.has(item.type) || item.type === "assistant_message") {
+      openGroup = null;
+    }
+  }
+
+  let reasoning: ExtensionLiveReasoning | null = null;
+  for (let index = reasoningGroups.length - 1; index >= 0; index -= 1) {
+    const group = reasoningGroups[index]!;
+    const streaming = group.some((item) => item.streaming || item.status === "running");
+    const parts = group.map((item) => item.text.trim()).filter((part) => part !== "");
+    if (parts.length === 0 && !streaming) continue;
+    const tail = group.at(-1)!;
+    reasoning = {
+      id: tail.id,
+      ordinal: tail.ordinal,
+      text: parts.join("\n\n"),
+      streaming,
+      status: tail.status,
+      updatedAt: DateTime.formatIso(tail.updatedAt),
+    };
+    break;
+  }
+
+  const next: ExtensionLiveActivity = {
+    runId: latestRun.id,
+    status: latestRun.status,
+    current: currentItem === null ? null : describeLiveStep(currentItem),
+    last: lastToolItem === null ? null : describeLiveStep(lastToolItem),
+    reasoning,
+    lastActivityAt,
+  };
+  if (
+    previous !== null &&
+    previous.runId === next.runId &&
+    previous.status === next.status &&
+    sameLiveStep(previous.current, next.current) &&
+    sameLiveStep(previous.last, next.last) &&
+    sameLiveReasoning(previous.reasoning, next.reasoning) &&
+    sameSecond(previous.lastActivityAt, next.lastActivityAt)
+  ) {
+    return previous;
+  }
+  return next;
 }

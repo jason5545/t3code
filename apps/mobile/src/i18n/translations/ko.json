@@ -1041,6 +1041,7 @@
   "af11b6afd744089a": "{status, select, inProgress {환경 연결 요청 중} completed {환경 연결 요청 완료} failed {환경 연결 요청 실패} declined {환경 연결 요청 거부됨} stopped {환경 연결 요청 중지됨} other {환경 연결 요청 중}}",
   "78ce399d5ddd8c0d": "{status, select, inProgress {연결된 환경 삭제 중} completed {연결된 환경 삭제 완료} failed {연결된 환경 삭제 실패} declined {연결된 환경 삭제 거부됨} stopped {연결된 환경 삭제 중지됨} other {연결된 환경 삭제 중}}",
   "b32fb6580625fcb1": "{status, select, inProgress {환경 기본 설정 업데이트 중} completed {환경 기본 설정 업데이트 완료} failed {환경 기본 설정 업데이트 실패} declined {환경 기본 설정 업데이트 거부됨} stopped {환경 기본 설정 업데이트 중지됨} other {환경 기본 설정 업데이트 중}}",
+  "dbb8fb939c3245b6": "{status, select, inProgress {Calling another machine} completed {Called another machine} failed {Failed to call another machine} declined {Declined to call another machine} stopped {Stopped calling another machine} other {Calling another machine}}",
   "ac03ef3d24daa518": "{status, select, inProgress {테마 읽기 중} completed {테마 읽기 완료} failed {테마 읽기 실패} declined {테마 읽기 거부됨} stopped {테마 읽기 중지됨} other {테마 읽기 중}}",
   "6aba5ebcdb9df13d": "{status, select, inProgress {테마 설정 중} completed {테마 설정 완료} failed {테마 설정 실패} declined {테마 설정 거부됨} stopped {테마 설정 중지됨} other {테마 설정 중}}",
   "6a1fa31a97a17df5": "{status, select, inProgress {프로젝트 스레드 시작 중} completed {프로젝트 스레드 시작 완료} failed {프로젝트 스레드 시작 실패} declined {프로젝트 스레드 시작 거부됨} stopped {프로젝트 스레드 시작 중지됨} other {프로젝트 스레드 시작 중}}",

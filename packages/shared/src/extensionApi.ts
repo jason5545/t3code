@@ -7,12 +7,10 @@ import * as DateTime from "effect/DateTime";
  * a server is older. Upstream's types stay behind it, so an upstream change is absorbed here.
  */
 /**
- * 3 added web's `pages`, `actions`, `navigation`, `shortcuts`, `StatusNotices`. 4 added replies,
- * `threads.useRequest`, `threads.respond`, `pendingRequest.id` and `CurrentPage`'s `composer`.
- * 5 added web's `threads.useSettle`; 6 `projects.use`, `threads.useStartOptions`, `threads.start`.
- * 7 added web's `components.ModelPicker`.
+ * 3: pages/actions/navigation/shortcuts/StatusNotices. 4: replies/requests/composer.
+ * 5: settle. 6: projects/start. 7: ModelPicker. 8: live activity & reasoning text/streaming.
  */
-export const EXTENSION_API_VERSION = 7;
+export const EXTENSION_API_VERSION = 8;
 
 /** Since API 4: a reply's first characters unless the caller asks for more. */
 export const REPLY_PREVIEW_CHARS = 600;
@@ -213,6 +211,41 @@ export interface ExtensionActivityItem {
   readonly file?: string;
   /** dynamic_tool: the tool and its input, every string cut to 1,000 characters; null over 256 KiB. */
   readonly tool?: { readonly name: string | null; readonly input: unknown };
+  /** Since API 8, reasoning: the thought text, cut to 32 KiB. */
+  readonly text?: string;
+  /** Since API 8, reasoning: whether text is still streaming. */
+  readonly streaming?: boolean;
+}
+
+/** Since API 8: one live step of a run, as `t3.threads.useActivity` returns it. */
+export interface ExtensionLiveStep {
+  readonly id: string;
+  readonly ordinal: number;
+  readonly kind: string;
+  readonly text: string;
+  readonly status: string;
+  readonly failed: boolean;
+  readonly at: string | null;
+}
+
+/** Since API 8: the newest reasoning segment of a run, streaming live. */
+export interface ExtensionLiveReasoning {
+  readonly id: string;
+  readonly ordinal: number;
+  readonly text: string;
+  readonly streaming: boolean;
+  readonly status: string;
+  readonly updatedAt: string;
+}
+
+/** Since API 8: live activity of a thread's latest run, streamed over the thread detail. */
+export interface ExtensionLiveActivity {
+  readonly runId: string;
+  readonly status: string;
+  readonly current: ExtensionLiveStep | null;
+  readonly last: ExtensionLiveStep | null;
+  readonly reasoning: ExtensionLiveReasoning | null;
+  readonly lastActivityAt: string | null;
 }
 
 export interface ExtensionRunActivity {
