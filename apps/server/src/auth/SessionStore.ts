@@ -435,6 +435,15 @@ export class SessionStore extends Context.Service<
       SessionCredentialError | ServerAuthInvalidCredentialError | ServerAuthInternalError
     >;
     readonly verify: (token: string) => Effect.Effect<VerifiedSession, SessionCredentialError>;
+    /**
+     * Moves a live session's expiry to `expiresAt` unless it is already within `step` of it, and
+     * returns the expiry it now has. None when it is revoked, expired or missing.
+     */
+    readonly extend: (
+      sessionId: AuthSessionId,
+      expiresAt: DateTime.Utc,
+      step: Duration.Duration,
+    ) => Effect.Effect<Option.Option<DateTime.Utc>, SessionCredentialInternalError>;
     readonly issueWebSocketToken: (
       sessionId: AuthSessionId,
       input?: {
@@ -929,6 +938,36 @@ const make = Effect.gen(function* () {
     },
   );
 
+  const extend: SessionStore["Service"]["extend"] = Effect.fn("SessionStore.extend")(
+    function* (sessionId, expiresAt, step) {
+      const now = yield* DateTime.now;
+      // The step is checked in the update, so of two uses that read the same expiry one writes.
+      const extended = yield* authSessions.extend({
+        sessionId,
+        expiresAt,
+        now,
+        onlyIfExpiresBy: DateTime.subtract(expiresAt, { milliseconds: Duration.toMillis(step) }),
+      });
+      if (!extended) {
+        const row = yield* authSessions.getById({ sessionId });
+        return Option.filter(
+          Option.map(row, (current) => current.expiresAt),
+          (current) =>
+            Option.exists(row, (session) => session.revokedAt === null) &&
+            DateTime.isGreaterThan(current, now),
+        );
+      }
+      const session = yield* loadActiveSession(sessionId);
+      if (Option.isSome(session)) yield* emitUpsert(session.value);
+      return Option.some(expiresAt);
+    },
+    (effect, sessionId) =>
+      Effect.mapError(
+        effect,
+        (cause) => new SessionCredentialVerificationError({ sessionId, cause }),
+      ),
+  );
+
   const renew: SessionStore["Service"]["renew"] = Effect.fn("SessionStore.renew")(
     function* (token, input) {
       const [encodedPayload, signature] = token.split(".");
@@ -1230,9 +1269,19 @@ const make = Effect.gen(function* () {
       Effect.gen(function* () {
         // Subscribe before reading: revocation can race with the WebSocket upgrade.
         const subscription = yield* PubSub.subscribe(changesPubSub);
-        // Fork patch 6 renews only non-DPoP sessions; DPoP sockets follow upstream's
-        // successor chain below.
-        if (proofKeyThumbprint === undefined) {
+        // Fork patch 6 renews only non-DPoP sessions; DPoP sockets, and media tickets of a
+        // DPoP session, follow upstream's successor chain below.
+        const storedProofKey =
+          proofKeyThumbprint === undefined
+            ? yield* authSessions
+                .getProofKeyThumbprint({ sessionId })
+                .pipe(
+                  Effect.mapError(
+                    (cause) => new SessionCredentialVerificationError({ sessionId, cause }),
+                  ),
+                )
+            : Option.none();
+        if (proofKeyThumbprint === undefined && Option.isNone(storedProofKey)) {
           const row = yield* authSessions
             .getById({ sessionId })
             .pipe(
@@ -1347,6 +1396,7 @@ const make = Effect.gen(function* () {
     legacyCookieName,
     issue,
     renew,
+    extend,
     verify,
     issueWebSocketToken,
     verifyWebSocketToken,

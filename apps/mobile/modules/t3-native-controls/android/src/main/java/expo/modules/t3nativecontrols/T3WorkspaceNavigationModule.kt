@@ -435,7 +435,7 @@ class T3WorkspaceNavigationView(
   }
 
   private fun expandedTabTitle(tab: String) =
-    if (tab == "pullRequests") zh("Pull Requests", "提取請求") else tabTitle(tab)
+    if (tab == "pullRequests") zh("Pull requests", "提取請求") else tabTitle(tab)
 
   @Composable
   private fun tabIconPainter(tab: String) = painterResource(

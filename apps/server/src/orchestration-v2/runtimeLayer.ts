@@ -9,6 +9,7 @@ import * as OrchestrationEventStore from "../persistence/OrchestrationEventStore
 import * as McpAppModelContext from "../mcpApps/McpAppModelContext.ts";
 import * as PreviewAgentActivity from "../preview/PreviewAgentActivity.ts";
 import * as McpAppRequests from "../mcpApps/McpAppRequests.ts";
+import * as McpSignIn from "../mcpApps/McpSignIn.ts";
 import * as ProviderSessionRuntime from "../persistence/ProviderSessionRuntime.ts";
 import * as TextGeneration from "../textGeneration/TextGeneration.ts";
 import * as ProviderAuthService from "../provider/ProviderAuthService.ts";
@@ -30,6 +31,7 @@ import * as EphemeralThreads from "./EphemeralThreads.ts";
 import * as ChildThreadArchive from "./ChildThreadArchive.ts";
 import * as EffectWorker from "./EffectWorker.ts";
 import * as EventSink from "./EventSink.ts";
+import * as ThreadViewers from "./ThreadViewers.ts";
 import * as EventStore from "./EventStore.ts";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as LegacyV1ThreadImporter from "./legacy/LegacyV1ThreadImporter.ts";
@@ -61,13 +63,21 @@ import * as ThreadForkService from "./ThreadForkService.ts";
 import * as TurnItemPositionStore from "./TurnItemPositionStore.ts";
 import * as ScheduledTaskService from "../scheduledTasks/ScheduledTaskService.ts";
 import * as SecretRequests from "../secrets/SecretRequests.ts";
+import * as FeedbackStore from "../feedback/FeedbackStore.ts";
+import * as WorkspaceFolders from "../workspace/WorkspaceFolders.ts";
+import * as TaskFolderStore from "../workspace/TaskFolderStore.ts";
 
 export const layerEventInfrastructure = Layer.mergeAll(
   OrchestrationEventStore.layer,
   OrchestrationCommandReceipts.layer,
 );
 
+const layerWorkspaceFoldersProvided = WorkspaceFolders.layer.pipe(
+  Layer.provide(Layer.merge(ProjectStore.layer, TaskFolderStore.layer)),
+);
+
 const layerRuntimePolicyProvided = RuntimePolicy.layerFromProjectStore.pipe(
+  Layer.provide(layerWorkspaceFoldersProvided),
   Layer.provide(ProjectStore.layer),
 );
 
@@ -88,7 +98,10 @@ const layerStores = Layer.mergeAll(
   TurnItemPositionStore.layer,
 );
 
-export const layerEventSink = EventSink.layerFromStores.pipe(Layer.provide(layerStores));
+// The server provides this same layer to thread subscriptions; memoized, they share one registry.
+export const layerEventSink = EventSink.layerFromStores.pipe(
+  Layer.provide(Layer.merge(layerStores, ThreadViewers.layer)),
+);
 const layerProjectionMaintenanceProvided = ProjectionMaintenance.layer.pipe(
   Layer.provide(layerStores),
 );
@@ -121,7 +134,7 @@ const layerProviderEventIngestorProvided = ProviderEventIngestor.layer.pipe(
 );
 
 const layerCheckpointServiceProvided = CheckpointService.layer.pipe(
-  Layer.provide(IdAllocator.layer),
+  Layer.provide(Layer.merge(IdAllocator.layer, layerWorkspaceFoldersProvided)),
 );
 const layerContextHandoffServiceProvided = ContextHandoffService.layer.pipe(
   Layer.provide(IdAllocator.layer),
@@ -218,6 +231,7 @@ const layerCheckpointCaptureServiceProvided = CheckpointCaptureService.layer.pip
       layerEventSink,
       IdAllocator.layer,
       ProjectionStore.layer,
+      ThreadCommandExecutor.layer,
     ),
   ),
 );
@@ -236,6 +250,7 @@ const layerOrchestratorProvided = Orchestrator.layer.pipe(
       layerContextHandoffServiceProvided,
       IdAllocator.layer,
       ProjectStore.layer,
+      TaskFolderStore.layer,
       ProviderAdapterRegistry.layerFromProviderInstanceRegistry,
       // Reuse the continuation worker's layer reference so memoization shares one request queue.
       ProviderContinuationRequests.layer,
@@ -306,6 +321,10 @@ const layerThreadLaunchProvided = ThreadLaunchService.layer.pipe(
   ),
 );
 const layerSecretRequestsProvided = SecretRequests.layer.pipe(
+  Layer.provide(layerThreadManagementProvided),
+);
+// Cards are shown from /mcp and answered over WebSocket; one instance serializes both.
+const layerFeedbackStoreProvided = FeedbackStore.layer.pipe(
   Layer.provide(layerThreadManagementProvided),
 );
 const layerScheduledTaskProvided = ScheduledTaskService.layer.pipe(
@@ -391,11 +410,16 @@ const layerMcpAppRequestsProvided = McpAppRequests.layer.pipe(
   ),
 );
 
+const layerMcpSignInProvided = McpSignIn.layer.pipe(
+  Layer.provide(Layer.merge(layerThreadManagementProvided, layerProviderSessionManagerProvided)),
+);
+
 export const layer = Layer.mergeAll(
   layerCommandOutputHubProvided,
   layerOrchestratorProvided,
   layerMcpAppRequestsProvided,
   layerEphemeralThreadsProvided,
+  layerMcpSignInProvided,
   layerThreadManagementProvided,
   layerEffectWorkerProvided,
   layerProviderSessionManagerProvided,
@@ -415,6 +439,7 @@ export const layerProduction = Layer.mergeAll(
   layerScheduledTaskProvided,
   layerScratchThreadPromotionProvided,
   layerSecretRequestsProvided,
+  layerFeedbackStoreProvided,
   GuestShareService.layer.pipe(
     Layer.provide(Layer.merge(layerOrchestratorProvided, layerCommandOutputHubProvided)),
   ),

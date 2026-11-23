@@ -346,7 +346,12 @@ const config: ExpoConfig = {
             },
             {
               fontFamily: "DMSans-Bold",
-              fontDefinitions: [{ path: dmSansFonts.bold, weight: 700 }],
+              // Android picks fallback glyphs (such as Vietnamese) at the requested weight, so bold text
+              // asks for 700; the 400 entry lets a relative bold step (Typeface.BOLD) land on 700 too.
+              fontDefinitions: [
+                { path: dmSansFonts.bold, weight: 400 },
+                { path: dmSansFonts.bold, weight: 700 },
+              ],
             },
           ],
         },
@@ -468,9 +473,6 @@ const config: ExpoConfig = {
     appVariant: APP_VARIANT,
     // Fork patch 7: throws on a malformed entry, so a bad value fails the build.
     tailnetEntryUrls: parseTailnetEntryUrls(repoEnv.T3CODE_MOBILE_TAILNET_ENTRY_URLS),
-    secretsFeatureEnabled: ["1", "true"].includes(
-      process.env.T3CODE_FEATURE_SECRETS?.trim().toLowerCase() ?? "",
-    ),
     iosPersonalTeamBuild: isIosPersonalTeamBuild,
     relay: {
       url: repoEnv.T3CODE_RELAY_URL ?? null,

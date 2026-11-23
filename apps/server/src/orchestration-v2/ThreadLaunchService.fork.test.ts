@@ -31,6 +31,7 @@ import * as ProviderRegistryMock from "../provider/testUtils/providerRegistryMoc
 import * as ServerSettings from "../serverSettings.ts";
 import * as TerminalManager from "../terminal/Manager.ts";
 import * as TextGeneration from "../textGeneration/TextGeneration.ts";
+import * as TaskFolders from "../workspace/TaskFolders.ts";
 import { CodexProviderCapabilitiesV2 } from "./Adapters/CodexAdapterV2.ts";
 import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as EffectOutbox from "./EffectOutbox.ts";
@@ -135,6 +136,7 @@ function makeHarness(scratchRoot: string, baseDir: string) {
     Layer.mock(TextGeneration.TextGeneration)({ generateThreadTitle }),
     layerSettings,
     ProviderRegistryMock.layer(),
+    Layer.mock(TaskFolders.TaskFolders)({ plan: () => Effect.succeed(null) }),
     Layer.mock(ManagedProjectFolders.ManagedProjectFolders)({
       namedProjectsRoot: "/projects",
       isScratchProject: (id) => Effect.succeed(id === projectId),

@@ -11,8 +11,8 @@ import {
   resolveSubagentMetadata,
   subagentDetailPreview,
 } from "@t3tools/client-runtime/state/subagent-display";
-import { REASONING_EFFORT_OPTION_IDS } from "@t3tools/client-runtime/state/thread-execution";
-import { getModelSelectionStringOptionValue, resolveSelectableModel } from "@t3tools/shared/model";
+import { readSelectedEffortValue } from "@t3tools/client-runtime/state/thread-execution";
+import { resolveSelectableModel } from "@t3tools/shared/model";
 import { getTraitsSpeedDisplay, TraitsSpeedIcon } from "./TraitsSpeed";
 import { useGT, useMessages } from "gt-react";
 import type { ReactNode } from "react";
@@ -80,16 +80,15 @@ export function SubagentTooltipContent(props: {
     childModel === modelSlug && childSelection?.instanceId === props.providerInstanceId
       ? childSelection
       : undefined;
-  const effortValue = REASONING_EFFORT_OPTION_IDS.map((id) =>
-    getModelSelectionStringOptionValue(matchingSelection, id),
-  ).find(Boolean);
+  const effortDescriptors = providerModel?.capabilities?.optionDescriptors;
+  const effortValue = readSelectedEffortValue(matchingSelection, effortDescriptors);
   const effort = effortValue
     ? localizeProviderOptionLabel(
-        providerModel?.capabilities?.optionDescriptors
+        effortDescriptors
           ?.flatMap((descriptor) => (descriptor.type === "select" ? descriptor.options : []))
           .find((option) => option.id === effortValue)?.label ?? effortValue,
       )
-    : undefined;
+    : null;
   const speed = provider
     ? providerModel?.capabilities?.optionDescriptors
         ?.map((descriptor) => {

@@ -100,6 +100,7 @@ export const authorizationServerMetadata = (
   authorization_endpoint: `${urls.issuer}/oauth/mcp/authorize`,
   token_endpoint: `${urls.issuer}/oauth/mcp/token`,
   registration_endpoint: `${urls.issuer}/oauth/mcp/register`,
+  revocation_endpoint: `${urls.issuer}/oauth/mcp/revoke`,
   response_types_supported: ["code"],
   grant_types_supported: ["authorization_code"],
   code_challenge_methods_supported: ["S256"],
@@ -361,7 +362,7 @@ const make = Effect.gen(function* () {
         return yield* new AuthMcpRegistrationError({
           error: "invalid_client_metadata",
           error_description:
-            "Linked environments is off on that machine. Turn it on in its Settings → Labs.",
+            'Linked environments is off on that machine. Turn it on in its Settings → Labs, or without a desktop, set "linkedEnvironmentsEnabled": true in userdata/settings.json in its T3 home (~/.t3 by default).',
         });
       }
       const clientId = yield* signClientId(name, redirectUris, peerLink);
@@ -685,7 +686,7 @@ export const layerMcpClientAuthenticator = Layer.effect(
         peerLink: false,
         client: deriveAuthClientMetadata({ request }),
       });
-      const session = {
+      const session: EnvironmentAuth.McpClientSession & { readonly expiresAtMs: number } = {
         sessionId: issued.sessionId,
         label,
         access,
@@ -693,7 +694,7 @@ export const layerMcpClientAuthenticator = Layer.effect(
         expiresAtMs: issued.expiresAt.epochMilliseconds,
       };
       yield* Ref.update(ownerSessions, (current) => new Map(current).set(subject, session));
-      return session satisfies EnvironmentAuth.McpClientSession;
+      return session;
     });
 
     const hostedAppUrl = yield* hostedAppUrlConfig.pipe(
@@ -721,6 +722,7 @@ export const layerMcpClientAuthenticator = Layer.effect(
                     label: client.label,
                     access: client.access,
                     linked: client.peerLink,
+                    linkExpiresAt: client.linkExpiresAt,
                     ...(client.peerLink ? {} : { hostedAppUrl }),
                   },
                   capabilities: new Set<McpInvocationContext.McpCapability>([
