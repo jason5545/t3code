@@ -273,7 +273,9 @@
     "brew upgrade --cask claude-code",
     "brew uninstall --cask claude-code && brew install --cask claude-code@latest",
     "codex",
-    "Run command"
+    "Run command",
+    "windows-{codePage}",
+    "search"
   ],
   "files": {
     "apps/web/src/components/settings/VoiceSettingsPanel.tsx": ["sorry"],

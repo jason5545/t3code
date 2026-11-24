@@ -1,8 +1,8 @@
 // @effect-diagnostics nodeBuiltinImport:off globalConsole:off - A command-line generator run with node.
 /**
- * Writes gt-react's zh-TW catalogs from upstream's `en.json`, with Chinese from `gtTranslations.json`
- * (keyed by the English, JSX parts by their JSON), then the build plugin's catalog. `--fill` first
- * adds what is missing from upstream's Simplified `zh` through OpenCC `s2twp` and TERMS; review it.
+ * Writes gt-react's zh-TW catalogs from upstream's `en.json` and the fork's translation files.
+ * `--fill` drafts missing entries from upstream's `zh` into `gtTranslations.pending.json`, which no
+ * catalog reads; `--accept` moves them in once each has been read against its English.
  */
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
@@ -10,6 +10,7 @@ import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
 import { catalogFile } from "./extract.ts";
+import { mainlandWording, toTaiwanWording } from "./zhTwWording.ts";
 
 type GtEntry = string | ReadonlyArray<unknown>;
 
@@ -19,6 +20,9 @@ const repoRoot = NodePath.resolve(
 );
 const GT_APPS = ["web", "mobile", "desktop"] as const;
 const gtTranslationsFile = NodePath.join(repoRoot, "scripts/i18n/gtTranslations.json");
+/** Chinese for one gt hash (or `<app>:<hash>`), where the same English means different things. */
+export const gtByHashFile = NodePath.join(repoRoot, "scripts/i18n/gtTranslationsByHash.json");
+export const gtPendingFile = NodePath.join(repoRoot, "scripts/i18n/gtTranslations.pending.json");
 const readJson = <T>(file: string): T => JSON.parse(NodeFS.readFileSync(file, "utf8")) as T;
 const translationsFile = (app: (typeof GT_APPS)[number], locale: string) =>
   NodePath.join(repoRoot, "apps", app, "src/i18n/translations", `${locale}.json`);
@@ -170,7 +174,7 @@ function toTaiwanChinese(entries: ReadonlyArray<unknown>): ReadonlyArray<unknown
   })
     .split("\n")
     .slice(0, strings.length)
-    .map((line) => applyTerms(JSON.parse(line) as string));
+    .map((line) => toTaiwanWording(applyTerms(JSON.parse(line) as string)));
   let index = 0;
   return entries.map((entry) => replaceStrings(entry, () => converted[index++] ?? ""));
 }
@@ -178,7 +182,10 @@ function toTaiwanChinese(entries: ReadonlyArray<unknown>): ReadonlyArray<unknown
 export function buildGtCatalogs() {
   const forkCatalog = readJson<Record<string, string>>(catalogFile);
   const gtTranslations = readJson<Record<string, GtEntry>>(gtTranslationsFile);
-  const translate = (english: GtEntry): GtEntry | undefined => {
+  const byHash = readJson<Record<string, GtEntry>>(gtByHashFile);
+  const translate = (app: string, english: GtEntry, hash: string): GtEntry | undefined => {
+    const contextual = byHash[`${app}:${hash}`] ?? byHash[hash];
+    if (contextual !== undefined) return contextual;
     const explicit = gtTranslations[entryKey(english)];
     if (explicit !== undefined) return explicit;
     if (typeof english !== "string") return undefined;
@@ -192,7 +199,7 @@ export function buildGtCatalogs() {
     for (const [hash, english] of Object.entries(
       readJson<Record<string, GtEntry>>(translationsFile(app, "en")),
     )) {
-      const translated = translate(english);
+      const translated = translate(app, english, hash);
       if (translated === undefined) {
         missing.push(english);
         missingHashes.push(hash);
@@ -209,27 +216,58 @@ export function buildGtCatalogs() {
 }
 
 function fill() {
-  const gtTranslations = readJson<Record<string, GtEntry>>(gtTranslationsFile);
+  const drafts = NodeFS.existsSync(gtPendingFile)
+    ? readJson<Record<string, GtEntry>>(gtPendingFile)
+    : {};
   const pending = new Map<string, unknown>();
   for (const { app, missing, missingHashes } of buildGtCatalogs()) {
     const simplified = readJson<Record<string, unknown>>(translationsFile(app, "zh"));
     missing.forEach((english, index) => {
       const source = simplified[missingHashes[index] ?? ""];
-      if (source !== undefined) pending.set(entryKey(english), source);
+      if (source !== undefined && !(entryKey(english) in drafts))
+        pending.set(entryKey(english), source);
     });
   }
   const converted = toTaiwanChinese([...pending.values()]);
   [...pending.keys()].forEach((key, index) => {
-    gtTranslations[key] = converted[index] as GtEntry;
+    drafts[key] = converted[index] as GtEntry;
   });
+  NodeFS.writeFileSync(gtPendingFile, `${JSON.stringify(drafts, null, 2)}\n`);
+  console.log(
+    `gtTranslations.pending.json: ${pending.size} drafted from upstream's zh; read each one before --accept`,
+  );
+}
+
+/** Moves the reviewed drafts into `gtTranslations.json`, refusing any that still read as mainland. */
+function accept() {
+  const drafts = readJson<Record<string, GtEntry>>(gtPendingFile);
+  const gtTranslations = readJson<Record<string, GtEntry>>(gtTranslationsFile);
+  const refused = Object.entries(drafts).flatMap(([english, chinese]) => {
+    const strings: string[] = [];
+    collectStrings(chinese, strings);
+    const words = mainlandWording(strings.join("\n"));
+    return words.length > 0 ? [`  ${JSON.stringify(english)}: ${words.join(", ")}`] : [];
+  });
+  if (refused.length > 0) {
+    console.log(`gtTranslations.pending.json: ${refused.length} drafts still use mainland wording`);
+    for (const line of refused) console.log(line);
+    process.exit(1);
+  }
+  Object.assign(gtTranslations, drafts);
   NodeFS.writeFileSync(gtTranslationsFile, `${JSON.stringify(gtTranslations, null, 2)}\n`);
-  console.log(`gtTranslations.json: ${pending.size} added from upstream's zh`);
+  NodeFS.rmSync(gtPendingFile);
+  console.log(`gtTranslations.json: ${Object.keys(drafts).length} reviewed drafts accepted`);
 }
 
 function main() {
   if (process.argv.includes("--fill")) fill();
+  if (process.argv.includes("--accept")) accept();
   let incomplete = false;
-  const written = [gtTranslationsFile];
+  const written = [
+    gtTranslationsFile,
+    gtByHashFile,
+    ...(NodeFS.existsSync(gtPendingFile) ? [gtPendingFile] : []),
+  ];
   for (const { file, contents, missing } of buildGtCatalogs()) {
     NodeFS.writeFileSync(file, contents);
     written.push(file);

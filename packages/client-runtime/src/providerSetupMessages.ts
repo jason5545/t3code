@@ -140,7 +140,7 @@ const EXACT: Readonly<Record<string, string>> = {
     "無法為這台 Mac 準備 Antigravity 執行環境，請確認 codesign 可以使用。",
   "Checking the downloaded runtime.": "正在檢查下載的執行環境。",
   "Another installation published a different Antigravity release.":
-    "另一個安裝程序發布了不同的 Antigravity 版本。",
+    "另一個安裝程式發布了不同的 Antigravity 版本。",
   "Could not publish the Antigravity runtime. The previous release is unchanged. Try again.":
     "無法發布 Antigravity 執行環境，先前的版本沒有變動。請再試一次。",
   "Could not install Antigravity. Check free disk space and directory access, then try again.":
@@ -159,7 +159,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "A provider instance has a custom path inside this managed runtime. Clear that path before removing it.":
     "有供應商執行個體的自訂路徑位在這個受管理的執行環境裡，請先清除該路徑再移除。",
   "Could not remove the managed Antigravity runtime. Check for open processes and try again.":
-    "無法移除受管理的 Antigravity 執行環境，請檢查是否有開啟中的程序，再試一次。",
+    "無法移除受管理的 Antigravity 執行環境，請檢查是否有開啟中的處理程序，再試一次。",
   "The managed Antigravity runtime is incomplete. Remove it and reinstall.":
     "受管理的 Antigravity 執行環境不完整，請移除後重新安裝。",
 
@@ -200,7 +200,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "A provider instance uses a custom path inside managed Codex. Clear that path before removing it.":
     "有供應商執行個體使用受管理 Codex 裡的自訂路徑，請先清除該路徑再移除。",
   "Could not remove the managed Codex runtime. Check for open processes and try again.":
-    "無法移除受管理的 Codex 執行環境，請檢查是否有開啟中的程序，再試一次。",
+    "無法移除受管理的 Codex 執行環境，請檢查是否有開啟中的處理程序，再試一次。",
   "The managed Codex runtime is incomplete. Remove it and reinstall.":
     "受管理的 Codex 執行環境不完整，請移除後重新安裝。",
   "Could not read provider installation settings.": "無法讀取供應商安裝設定。",
@@ -221,7 +221,7 @@ const EXACT: Readonly<Record<string, string>> = {
     "檢查 Codex 時 ChatGPT 連線變更了，請重試。",
   "Could not prepare managed Codex.": "無法準備受管理的 Codex。",
   "Could not prepare the private managed Codex token listener. Restart T3 and retry.":
-    "無法準備受管理 Codex 的私有權杖監聽程序，請重新啟動 T3 再試一次。",
+    "無法準備受管理 Codex 的私有權杖監聽程式，請重新啟動 T3 再試一次。",
   "Set up managed Codex before starting a session.": "開始工作階段前，請先設定受管理的 Codex。",
   "Could not prepare the managed Codex runtime.": "無法準備受管理的 Codex 執行環境。",
 
@@ -269,7 +269,7 @@ const EXACT: Readonly<Record<string, string>> = {
 
   // Antigravity usage limits
   "Sign in with Google to see Antigravity limits.":
-    "使用 Google 登入後才能查看 Antigravity 用量上限。",
+    "使用 Google 登入後才能檢視 Antigravity 用量上限。",
   "Antigravity did not return usable quota information.": "Antigravity 沒有回傳可用的配額資訊。",
   "Could not read Antigravity limits. Refresh provider status to retry.":
     "無法讀取 Antigravity 用量上限，請重新整理供應商狀態再試。",

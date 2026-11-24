@@ -3,7 +3,9 @@ import * as NodeFS from "node:fs";
 
 import { expect, it } from "vite-plus/test";
 
-import { buildGtCatalogs, collectStrings } from "./gtCatalog.ts";
+import { catalogFile } from "./extract.ts";
+import { buildGtCatalogs, collectStrings, gtPendingFile } from "./gtCatalog.ts";
+import { mainlandWording } from "./zhTwWording.ts";
 
 // Fails after a sync in which upstream wrapped more text in gt-react: add the Chinese to
 // `gtTranslations.json` or the catalog, then run `node scripts/i18n/gtCatalog.ts`.
@@ -53,4 +55,42 @@ it("--fill converts the text inside plural branches", () => {
     strings,
   );
   expect(strings).toEqual(["已打开 1 个标签页", " 个标签页"]);
+});
+
+// On 2026-11-20 `--fill` wrote 5,331 unreviewed OpenCC drafts into the shipped translations, and
+// 不可用, 批准, 當前 and the like reached upstream. Drafts wait in the pending file.
+it("no machine draft is left unreviewed", () => {
+  expect(NodeFS.existsSync(gtPendingFile)).toBe(false);
+});
+
+it("shipped zh-TW text uses Taiwan wording", () => {
+  const sources = [
+    new URL("gtTranslations.json", import.meta.url),
+    new URL("gtTranslationsByHash.json", import.meta.url),
+    new URL(catalogFile, "file://"),
+    ...["web", "mobile", "desktop"].map(
+      (app) => new URL(`../../apps/${app}/src/i18n/translations/zh-TW.json`, import.meta.url),
+    ),
+  ];
+  const found: string[] = [];
+  for (const source of sources) {
+    const catalog = JSON.parse(NodeFS.readFileSync(source, "utf8")) as Record<string, unknown>;
+    for (const [key, entry] of Object.entries(catalog)) {
+      const strings: string[] = [];
+      collectStrings(entry, strings);
+      const words = mainlandWording(strings.join("\n"));
+      if (words.length > 0)
+        found.push(`${source.pathname.split("/").slice(-3).join("/")} ${key}: ${words.join(", ")}`);
+    }
+  }
+  for (const file of [
+    "packages/shared/src/t3McpToolText.ts",
+    "packages/client-runtime/src/providerSetupMessages.ts",
+  ]) {
+    const words = mainlandWording(
+      NodeFS.readFileSync(new URL(`../../${file}`, import.meta.url), "utf8"),
+    );
+    if (words.length > 0) found.push(`${file}: ${words.join(", ")}`);
+  }
+  expect(found).toEqual([]);
 });

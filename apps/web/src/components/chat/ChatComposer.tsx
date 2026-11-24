@@ -1019,15 +1019,14 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   // Called before the derivation below: a hook between it and its uses stops React Compiler
   // from caching the mode options, and the footer then re-renders on every keystroke.
   const managedPolicy = useManagedPolicy(environmentId);
-  const { modes: compatibleRuntimeModes, mode: resolvedRuntimeMode } =
-    resolveCompatibleRuntimeMode(
-      runtimeMode,
-      draftSupportedRuntimeModes(
-        selectedProviderEntry?.snapshot.supportedRuntimeModes,
-        multipleModelSelections,
-        providerStatuses,
-      ),
-    );
+  const { modes: compatibleRuntimeModes, mode: resolvedRuntimeMode } = resolveCompatibleRuntimeMode(
+    runtimeMode,
+    draftSupportedRuntimeModes(
+      selectedProviderEntry?.snapshot.supportedRuntimeModes,
+      multipleModelSelections,
+      providerStatuses,
+    ),
+  );
   // Modes above an administrator's ceiling stay listed, disabled with the reason.
   const providerRuntimeModeOptions = resolveRuntimeModeOptions(
     compatibleRuntimeModes,
