@@ -3152,7 +3152,7 @@
   "8e64d98f747bf650": "{count, plural, other {{count} 項檢查失敗}}",
   "ff4514103a353d8e": "{count, plural, other {{count} 個需要關注}}",
   "078bb63ea2f3ee40": "檢查需要注意",
-  "fd63b391898889f9": "{count, plural, other {{count} 個等待操作}}",
+  "fd63b391898889f9": "{count, plural, other {{count} 個等待處理}}",
   "a39948e68089494f": "{count, plural, other {{count} 個待定}}",
   "a764ad3d20c73c61": "已透過 {passed}/{total}",
   "a7c33927d8e6d14d": "所有檢查皆通過",
