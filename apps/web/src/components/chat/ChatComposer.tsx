@@ -6,6 +6,7 @@ import type { ComposerAttachmentInsertion } from "../composerAttachmentInsertion
 import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../lib/desktopPasteAsText";
 import { BackgroundThreadContext, HiddenThreadContext } from "./backgroundThread";
 import {
+  draftSupportedRuntimeModes,
   resolveCompatibleRuntimeMode,
   runtimeModeConfig,
   resolveRuntimeModeOptions,
@@ -1018,10 +1019,15 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   // Called before the derivation below: a hook between it and its uses stops React Compiler
   // from caching the mode options, and the footer then re-renders on every keystroke.
   const managedPolicy = useManagedPolicy(environmentId);
-  const { modes: compatibleRuntimeModes, mode: resolvedRuntimeMode } = resolveCompatibleRuntimeMode(
-    runtimeMode,
-    selectedProviderEntry?.snapshot.supportedRuntimeModes,
-  );
+  const { modes: compatibleRuntimeModes, mode: resolvedRuntimeMode } =
+    resolveCompatibleRuntimeMode(
+      runtimeMode,
+      draftSupportedRuntimeModes(
+        selectedProviderEntry?.snapshot.supportedRuntimeModes,
+        multipleModelSelections,
+        providerStatuses,
+      ),
+    );
   // Modes above an administrator's ceiling stay listed, disabled with the reason.
   const providerRuntimeModeOptions = resolveRuntimeModeOptions(
     compatibleRuntimeModes,
@@ -2713,9 +2719,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       <ComposerControlsBar
         environmentId={environmentId}
         workspaceCwd={gitCwd}
-        routeKind={routeKind}
+        routeKind={typeof composerDraftTarget === "string" ? "draft" : routeKind}
         routeThreadRef={routeThreadRef}
-        draftId={draftId}
+        draftId={typeof composerDraftTarget === "string" ? composerDraftTarget : draftId}
         selectedProvider={selectedProvider}
         selectedInstanceId={selectedInstanceId}
         selectedModel={selectedModel}
