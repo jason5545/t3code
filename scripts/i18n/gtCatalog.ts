@@ -63,7 +63,6 @@ const TERMS: ReadonlyArray<readonly [RegExp, string]> = [
   [/快捷鍵/g, "快速鍵"],
   [/克隆/g, "複製"],
   [/擴充套件/g, "擴充功能"],
-  [/字型/g, "字體"],
   [/終端(?!機)/g, "終端機"],
   [/稍後提醒/g, "延後"],
   [/此應用/g, "此 App"],
