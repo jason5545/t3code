@@ -15127,5 +15127,5 @@
   "Word break": "斷字",
   "Sets both light and dark appearances": "同時設定淺色與深色外觀",
   "Merge {layers} into {base} using {kind, select, squash {squash} merge {merge} rebase {rebase} fastForward {fast-forward} other {{method}}} once their requirements are met. This may happen immediately.": "符合條件後，使用{kind, select, squash {壓縮合併} merge {合併} rebase {rebase} fastForward {快轉} other {{method}}}方式將 {layers} 合併到 {base}。這可能會立即發生。",
-  "Resuming {provider} session": "正在恢復 {provider} 工作階段"
+  "Resuming {provider} session": "正在接續 {provider} 工作階段"
 }
