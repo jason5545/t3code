@@ -2663,6 +2663,7 @@ const makeNativeOperations = Effect.fn("PreviewManager.makeOperations")(function
             webContents: wc,
             debugger: control.debugger,
             cookiesCleared: () => runPromise(browserSession.cookiesCleared(wc.session)),
+            annotating: () => Ref.getUnsafe(pickSessionsRef).has(tabId),
           },
           backgroundWindows.get(tabId)?.webContents === wc,
         );

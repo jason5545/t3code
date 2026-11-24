@@ -361,7 +361,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "With an API token instead of an access token.": "搭配 API 權杖使用，取代存取權杖。",
   "API token": "API 權杖",
   "Reaches every repository your Atlassian account can. Give it read and write access to repositories and pull requests, and read:user:bitbucket.":
-    "可存取你的 Atlassian 帳號能存取的所有存放庫。請給它存放庫和提取請求的讀寫權限，以及 read:user:bitbucket。",
+    "可存取你的 Atlassian 帳號能存取的所有存放庫。請給它存放庫和提取要求的讀寫權限，以及 read:user:bitbucket。",
 };
 
 const RULES: ReadonlyArray<readonly [RegExp, (match: RegExpExecArray) => string]> = [

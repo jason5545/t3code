@@ -54,6 +54,8 @@ export function buildPairingUrl(host: string, code: string): string {
       h.includes("://") ? h : `${isIpLiteral(h) || machineName ? "http" : "https"}://${h}`,
     );
     if (machineName && url.port === "") url.port = DEFAULT_SERVER_PORT;
+    // The code goes to the address shown, so a query cannot name another destination.
+    url.search = "";
     // Fork patch 7: an address alone asks the backend to pair over Tailscale.
     if (c) url.hash = new URLSearchParams([["token", c]]).toString();
     return url.toString();

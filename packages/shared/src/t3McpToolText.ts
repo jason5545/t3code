@@ -13,14 +13,14 @@ interface ToolText {
   readonly completed?: string;
 }
 
-const PR = { target: "提取請求" } as const;
+const PR = { target: "提取要求" } as const;
 
 const TOOLS: Readonly<Record<string, ToolText>> = {
   link_pull_request: { phrase: "連結{target}", ...PR },
   unlink_pull_request: { phrase: "取消連結{target}", ...PR },
-  link_pull_requests: { phrase: "連結提取請求" },
-  unlink_pull_requests: { phrase: "依狀態取消連結提取請求" },
-  list_thread_pull_requests: { phrase: "檢視已連結的提取請求" },
+  link_pull_requests: { phrase: "連結提取要求" },
+  unlink_pull_requests: { phrase: "依狀態取消連結提取要求" },
+  list_thread_pull_requests: { phrase: "檢視已連結的提取要求" },
   watch_pull_request: { phrase: "監看{target}", completed: "已開始監看{target}", ...PR },
   unwatch_pull_request: { phrase: "停止監看{target}", ...PR },
   write_pull_request_guides: { phrase: "撰寫審查指南", completed: "已開始撰寫審查指南" },

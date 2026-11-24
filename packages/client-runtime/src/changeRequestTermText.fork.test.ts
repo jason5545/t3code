@@ -9,16 +9,16 @@ const fill = (parts: ReadonlyArray<string | number>, values: ReadonlyArray<unkno
 
 describe("change request terms in translated messages", () => {
   it("writes each host's term in Chinese without the space beside Chinese text", () => {
-    expect(fill(["開啟 ", 0], ["pull request"])).toBe("開啟提取請求");
-    expect(fill(["在 ", 0, " 留言"], ["merge request"])).toBe("在合併請求留言");
-    expect(fill([0, " 已放進輸入框。"], ["pull request"])).toBe("提取請求已放進輸入框。");
+    expect(fill(["開啟 ", 0], ["pull request"])).toBe("開啟提取要求");
+    expect(fill(["在 ", 0, " 留言"], ["merge request"])).toBe("在合併要求留言");
+    expect(fill([0, " 已放進輸入區。"], ["pull request"])).toBe("提取要求已放進輸入區。");
     expect(fill([0, " 個 ", 1, " 依基底分支串接。"], [3, "pull requests"])).toBe(
-      "3 個提取請求依基底分支串接。",
+      "3 個提取要求依基底分支串接。",
     );
   });
 
   it("keeps spaces beside Latin text and short labels", () => {
-    expect(fill([0, " #", 1], ["Pull request", 12])).toBe("提取請求 #12");
+    expect(fill([0, " #", 1], ["Pull request", 12])).toBe("提取要求 #12");
     expect(fill(["推送或開啟 ", 0, " 前"], ["a PR"])).toBe("推送或開啟 PR 前");
     expect(fill(["說明這個 ", 0], ["MR"])).toBe("說明這個 MR");
   });

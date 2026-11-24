@@ -4,13 +4,13 @@
  * equals a term, and only in a translated message.
  */
 const TERMS: ReadonlyMap<string, string> = new Map([
-  ["pull request", "提取請求"],
-  ["pull requests", "提取請求"],
-  ["merge request", "合併請求"],
-  ["merge requests", "合併請求"],
-  ["change request", "變更請求"],
-  ["change requests", "變更請求"],
-  ["a change request", "變更請求"],
+  ["pull request", "提取要求"],
+  ["pull requests", "提取要求"],
+  ["merge request", "合併要求"],
+  ["merge requests", "合併要求"],
+  ["change request", "變更要求"],
+  ["change requests", "變更要求"],
+  ["a change request", "變更要求"],
   ["a PR", "PR"],
   ["an MR", "MR"],
 ]);
@@ -25,7 +25,7 @@ function chineseTerm(value: unknown): string | null {
 /**
  * A translated message's Chinese parts with change request terms written in. Catalog messages put
  * spaces around placeholders, which suit Latin values; a Chinese term drops the space between it
- * and Chinese text (開啟提取請求, not 開啟 提取請求). Returns `parts` itself when nothing changes.
+ * and Chinese text (開啟提取要求, not 開啟 提取要求). Returns `parts` itself when nothing changes.
  */
 export function withChineseChangeRequestTerms(
   parts: ReadonlyArray<string | number>,
