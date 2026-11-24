@@ -7366,7 +7366,7 @@
   "{passed} of {total}": "{passed}/{total}",
   "{count, plural, one {{count} check failing} other {{count} checks failing}}": "{count, plural, other {{count} 項檢查失敗}}",
   "{count, plural, one {{count} need attention} other {{count} need attention}}": "{count, plural, other {{count} 個需要關注}}",
-  "{count, plural, one {{count} awaiting action} other {{count} awaiting action}}": "{count, plural, other {{count} 個等待操作}}",
+  "{count, plural, one {{count} awaiting action} other {{count} awaiting action}}": "{count, plural, other {{count} 個等待處理}}",
   "{count, plural, one {{count} pending} other {{count} pending}}": "{count, plural, other {{count} 個待定}}",
   "{passed} of {total} passed": "已透過 {passed}/{total}",
   "{count, plural, one {{count} completed} other {{count} completed}}": "{count, plural, other {{count} 個已完成}}",
@@ -15126,5 +15126,6 @@
   "Font size": "字體大小",
   "Word break": "斷字",
   "Sets both light and dark appearances": "同時設定淺色與深色外觀",
-  "Merge {layers} into {base} using {kind, select, squash {squash} merge {merge} rebase {rebase} fastForward {fast-forward} other {{method}}} once their requirements are met. This may happen immediately.": "符合條件後，使用{kind, select, squash {壓縮合併} merge {合併} rebase {rebase} fastForward {快轉} other {{method}}}方式將 {layers} 合併到 {base}。這可能會立即發生。"
+  "Merge {layers} into {base} using {kind, select, squash {squash} merge {merge} rebase {rebase} fastForward {fast-forward} other {{method}}} once their requirements are met. This may happen immediately.": "符合條件後，使用{kind, select, squash {壓縮合併} merge {合併} rebase {rebase} fastForward {快轉} other {{method}}}方式將 {layers} 合併到 {base}。這可能會立即發生。",
+  "Resuming {provider} session": "正在恢復 {provider} 工作階段"
 }
