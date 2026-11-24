@@ -74,7 +74,7 @@ const RULES: ReadonlyArray<Rule> = [
   ),
   rule(
     `${NAME} SDK catalog request timed out after (\\d+)ms\\.`,
-    (m) => `${m[1]} SDK 目錄請求在 ${m[2]} 毫秒後逾時。`,
+    (m) => `${m[1]} SDK 目錄要求在 ${m[2]} 毫秒後逾時。`,
   ),
   rule(
     `Sign in with Cursor or add CURSOR_API_KEY in provider settings\\.`,
@@ -181,7 +181,7 @@ const RULES: ReadonlyArray<Rule> = [
   rule(`Always allow`, () => "一律允許"),
   rule(`Always allow this session`, () => "在此工作階段一律允許"),
   rule(`Allow all edits this session`, () => "在此工作階段允許所有編輯"),
-  rule(`Allow every ${NAME} request this session`, (m) => `在此工作階段允許所有 ${m[1]} 請求`),
+  rule(`Allow every ${NAME} request this session`, (m) => `在此工作階段允許所有 ${m[1]} 要求`),
   rule(`Allow ${NAME} this session`, (m) => `在此工作階段允許 ${m[1]}`),
 ];
 

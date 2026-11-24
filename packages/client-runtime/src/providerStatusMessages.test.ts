@@ -32,7 +32,7 @@ describe("translateProviderStatusMessage", () => {
     expect(translateProviderStatusMessage("Approve")).toBe("核准");
     expect(translateProviderStatusMessage("Decline")).toBe("拒絕");
     expect(translateProviderStatusMessage("Allow every bash request this session")).toBe(
-      "在此工作階段允許所有 bash 請求",
+      "在此工作階段允許所有 bash 要求",
     );
     expect(translateProviderStatusMessage("Allow git *, ls * this session")).toBe(
       "在此工作階段允許 git *, ls *",

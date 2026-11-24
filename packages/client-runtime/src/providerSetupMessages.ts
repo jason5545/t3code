@@ -66,7 +66,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "Signed in with Google.": "已使用 Google 登入。",
   "Connected to Antigravity.": "已連線到 Antigravity。",
   "Antigravity started more than one Google sign-in request.":
-    "Antigravity 發出了不只一個 Google 登入請求。",
+    "Antigravity 發出了不只一個 Google 登入要求。",
   "Open the Google sign-in link. If you are remote, paste the redirect URL here.":
     "開啟 Google 登入連結。如果你在遠端，請把重新導向網址貼到這裡。",
   "Checking Antigravity access and models.": "正在檢查 Antigravity 存取權與模型。",
