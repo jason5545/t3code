@@ -159,7 +159,7 @@ const RULES: ReadonlyArray<Rule> = [
   ),
   rule(`This connection cannot manage provider accounts\\.`, () => "此連線無法管理供應商帳號。"),
   // Notifications the server writes into a thread's timeline.
-  rule(`T3 Code restarted and resumed this turn`, () => "T3 Code 重新啟動了，已接續這一輪"),
+  rule(`T3 Code restarted and resumed this turn`, () => "T3 Code 重新啟動了，已接續這一回合"),
   rule(`T3 Code restarted and stopped background work`, () => "T3 Code 重新啟動了，背景工作已停止"),
   rule(`Continue where you left off\\.`, () => "從中斷的地方繼續。"),
   rule(`Resumed thread`, () => "已接續對話"),

@@ -86,6 +86,9 @@ it("shipped zh-TW text uses Taiwan wording", () => {
   for (const file of [
     "packages/shared/src/t3McpToolText.ts",
     "packages/client-runtime/src/providerSetupMessages.ts",
+    "packages/client-runtime/src/providerStatusMessages.ts",
+    "packages/client-runtime/src/state/backgroundWorkText.ts",
+    "packages/client-runtime/src/changeRequestTermText.ts",
   ]) {
     const words = mainlandWording(
       NodeFS.readFileSync(new URL(`../../${file}`, import.meta.url), "utf8"),

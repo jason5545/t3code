@@ -6,9 +6,9 @@
 
 const EXACT: Readonly<Record<string, string>> = {
   // Extensions (Settings → Maintenance; fork patch 30)
-  "Calls to your other machines": "呼叫你的其他機器",
+  "Calls to your other machines": "呼叫你的其他電腦",
   "The t3_machine_call tool, which lets agents use T3 tools on your other machines. Changes apply after the server restarts.":
-    "t3_machine_call 工具，讓代理程式使用你其他機器上的 T3 工具。變更會在伺服器重新啟動後套用。",
+    "t3_machine_call 工具，讓代理程式使用你其他電腦上的 T3 工具。變更會在伺服器重新啟動後套用。",
   "Tailnet server suggestions": "tailnet 伺服器建議",
   "Servers found on your tailnet, offered when you add an environment. The mobile app keeps showing them.":
     "新增環境時，列出在你的 tailnet 上找到的伺服器。行動版 App 仍會顯示。",
@@ -126,12 +126,12 @@ const EXACT: Readonly<Record<string, string>> = {
     "Antigravity 下載超過指定版本的大小。",
   "The Antigravity download failed its size or SHA-256 check. Nothing was installed.":
     "Antigravity 下載未通過大小或 SHA-256 檢查，沒有安裝任何東西。",
-  "Extracting the verified runtime.": "正在解壓已驗證的執行環境。",
+  "Extracting the verified runtime.": "正在解壓縮已驗證的執行環境。",
   "The archive must contain exactly the Antigravity executable and its harness.":
     "壓縮檔只能包含 Antigravity 執行檔與它的 harness。",
   "The archive contains an unexpected, unsafe, or incorrectly sized member.":
     "壓縮檔含有不預期、不安全或大小不對的項目。",
-  "Could not extract the Antigravity runtime.": "無法解壓 Antigravity 執行環境。",
+  "Could not extract the Antigravity runtime.": "無法解壓縮 Antigravity 執行環境。",
   "An archive member exceeded its pinned size.": "壓縮檔中的項目超過指定大小。",
   "An archive member was truncated.": "壓縮檔中的項目不完整。",
   "The archive is missing the Antigravity executable or its harness.":
@@ -184,7 +184,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "The Codex download timed out. Retry installation.": "Codex 下載逾時，請重新安裝。",
   "The Codex download failed its size or SHA-256 check. Nothing was installed.":
     "Codex 下載未通過大小或 SHA-256 檢查，沒有安裝任何東西。",
-  "Extracting Codex.": "正在解壓 Codex。",
+  "Extracting Codex.": "正在解壓縮 Codex。",
   "The Codex archive contains unsafe entries.": "Codex 壓縮檔含有不安全的項目。",
   "Checking Codex.": "正在檢查 Codex。",
   "The Codex download was interrupted. Check your internet connection, then retry installation.":
@@ -284,7 +284,7 @@ const EXACT: Readonly<Record<string, string>> = {
   "Shadow home path": "影子主目錄路徑",
   "Account-specific Codex home. Keeps auth.json separate while sharing state from CODEX_HOME.":
     "帳號專屬的 Codex 主目錄。auth.json 分開存放，其他狀態與 CODEX_HOME 共用。",
-  "Launch arguments": "啟動參數",
+  "Launch arguments": "啟動引數",
   "Additional CLI arguments passed to codex app-server on session start.":
     "工作階段開始時，額外傳給 codex app-server 的 CLI 參數。",
   "Path to the Claude binary used by this instance.": "這個執行個體使用的 Claude 執行檔路徑。",

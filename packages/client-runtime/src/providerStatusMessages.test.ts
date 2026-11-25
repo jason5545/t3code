@@ -41,7 +41,7 @@ describe("translateProviderStatusMessage", () => {
 
   it("translates notifications the server writes into the timeline", () => {
     expect(translateProviderStatusMessage("T3 Code restarted and resumed this turn")).toBe(
-      "T3 Code 重新啟動了，已接續這一輪",
+      "T3 Code 重新啟動了，已接續這一回合",
     );
     expect(translateProviderStatusMessage("Continue where you left off.")).toBe(
       "從中斷的地方繼續。",

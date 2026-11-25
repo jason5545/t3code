@@ -320,6 +320,7 @@ export const ShellEnvironmentPatch = Schema.Struct({
   SSL_CERT_DIR: Schema.optionalKey(Schema.NullOr(Schema.String)),
   NODE_EXTRA_CA_CERTS: Schema.optionalKey(Schema.NullOr(Schema.String)),
   T3CODE_TELEMETRY_ENABLED: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  DO_NOT_TRACK: Schema.optionalKey(Schema.NullOr(Schema.String)),
   T3CODE_FEATURE_FLAGS: Schema.optionalKey(Schema.NullOr(Schema.String)),
   // Fork patch 17: the backend reads these at startup, so they ride in the patch and the cache.
   T3CODE_CONTEXT_HANDOFF_TOKEN_CAP: Schema.optionalKey(Schema.NullOr(Schema.String)),
