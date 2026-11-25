@@ -13068,7 +13068,7 @@
   "Capture a window and attach it to your current draft.": "擷取視窗並附加到目前的草稿。",
   "Whoosh (Default)": "咻聲（預設）",
   "Click": "喀嚓聲",
-  "SnapShots": "快照",
+  "SnapShots": "SnapShots",
   "Enable snapshots": "啟用快照",
   "Include text and controls when the app makes them available.": "App 提供時，一併包含文字和控制項。",
   "Include app text in snapshots": "在快照中包含 App 文字",
@@ -15190,5 +15190,41 @@
   "Connection diagnostics": "連線診斷",
   "Send connection traces": "傳送連線追蹤資料",
   "Helps the T3 Code team fix connection problems. Traces hold timings, error types, an ID for this app session, and the app version, never your threads, prompts, or code. You can change this in Settings > About T3 Code > Diagnostics.": "協助 T3 Code 團隊修正連線問題。追蹤資料包含各步驟耗時、錯誤類型、這次 App 工作階段的 ID 和 App 版本，絕不包含你的對話、提示或程式碼。你可以在「設定 > 關於 T3 Code > 診斷」中變更。",
-  "When the app connects to a computer through {product}, it sends the T3 Code team how long each step took, any error type, an ID for this app session, and the app version. Traces never include your threads, prompts, or code.": "App 透過 {product} 連線到電腦時，會把每個步驟花了多久、錯誤類型、這次 App 工作階段的 ID 和 App 版本傳給 T3 Code 團隊。追蹤資料絕不包含你的對話、提示或程式碼。"
+  "When the app connects to a computer through {product}, it sends the T3 Code team how long each step took, any error type, an ID for this app session, and the app version. Traces never include your threads, prompts, or code.": "App 透過 {product} 連線到電腦時，會把每個步驟花了多久、錯誤類型、這次 App 工作階段的 ID 和 App 版本傳給 T3 Code 團隊。追蹤資料絕不包含你的對話、提示或程式碼。",
+  "[\"The \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\" app needs a newer \",{\"i\":2,\"k\":\"_gt_value_2\",\"v\":\"v\"},\" server on this environment. Update the server to use it.\"]": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " App 需要這個環境上較新的 ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " 伺服器。請更新伺服器後再使用。"
+  ],
+  "[{\"t\":\"span\",\"i\":1,\"c\":[\"↻ +\",{\"i\":2,\"k\":\"_gt_value_2\",\"v\":\"v\"},\"%\"]},\" \",\"in \",{\"i\":3,\"k\":\"_gt_value_3\",\"v\":\"v\"}]": [
+    {
+      "t": "span",
+      "i": 1,
+      "c": [
+        "↻ +",
+        {
+          "i": 2,
+          "k": "_gt_value_2",
+          "v": "v"
+        },
+        "%"
+      ]
+    },
+    "，",
+    {
+      "i": 3,
+      "k": "_gt_value_3",
+      "v": "v"
+    },
+    " 後"
+  ]
 }

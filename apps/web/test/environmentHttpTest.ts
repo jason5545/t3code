@@ -116,11 +116,11 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
                 // Like a server without Tailscale pairing turned on.
                 return yield* (
                   scenario.tailscalePairing?.() ??
-                    new EnvironmentOperationForbiddenError({
-                      code: "operation_forbidden",
-                      reason: "tailscale_pairing_refused",
-                      traceId: "test-trace",
-                    })
+                  new EnvironmentOperationForbiddenError({
+                    code: "operation_forbidden",
+                    reason: "tailscale_pairing_refused",
+                    traceId: "test-trace",
+                  })
                 );
               }),
             )
@@ -132,7 +132,7 @@ export async function installEnvironmentHttpTest(scenario: EnvironmentHttpTestSc
                 calls.pairingCredential.push(payload);
                 return yield* (
                   scenario.pairingCredential?.(payload) ??
-                    unexpectedEndpoint("auth.pairingCredential")
+                  unexpectedEndpoint("auth.pairingCredential")
                 );
               }),
             )
