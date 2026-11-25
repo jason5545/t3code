@@ -15341,5 +15341,6 @@
   "Withdrawn by {by}.": "已由 {by} 撤回。",
   "Withdrawn by {by}: {reason}": "已由 {by} 撤回：{reason}",
   "withdrawn": "已撤回",
-  "{count, plural, one {Across {sessions} session} other {Across {sessions} sessions}}": "{count, plural, other {共 {sessions} 個工作階段}}"
+  "{count, plural, one {Across {sessions} session} other {Across {sessions} sessions}}": "{count, plural, other {共 {sessions} 個工作階段}}",
+  "{omitted, plural, one {{environment}: {count} more result.} other {{environment}: {count} more results.}}": "{omitted, plural, other {{environment}：另有 {count} 個結果。}}"
 }

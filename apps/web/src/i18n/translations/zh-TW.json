@@ -11190,7 +11190,7 @@
   "4889f7885396c26b": "工作樹",
   "2d96fe39105aae8f": "輪替的記錄",
   "1214c77f4bf1ee81": "瀏覽器產物",
-  "9831e9c703b3bdd0": "{omitted, plural, other {{environment}：另有 {count} 個結果。}}",
+  "d9e33a2a8d404a96": "{omitted, plural, other {{environment}：另有 {count} 個結果。}}",
   "c8192b219451a0d0": "已移除 {removed} 項，保留 {kept} 項，失敗 {failed} 項",
   "cbd8bf91a856906a": "已移除 {removed} 項，保留 {kept} 項",
   "754564dc0b82aff7": "{count, plural, other {上次執行：{when}。已回收 {bytes}。有 {count} 項無法移除。}}",
