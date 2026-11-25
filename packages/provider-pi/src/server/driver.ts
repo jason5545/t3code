@@ -125,6 +125,7 @@ export const PiDriver: ProviderDriver<PiSettings, PiDriverEnv, Path.Path> = {
         {
           binaryPath: effectiveConfig.binaryPath,
           env: processEnv,
+          npmCacheDir: pathService.join(host.paths.providerStatusCacheDir, "npm"),
         },
       ).pipe(
         Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),

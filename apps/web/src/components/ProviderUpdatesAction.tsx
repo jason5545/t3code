@@ -22,7 +22,7 @@ import {
 import { providerUpdateName } from "./providerUpdateName";
 import { Button } from "./ui/button";
 import { stackedThreadToast, toastManager } from "./ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { SharedTooltipTrigger } from "./ui/shared-tooltip";
 
 // `refreshModels` always drops the server's hour-long latest-version cache. `modelCatalogOnly`
 // drops it only when the model manifest changed.
@@ -144,26 +144,22 @@ export function ProviderUpdatesAction() {
   };
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            size="xs"
-            variant="ghost-muted"
-            disabled={isPending}
-            onClick={() => void handleUpdate()}
-          >
-            {isPending ? <T>Updating…</T> : <T>Update all</T>}
-          </Button>
-        }
-      />
-      <TooltipPopup side="top">
-        {machines.map((machine) => (
-          <div key={machine.environmentId}>
-            {machine.label}: {machine.candidates.map(providerUpdateName).join(", ")}
-          </div>
-        ))}
-      </TooltipPopup>
-    </Tooltip>
+    <SharedTooltipTrigger
+      render={
+        <Button
+          size="xs"
+          variant="ghost-muted"
+          disabled={isPending}
+          onClick={() => void handleUpdate()}
+        >
+          {isPending ? <T>Updating…</T> : <T>Update all</T>}
+        </Button>
+      }
+      label={machines.map((machine) => (
+        <div key={machine.environmentId}>
+          {machine.label}: {machine.candidates.map(providerUpdateName).join(", ")}
+        </div>
+      ))}
+    />
   );
 }
