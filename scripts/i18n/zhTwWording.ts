@@ -1,7 +1,8 @@
 /**
  * Mainland wording that OpenCC `s2twp` leaves in place, with the word Taiwan software uses. Every
  * entry is safe to replace without reading the English; a reviewer decides the rest per entry
- * (策略 is 原則 only for a policy, 條 is 則 only for messages, an email's 地址 stays).
+ * (策略 is 原則 only for a policy, 條 is 則 only for messages, 地址 is 位址 for network and email
+ * addresses but stays for a postal one).
  */
 export const MAINLAND_WORDING: ReadonlyArray<readonly [RegExp, string]> = [
   [/已不可用/g, "已無法使用"],
@@ -67,6 +68,10 @@ export const MAINLAND_WORDING: ReadonlyArray<readonly [RegExp, string]> = [
   [/臺/g, "台"],
   [/占(?!卜)/g, "佔"],
   [/正在在/g, "正在"],
+  [/時間窗(?!口)/g, "時間視窗"],
+  [/虛擬機(?!器)/g, "虛擬機器"],
+  [/全不選/g, "取消全選"],
+  [/去重(?!複)/g, "去除重複"],
 ];
 
 export const toTaiwanWording = (text: string) =>
