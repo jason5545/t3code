@@ -6,6 +6,7 @@ import type { ComposerAttachmentInsertion } from "../composerAttachmentInsertion
 import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../lib/desktopPasteAsText";
 import { BackgroundThreadContext, HiddenThreadContext } from "./backgroundThread";
 import {
+  draftRuntimeModeLimitsInstance,
   draftSupportedRuntimeModes,
   resolveCompatibleRuntimeMode,
   runtimeModeConfig,
@@ -292,6 +293,11 @@ import {
 } from "./ComposerCommandMenuLayer";
 import { useRestingComposerControlsLayout } from "./useRestingComposerControlsLayout";
 import { useProviderWorkspaceSnapshotRefresh } from "./useProviderWorkspaceSnapshotRefresh";
+import {
+  RuntimeModeLimitsTargetContext,
+  runtimeModeLimitsTarget,
+  useProviderRuntimeModeLimits,
+} from "../../state/runtimeModeLimits";
 import { useComposerProviderModel } from "./useComposerProviderModel";
 import { useComposerImageGroups } from "./useComposerImageGroups";
 import { useComposerStash } from "./useComposerStash";
@@ -1022,6 +1028,12 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   // Called before the derivation below: a hook between it and its uses stops React Compiler
   // from caching the mode options, and the footer then re-renders on every keystroke.
   const managedPolicy = useManagedPolicy(environmentId);
+  const runtimeModeLimitsFor = runtimeModeLimitsTarget(
+    environmentId,
+    draftRuntimeModeLimitsInstance(selectedProviderEntry?.instanceId, multipleModelSelections),
+    gitCwd,
+  );
+  const runtimeModeLimits = useProviderRuntimeModeLimits(runtimeModeLimitsFor);
   const { modes: compatibleRuntimeModes, mode: resolvedRuntimeMode } = resolveCompatibleRuntimeMode(
     runtimeMode,
     draftSupportedRuntimeModes(
@@ -1030,11 +1042,13 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       providerStatuses,
     ),
   );
-  // Modes above an administrator's ceiling stay listed, disabled with the reason.
+  // Modes above an administrator's ceiling, or that the provider cannot run in this folder,
+  // stay listed, disabled with the reason.
   const providerRuntimeModeOptions = resolveRuntimeModeOptions(
     compatibleRuntimeModes,
     managedPolicy,
     m,
+    runtimeModeLimits,
   );
   // Fork patch 11: an ephemeral thread keeps the runtime mode it started with.
   const ephemeralThread = isEphemeralThreadShell(props.activeThreadShell);
@@ -2718,7 +2732,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       ? 0
       : expandedControlsIconOnlyBlockCount;
   const composerControls = (
-    <>
+    <RuntimeModeLimitsTargetContext value={runtimeModeLimitsFor}>
       <EphemeralDraftToggle draftId={draftId} available={canStartEphemeral} />
       <ComposerControlsBar
         environmentId={environmentId}
@@ -2767,7 +2781,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         modelPickerIconClassName={composerProviderState.modelPickerIconClassName}
         getModelDisabledReason={getModelDisabledReason}
       />
-    </>
+    </RuntimeModeLimitsTargetContext>
   );
   // An open question owns the space above the composer. Only a machine problem,
   // which is why an answer could not go through, stays beside it.

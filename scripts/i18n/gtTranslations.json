@@ -15342,5 +15342,38 @@
   "Withdrawn by {by}: {reason}": "已由 {by} 撤回：{reason}",
   "withdrawn": "已撤回",
   "{count, plural, one {Across {sessions} session} other {Across {sessions} sessions}}": "{count, plural, other {共 {sessions} 個工作階段}}",
-  "{omitted, plural, one {{environment}: {count} more result.} other {{environment}: {count} more results.}}": "{omitted, plural, other {{environment}：另有 {count} 個結果。}}"
+  "{omitted, plural, one {{environment}: {count} more result.} other {{environment}: {count} more results.}}": "{omitted, plural, other {{environment}：另有 {count} 個結果。}}",
+  "Your organization's Claude settings turn auto mode off.": "你所屬組織的 Claude 設定關閉了自動模式。",
+  "Your Claude settings turn auto mode off.": "你的 Claude 設定關閉了自動模式。",
+  "This project's Claude settings turn auto mode off.": "此專案的 Claude 設定關閉了自動模式。",
+  "Claude's settings turn auto mode off.": "Claude 的設定關閉了自動模式。",
+  "[\"+\",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\" more\"]": [
+    "還有 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 項"
+  ],
+  "[\"+\",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\" more in Linked items\"]": [
+    "已連結項中還有 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 項"
+  ],
+  "{count, plural, one {… {hidden} character in the middle is not shown.} other {… {hidden} characters in the middle are not shown.}} The text ends with:": "{count, plural, other {… 中間有 {hidden} 個字元未顯示。文字結尾如下：}}",
+  "Scroll each part to read all of it.": "捲動各段即可閱讀完整內容。",
+  "Scroll to read all of it.": "捲動即可閱讀完整內容。",
+  "{count, plural, one {Show {count} more image attachment} other {Show {count} more image attachments}}": "{count, plural, other {再顯示 {count} 個圖片附件}}",
+  "Stash is full": "擱置區已滿",
+  "The stash holds {max} prompts. Restore or delete one to make room; the composer was left as-is.": "擱置區最多保留 {max} 則提示。請還原或刪除一則以騰出空間；輸入區保持原狀。",
+  "{others, plural, =0 {It is shared with other working threads. Stop those to free it.} one {It is shared with {others} working thread. Stop that thread to free it.} other {It is shared with {others} working threads. Stop those to free it.}}": "{others, plural, =0 {它與其他執行中的對話共用。停止那些對話即可釋放它。} =1 {它與另外 {others} 個執行中的對話共用。停止該對話即可釋放它。} other {它與另外 {others} 個執行中的對話共用。停止那些對話即可釋放它。}}",
+  "Stop {name}": "停止 {name}",
+  "Stop all devices": "停止所有裝置",
+  "{count, selectordinal, one {{count}st try} two {{count}nd try} few {{count}rd try} other {{count}th try}}": "{count, selectordinal, other {第 {count} 次嘗試}}",
+  "{count, plural, =0 {It is shared with other working threads. Stop those to free it.} one {It is shared with {count} working thread. Stop that thread to free it.} other {It is shared with {count} working threads. Stop those to free it.}}": "{count, plural, =0 {它與其他執行中的對話共用。停止那些對話即可釋放它。} =1 {它與 {count} 個執行中的對話共用。停止該對話即可釋放它。} other {它與 {count} 個執行中的對話共用。停止那些對話即可釋放它。}}"
 }
