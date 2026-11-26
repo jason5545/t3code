@@ -155,6 +155,8 @@ function makeHarness(scratchRoot: string, baseDir: string) {
         layerReceipts,
         IdAllocator.layer,
         layerOrchestrator,
+        layerStores,
+        NodeServices.layer,
       ),
     ),
   );
