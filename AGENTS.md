@@ -168,7 +168,7 @@ A different interface (a new layout, a board in place of the sidebar and chat) i
 
 ### Every change starts with a sync
 
-Any change to the fork, whether a bug fix, a translation or an update, starts by syncing upstream: steps 1 and 2 below, before reading the code you will change (owner decision, 2026-10-31). It is required every time, not only when upstream might already have fixed the problem; the change then lands on the code that will ship. Deploy the sync and the change together, then carry on as usual.
+Any change to the fork, whether a bug fix, a translation or an update, starts by syncing upstream: steps 1 and 2 below, before reading the code you will change (owner decision, 2026-10-31). It is required every time, not only when upstream might already have fixed the problem; the change then lands on the code that will ship. Deploy the sync and the change together, then carry on as usual; the Mac takes it at its daily install ("Installing on the Mac").
 
 ### Syncing upstream
 
@@ -190,6 +190,8 @@ On 2026-11-20 `--fill` wrote 5,331 unreviewed `s2twp` entries straight into `gtT
 ### Installing on the Mac
 
 A thread inside the Mac app installs the build itself; no hand-off to Claude desktop is needed (first done 2026-11-12). Build with `scripts/build-fork-nightly.sh`, then run `scripts/install-fork-nightly.sh release/fork-nightly/<version>` as the turn's last step before checking. It verifies the build and swaps the app from its own session, so quitting T3 cuts the calling turn off; T3's restart continuation resumes that turn, which reads `release/fork-nightly/<version>/install.log`, checks the new server and deletes `<version>/stage`, where the previous bundle is kept. Check for other running threads first, as for agent-hub. Details are under "Local Mac deployment" in [patches.md](patches.md).
+
+The Mac installs a new build at most once a day, so the owner can keep up with upstream without work in the Mac app being cut off (owner decision, 2026-11-26). Syncs and fixes still deploy to agent-hub, agent-fr and Android as they land; the Mac takes the newest commit at its next daily install, and the last install date is in "Current deployment" in patches.md. Install sooner only when this is the only thread running in the Mac app, or when the owner asks for it. A merge that changes `ORCHESTRATION_PROTOCOL_VERSION` would leave the Mac unable to talk to agent-hub, so it goes to the owner before agent-hub is deployed.
 
 ### Reporting upstream
 
