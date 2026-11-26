@@ -214,14 +214,14 @@ const EXACT: Readonly<Record<string, string>> = {
   "Could not lock the ChatGPT connection for an update. Try again.":
     "無法鎖定 ChatGPT 連線來更新，請再試一次。",
   "Signed in with ChatGPT, but token sharing is disabled. Sign in again and enable token sharing, or use another provider.":
-    "已使用 ChatGPT 登入，但權杖共用已停用。請重新登入並啟用權杖共用，或改用其他供應商。",
+    "已使用 ChatGPT 登入，但 token 共用已停用。請重新登入並啟用 token 共用，或改用其他供應商。",
   "ChatGPT tracks subscription usage across connected apps. Open Usage settings with the account you connected to Codex.":
     "ChatGPT 會合計各個已連結 App 的訂閱用量。請用連結到 Codex 的帳號開啟用量設定。",
   "The ChatGPT connection changed while checking Codex. Retry.":
     "檢查 Codex 時 ChatGPT 連線變更了，請重試。",
   "Could not prepare managed Codex.": "無法準備受管理的 Codex。",
   "Could not prepare the private managed Codex token listener. Restart T3 and retry.":
-    "無法準備受管理 Codex 的私有權杖監聽程式，請重新啟動 T3 再試一次。",
+    "無法準備受管理 Codex 的私有 token 監聽程式，請重新啟動 T3 再試一次。",
   "Set up managed Codex before starting a session.": "開始工作階段前，請先設定受管理的 Codex。",
   "Could not prepare the managed Codex runtime.": "無法準備受管理的 Codex 執行環境。",
 
@@ -351,17 +351,17 @@ const EXACT: Readonly<Record<string, string>> = {
   Executable: "執行檔",
   "Executable name or path on this environment.": "此環境上的執行檔名稱或路徑。",
   "e.g. dsh": "例如：dsh",
-  Token: "權杖",
+  Token: "Token",
   "A git.cafe token, used before CAFE_TOKEN and the cafe login, so GitCafe works without the CLI signed in.":
-    "git.cafe 權杖，優先於 CAFE_TOKEN 和 cafe 登入使用，所以 CLI 沒登入也能使用 GitCafe。",
-  "Access token": "存取權杖",
+    "git.cafe token，優先於 CAFE_TOKEN 和 cafe 登入使用，所以 CLI 沒登入也能使用 GitCafe。",
+  "Access token": "存取 token",
   "Scoped to one repository, project, or workspace. Create it in that item's Bitbucket settings.":
     "範圍限於一個存放庫、專案或工作區。請在該項目的 Bitbucket 設定中建立。",
   "Atlassian account email": "Atlassian 帳號電子郵件",
-  "With an API token instead of an access token.": "搭配 API 權杖使用，取代存取權杖。",
-  "API token": "API 權杖",
+  "With an API token instead of an access token.": "搭配 API token 使用，取代存取 token。",
+  "API token": "API token",
   "Reaches every repository your Atlassian account can. Give it read and write access to repositories and pull requests, and read:user:bitbucket.":
-    "可存取你的 Atlassian 帳號能存取的所有存放庫。請給它存放庫和提取要求的讀寫權限，以及 read:user:bitbucket。",
+    "可存取你的 Atlassian 帳號能存取的所有存放庫。請給它存放庫和 pull request 的讀寫權限，以及 read:user:bitbucket。",
 };
 
 const RULES: ReadonlyArray<readonly [RegExp, (match: RegExpExecArray) => string]> = [

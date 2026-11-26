@@ -5,7 +5,7 @@ import { expect, it } from "vite-plus/test";
 
 import { catalogFile } from "./extract.ts";
 import { buildGtCatalogs, collectStrings, gtPendingFile } from "./gtCatalog.ts";
-import { mainlandWording } from "./zhTwWording.ts";
+import { avoidedWording } from "./zhTwWording.ts";
 
 // Fails after a sync in which upstream wrapped more text in gt-react: add the Chinese to
 // `gtTranslations.json` or the catalog, then run `node scripts/i18n/gtCatalog.ts`.
@@ -78,7 +78,7 @@ it("shipped zh-TW text uses Taiwan wording", () => {
     for (const [key, entry] of Object.entries(catalog)) {
       const strings: string[] = [];
       collectStrings(entry, strings);
-      const words = mainlandWording(strings.join("\n"));
+      const words = avoidedWording(strings.join("\n"));
       if (words.length > 0)
         found.push(`${source.pathname.split("/").slice(-3).join("/")} ${key}: ${words.join(", ")}`);
     }
@@ -90,7 +90,7 @@ it("shipped zh-TW text uses Taiwan wording", () => {
     "packages/client-runtime/src/state/backgroundWorkText.ts",
     "packages/client-runtime/src/changeRequestTermText.ts",
   ]) {
-    const words = mainlandWording(
+    const words = avoidedWording(
       NodeFS.readFileSync(new URL(`../../${file}`, import.meta.url), "utf8"),
     );
     if (words.length > 0) found.push(`${file}: ${words.join(", ")}`);

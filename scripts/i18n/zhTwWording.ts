@@ -63,7 +63,7 @@ export const MAINLAND_WORDING: ReadonlyArray<readonly [RegExp, string]> = [
   [/(?<!處理|安裝|應用|監聽)程序(?!碼)/g, "處理程序"],
   [/合並/g, "合併"],
   [/快進/g, "快轉"],
-  [/檢出/g, "簽出"],
+  [/檢出/g, "checkout"],
   [/更新頻道/g, "更新通道"],
   [/臺/g, "台"],
   [/占(?!卜)/g, "佔"],
@@ -80,10 +80,30 @@ export const toTaiwanWording = (text: string) =>
     text,
   );
 
-/** The mainland words in `text`, empty when it reads as Taiwan software does. */
-export function mainlandWording(text: string): ReadonlyArray<string> {
+/**
+ * Textbook Chinese for Git and developer terms, which the catalogs keep in English (pull request,
+ * worktree, checkout, rebase, stash, token, fork, secret, squash), as Taiwan developers say them
+ * (owner decision, 2026-11-27). Detected only: the English depends on the sentence, so a reviewer
+ * writes it.
+ */
+const TEXTBOOK_GIT_TERMS: ReadonlyArray<RegExp> = [
+  /提取要求/g,
+  /合併要求/g,
+  /工作樹/g,
+  /簽出/g,
+  /工作複本/g,
+  /重定基底/g,
+  /貯存/g,
+  /權杖/g,
+  /分岔/g,
+  /祕密/g,
+  /壓縮合併/g,
+];
+
+/** Mainland and textbook Git words in `text`, empty when it reads as Taiwan software does. */
+export function avoidedWording(text: string): ReadonlyArray<string> {
   const found: string[] = [];
-  for (const [pattern] of MAINLAND_WORDING) {
+  for (const pattern of [...MAINLAND_WORDING.map(([pattern]) => pattern), ...TEXTBOOK_GIT_TERMS]) {
     for (const match of text.matchAll(pattern)) found.push(match[0]);
   }
   return found;

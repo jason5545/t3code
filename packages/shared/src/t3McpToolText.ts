@@ -13,14 +13,14 @@ interface ToolText {
   readonly completed?: string;
 }
 
-const PR = { target: "提取要求" } as const;
+const PR = { target: "pull request" } as const;
 
 const TOOLS: Readonly<Record<string, ToolText>> = {
   link_pull_request: { phrase: "連結{target}", ...PR },
   unlink_pull_request: { phrase: "取消連結{target}", ...PR },
-  link_pull_requests: { phrase: "連結提取要求" },
-  unlink_pull_requests: { phrase: "依狀態取消連結提取要求" },
-  list_thread_pull_requests: { phrase: "檢視已連結的提取要求" },
+  link_pull_requests: { phrase: "連結 pull request" },
+  unlink_pull_requests: { phrase: "依狀態取消連結 pull request" },
+  list_thread_pull_requests: { phrase: "檢視已連結的 pull request" },
   watch_pull_request: { phrase: "監看{target}", completed: "已開始監看{target}", ...PR },
   unwatch_pull_request: { phrase: "停止監看{target}", ...PR },
   write_pull_request_guides: { phrase: "撰寫審查指南", completed: "已開始撰寫審查指南" },
@@ -34,7 +34,7 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   list_scheduled_tasks: { phrase: "列出排程工作" },
   update_scheduled_task: { phrase: "更新排程工作" },
   delete_scheduled_task: { phrase: "刪除排程工作", completed: "已要求刪除排程工作" },
-  request_secret: { phrase: "要求祕密" },
+  request_secret: { phrase: "要求 secret" },
   create_threads: { phrase: "建立 T3 對話" },
   t3_thread_start: { phrase: "啟動 T3 對話" },
   t3_thread_list: { phrase: "列出 T3 對話" },
@@ -44,8 +44,8 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   t3_background_wait: { phrase: "更新背景等候" },
   t3_workflow_stop: { phrase: "停止工作流程", completed: "已要求停止工作流程" },
   t3_thread_interrupt: { phrase: "中斷 T3 對話", completed: "已要求中斷 T3 對話" },
-  t3_worktree_handoff: { phrase: "把對話交接到工作樹" },
-  t3_worktree_status: { phrase: "取得對話的工作樹狀態" },
+  t3_worktree_handoff: { phrase: "把對話移到 worktree" },
+  t3_worktree_status: { phrase: "取得對話的 worktree 狀態" },
   preview_status: { phrase: "取得預覽瀏覽器狀態" },
   preview_open: { phrase: "開啟預覽瀏覽器頁面" },
   preview_navigate: { phrase: "切換預覽瀏覽器頁面" },
@@ -84,7 +84,7 @@ const TOOLS: Readonly<Record<string, ToolText>> = {
   t3_pending_request_respond: { phrase: "回答待處理的問題" },
   t3_thread_configuration: { phrase: "讀取對話設定" },
   t3_thread_configure: { phrase: "設定對話模型" },
-  t3_thread_fork: { phrase: "分岔這個對話", completed: "已要求分岔這個對話" },
+  t3_thread_fork: { phrase: "Fork 這個對話", completed: "已要求 fork 這個對話" },
   t3_thread_merge_back: { phrase: "合併對話脈絡", completed: "已要求合併對話脈絡" },
   t3_thread_search: { phrase: "搜尋對話內容" },
   t3_thread_transfer: { phrase: "處理對話轉移" },
