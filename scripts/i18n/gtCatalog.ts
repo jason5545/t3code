@@ -10,7 +10,7 @@ import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
 import { catalogFile } from "./extract.ts";
-import { mainlandWording, toTaiwanWording } from "./zhTwWording.ts";
+import { avoidedWording, toTaiwanWording } from "./zhTwWording.ts";
 
 type GtEntry = string | ReadonlyArray<unknown>;
 
@@ -56,7 +56,9 @@ const TERMS: ReadonlyArray<readonly [RegExp, string]> = [
   [/客戶端/g, "用戶端"],
   [/重置/g, "重設"],
   [/視口/g, "檢視區"],
-  [/貯藏/g, "貯存"],
+  [/貯藏/g, "stash"],
+  [/工作樹/g, "worktree"],
+  [/變基/g, "rebase"],
   [/歸檔/g, "封存"],
   [/取消置頂/g, "取消釘選"],
   [/置頂/g, "釘選"],
@@ -244,7 +246,7 @@ function accept() {
   const refused = Object.entries(drafts).flatMap(([english, chinese]) => {
     const strings: string[] = [];
     collectStrings(chinese, strings);
-    const words = mainlandWording(strings.join("\n"));
+    const words = avoidedWording(strings.join("\n"));
     return words.length > 0 ? [`  ${JSON.stringify(english)}: ${words.join(", ")}`] : [];
   });
   if (refused.length > 0) {

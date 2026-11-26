@@ -1,13 +1,14 @@
 /**
  * zh-TW for forge change request terms. Definitions stay English because agent prompts and
  * context records read them, so the translation runtimes swap only a placeholder value that
- * equals a term, and only in a translated message.
+ * equals a term, and only in a translated message. Hosts' own terms stay English, as Taiwan
+ * developers say them, without the plural.
  */
 const TERMS: ReadonlyMap<string, string> = new Map([
-  ["pull request", "提取要求"],
-  ["pull requests", "提取要求"],
-  ["merge request", "合併要求"],
-  ["merge requests", "合併要求"],
+  ["pull request", "pull request"],
+  ["pull requests", "pull request"],
+  ["merge request", "merge request"],
+  ["merge requests", "merge request"],
   ["change request", "變更要求"],
   ["change requests", "變更要求"],
   ["a change request", "變更要求"],
@@ -19,13 +20,17 @@ const HAN = /[㐀-鿿]/;
 
 function chineseTerm(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  return TERMS.get(value) ?? TERMS.get(value.charAt(0).toLowerCase() + value.slice(1)) ?? null;
+  const exact = TERMS.get(value);
+  if (exact !== undefined) return exact;
+  const term = TERMS.get(value.charAt(0).toLowerCase() + value.slice(1));
+  if (term === undefined) return null;
+  return HAN.test(term) ? term : term.charAt(0).toUpperCase() + term.slice(1);
 }
 
 /**
  * A translated message's Chinese parts with change request terms written in. Catalog messages put
  * spaces around placeholders, which suit Latin values; a Chinese term drops the space between it
- * and Chinese text (開啟提取要求, not 開啟 提取要求). Returns `parts` itself when nothing changes.
+ * and Chinese text (開啟變更要求, not 開啟 變更要求). Returns `parts` itself when nothing changes.
  */
 export function withChineseChangeRequestTerms(
   parts: ReadonlyArray<string | number>,
