@@ -16,7 +16,7 @@ export const MAINLAND_WORDING: ReadonlyArray<readonly [RegExp, string]> = [
   [/詳情/g, "詳細資料"],
   [/跟蹤/g, "追蹤"],
   [/自定義/g, "自訂"],
-  [/密鑰/g, "金鑰"],
+  [/(?<!通行)密鑰/g, "金鑰"],
   [/執行例項/g, "執行個體"],
   [/例項/g, "執行個體"],
   [/點贊/g, "讚"],
