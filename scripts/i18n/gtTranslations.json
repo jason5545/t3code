@@ -4189,7 +4189,7 @@
       "k": "_gt_value_1",
       "v": "v"
     },
-    " 上的供應商旁顯示該中轉站彙集的每個帳號的配額。金鑰保留在該伺服器上。"
+    " 上的供應商旁顯示該中樞彙集的每個帳號的配額。金鑰保留在該伺服器上。"
   ],
   "Only built-in themes show artwork, so this theme shows the version pill.": "僅內建主題支援背景圖，因此目前主題顯示版本標籤。",
   "Only built-in themes show artwork.": "僅內建主題支援背景圖。",
@@ -8108,7 +8108,7 @@
       "v": "v"
     }
   ],
-  "{count, plural, one {{count} stops} other {{count} stops}}": "{count, plural, other {{count} 個站點}}",
+  "{count, plural, one {{count} stops} other {{count} stops}}": "{count, plural, other {{count} 站}}",
   "{count, plural, one {through {count} file} other {through {count} files}}": "{count, plural, other {涵蓋 {count} 個檔案}}",
   "Stop {position}: {title}": "第 {position} 站：{title}",
   "Stop {position} of {total}": "第 {position} 站，共 {total} 站",
@@ -15388,5 +15388,17 @@
   "{summary} · {count, plural, one {{count} project override} other {{count} project overrides}}": "{summary} · {count, plural, other {{count} 個專案覆寫}}",
   "Segment {index}, {account}, {remaining}% left, {resetsIn}, {credits, plural, one {{credits} reset credit banked} other {{credits} reset credits banked}}": "分段 {index}，{account}，剩餘 {remaining}%，{resetsIn}，{credits, plural, other {已存有 {credits} 個重設額度}}",
   "Segment {index}, {account}, {remaining}% left, {credits, plural, one {{credits} reset credit banked} other {{credits} reset credits banked}}": "分段 {index}，{account}，剩餘 {remaining}%，{credits, plural, other {已存有 {credits} 個重設額度}}",
-  "{count, plural, one {{count} stop} other {{count} stops}}": "{count, plural, other {{count} 個站點}}"
+  "{count, plural, one {{count} stop} other {{count} stops}}": "{count, plural, other {{count} 站}}",
+  "[\"Show the quota of every Codex, Claude, and Grok account the hub pools, next to the providers on \",{\"i\":1,\"k\":\"_gt_value_1\",\"v\":\"v\"},\". The key stays on that server.\"]": [
+    "在",
+    " ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 上的供應商旁顯示該中樞彙集的每個 Codex、Claude 和 Grok 帳號的配額。金鑰保留在該伺服器上。"
+  ],
+  "{source}: No Codex, Claude, or Grok accounts. Skipped {providers}.": "{source}：沒有 Codex、Claude 或 Grok 帳號。已略過 {providers}。",
+  "Copy as PNG": "複製為 PNG"
 }

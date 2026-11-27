@@ -1331,6 +1331,7 @@
   "42a2622893a6bced": "No se pudieron leer los límites.",
   "4897e228d3185c96": "No se informaron límites.",
   "e27d2cb964df5dd5": "{source}: no se informaron cuentas.",
+  "161135f0aea4d1ca": "{source}: no hay cuentas de Codex, Claude ni Grok. Se omitieron: {providers}.",
   "1b503134018285f4": "{days} d {hours} h",
   "164c674cf062933a": "{label} · quedan {count} · caduca en {expires}",
   "9c82c39589c23938": "{label} · quedan {count}",
@@ -3842,6 +3843,7 @@
   "6c71d251d9917587": "Copiar como Markdown",
   "d510b122f84051a0": "Copiar como CSV",
   "66c4ee40252d9dec": "Copiar como HTML",
+  "7b8a7cd89a22d822": "Copiar como PNG",
   "2912e4ac3697686b": "Leer el hilo en {label}",
   "ced684880c2e1961": "¿Permitir que {server} ejecute {tool}?",
   "b66fa23b5647b62d": "¿Enviar este mensaje desde {server}?",
@@ -7620,8 +7622,8 @@
     },
     "."
   ],
-  "432e85a50e2e7964": [
-    "Muestra la cuota de cada cuenta que agrupa el hub, junto a los proveedores en",
+  "28988b067c83383c": [
+    "Muestra la cuota de cada cuenta de Codex, Claude y Grok que agrupa el hub, junto a los proveedores en",
     " ",
     {
       "i": 1,
